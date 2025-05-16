@@ -1,0 +1,21 @@
+<svg width="600" height="180" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="SIEMSa logo">
+  <!-- Fondo transparente -->
+  <rect width="100%" height="100%" fill="none" />
+  
+  <!-- Icono estilo montaña simplificado -->
+  <polyline points="30,140 60,60 90,140 120,20 150,140 180,80 210,140" 
+            fill="none" stroke="#ffffff" stroke-width="5" />
+  
+  <!-- Texto SIEMSa -->
+  <text x="230" y="90" font-family="Arial, sans-serif" font-size="64" fill="#ffffff" font-weight="bold" letter-spacing="2">
+    SIEMSa
+  </text>
+  
+  <!-- Texto subtítulo -->
+  <text x="230" y="130" font-family="Arial, sans-serif" font-size="18" fill="#ffffff" font-weight="normal" letter-spacing="1">
+    Sistema de Información de
+  </text>
+  <text x="230" y="155" font-family="Arial, sans-serif" font-size="18" fill="#ffffff" font-weight="bold" letter-spacing="1">
+    Exportación de Minerales de Salta
+  </text>
+</svg>

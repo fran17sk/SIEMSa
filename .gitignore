@@ -1,0 +1,73 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Django stuff:
+*.log
+*.pot
+*.pyc
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+media/
+staticfiles/
+static/
+
+# If you are using Django Compressor
+*.cache
+
+# Pytest
+.cache/
+
+# VSCode
+.vscode/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# macOS
+.DS_Store
+
+# Environment variables
+.env
+.env.*
+
+# Virtualenv
+venv/
+ENV/
+env/
+.venv/
+
+# Migrations (opcional: si no querés subir las migrations inicialmente)
+# **/migrations/
+# !**/migrations/__init__.py
+
+# MyPy
+.mypy_cache/
+
+# Coverage reports
+htmlcov/
+.coverage
+.coverage.*
+
+# Test results
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+
+# Build files
+build/
+dist/
+*.egg-info/
+
+# IDEs
+.idea/
+*.iml
+
+# System files
+Thumbs.db

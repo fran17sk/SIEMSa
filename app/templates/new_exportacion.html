@@ -1,0 +1,436 @@
+{% extends "base.html" %}
+
+{% block head %}
+  <style>
+    :root {
+      --sidebar-bg: #1f2937;
+      --sidebar-accent: #3b82f6;
+      --text-light: #f9fafb;
+      --text-muted: #9ca3af;
+      --hover-bg: rgba(59, 130, 246, 0.1);
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: #f4f6f8;
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .sidebar {
+      width: 250px;
+      background-color: var(--sidebar-bg);
+      color: var(--text-light);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: all 0.3s ease-in-out;
+      box-shadow: 2px 0 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .sidebar .menu {
+      padding: 2rem 1rem;
+    }
+
+    .sidebar .menu .logo {
+      font-size: 1.5rem;
+      font-weight: bold;
+      margin-bottom: 2.5rem;
+      text-align: center;
+      letter-spacing: 1px;
+      color: white;
+    }
+
+    .sidebar nav a {
+      display: flex;
+      align-items: center;
+      text-decoration: none;
+      color: var(--text-light);
+      padding: 0.75rem 1rem;
+      margin-bottom: 0.5rem;
+      border-radius: 8px;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    .sidebar nav a:hover,
+    .sidebar nav a.active {
+      background-color: var(--hover-bg);
+      color: var(--sidebar-accent);
+    }
+
+    .sidebar nav a svg {
+      margin-right: 12px;
+      stroke-width: 1.8;
+    }
+
+    .user-footer {
+      padding: 1.2rem;
+      text-align: center;
+      border-top: 1px solid rgba(255,255,255,0.1);
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      background-color: #111827;
+    }
+
+    .main {
+      flex: 1;
+      padding: 2rem;
+      overflow-y: auto;
+      animation: fadeIn 0.4s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 768px) {
+      .sidebar {
+        position: fixed;
+        left: -100%;
+        height: 100vh;
+        z-index: 999;
+      }
+
+      .sidebar.open {
+        left: 0;
+      }
+
+      .toggle-btn {
+        position: fixed;
+        top: 1rem;
+        left: 1rem;
+        z-index: 1000;
+        background: var(--sidebar-accent);
+        color: white;
+        border: none;
+        padding: 0.6rem 1rem;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 1.2rem;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      }
+    }
+    .container {
+      max-width: 1100px;
+      margin: auto;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+      padding: .1rem 2rem;
+      animation: fadeIn 0.6s ease-out;
+    }
+
+    h2 {
+      color: rgb(0, 0, 0);
+      font-size: 1.4rem;
+    }
+
+    form {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      column-gap: 35px;  /* separación horizontal */
+      row-gap: 5px;      /* separación vertical */
+      align-items: end;
+    }
+
+    label {
+      font-weight: 600;
+      font-size: 0.95rem;
+      margin-bottom: 0.4rem;
+      display: block;
+    }
+
+    input[type="text"],
+    input[type="date"],
+    select {
+      width: 100%;
+      padding: 0.5rem;
+      font-size: 0.95rem;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      transition: border-color 0.3s ease;
+    }
+
+    input:focus,
+    select:focus {
+      outline: none;
+      border-color: #4a90e2;
+      box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+    }
+
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      grid-column: span 2;
+    }
+
+    .divider {
+      height: 2px;
+      background-color: #004080;
+      margin: 2rem 0 1rem;
+      border-radius: 2px;
+    }
+
+    .details-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+      font-size: 0.95rem;
+    }
+
+    .details-table thead {
+      background-color: #111827;
+      color: white;
+    }
+
+    .details-table th,
+    .details-table td {
+      padding: 0.8rem;
+      border: 1px solid #ddd;
+      text-align: left;
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .action-buttons button {
+      padding: 0.6rem 1.2rem;
+      border: none;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 0.95rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      cursor: pointer;
+      transition: transform 0.2s ease;
+    }
+
+    .action-buttons button:hover {
+      transform: scale(1.05);
+    }
+
+    .btn-add {
+      background-color: #111827;
+      color: white;
+    }
+
+    .btn-delete {
+      background-color: #e74c3c;
+      color: white;
+    }
+
+    .btn-edit {
+      background-color: #3498db;
+      color: white;
+    }
+
+    .btn-save {
+      background-color: #004080;
+      color: white;
+      float: right;
+      margin-top: 2rem;
+      padding: 0.7rem 1.5rem;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(15px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  </style>
+
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h2>Nueva Declaracion Jurada | Exportacion de Minerales</h2>
+    <form>
+      <div>
+        <label>N° Exportación</label>
+        <input type="text" placeholder="Automático" value="{{ numero_exportacion }}" disabled />
+
+      </div>
+
+      <div>
+        <label>N° de expediente</label>
+        <input type="text" placeholder="123456" />
+      </div>
+
+      <div>
+        <label>Fecha de Exportación</label>
+        <input type="date" />
+      </div>
+
+      <div>
+        <label>Empresa</label>
+        <select name="empresa">
+          <option value="">Seleccionar</option>
+          {% for empresa in empresas %}
+            <option value="{{ empresa.id }}">{{ empresa.nom_productor_min }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label>País</label>
+        <select>
+          <option value="">Seleccionar</option>
+          {% for pais in paises %}
+            <option value="{{ pais.id }}">{{ pais.nom_pais }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label>Fecha de presentación</label>
+        <input type="date" />
+      </div>
+
+      <div>
+        <label>Pedido comercial</label>
+        <input type="text" />
+      </div>
+
+      <div class="checkbox-group">
+        <input type="checkbox" id="anulacion" />
+        <label for="anulacion">¿Anulación?</label>
+      </div>
+    </form>
+
+    <div class="divider"></div>
+
+    <form id="mineral-form" style="margin-top: 1rem; display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px;">
+  <div>
+    <label>Mineral</label>
+    <select id="mineral" name="mineral">
+      <option value="">Seleccionar</option>
+      {% for mineral in minerales %}
+        <option value="{{ mineral.id }}">{{ mineral.nom_min }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div>
+    <label>Toneladas</label>
+    <input type="text" id="toneladas" name="toneladas" />
+  </div>
+  <div>
+    <label>Valor FOB  (USD)</label>
+    <input type="text" id="valor_fob" name="valor_fob" />
+  </div>
+</form>
+
+    <div class="action-buttons">
+      <button class="btn-add"><i class="fa fa-plus"></i> Agregar</button>
+    </div>
+
+    <table class="details-table">
+      <thead>
+        <tr>
+          <th>N° Detalle</th>
+          <th>Mineral</th>
+          <th>Toneladas</th>
+          <th>Valor FOB  (USD)</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="tabla-detalles-body">
+  <tr>
+    <td colspan="5" style="text-align: center; color: #888;">Sin registros aún</td>
+  </tr>
+</tbody>
+    </table>
+    <button class="btn-save"><i class="fa fa-check"></i> Guardar</button>
+  </div>
+
+{% endblock %}
+
+{% block script %}
+<script>
+  function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('open');
+  }
+
+  // Cargar íconos Lucide
+  lucide.createIcons();
+</script>
+
+<script>
+  let contadorDetalles = 1;
+
+  document.querySelector(".btn-add").addEventListener("click", function (e) {
+    e.preventDefault();
+
+    const mineralSelect = document.getElementById("mineral");
+    const toneladasInput = document.getElementById("toneladas");
+    const valorFobInput = document.getElementById("valor_fob");
+
+    const mineralId = mineralSelect.value;
+    const mineralNombre = mineralSelect.options[mineralSelect.selectedIndex].text;
+    const toneladas = toneladasInput.value;
+    const valorFob = valorFobInput.value;
+
+    // Validaciones básicas
+    if (!toneladas || !valorFob) {
+      Swal.fire({
+      icon: 'warning',
+      title: 'Campos incompletos',
+      text: 'Completa todos los campos antes de agregar.',
+      confirmButtonColor: '#3085d6',
+      confirmButtonText: 'Entendido'
+    });
+      return;
+    }
+
+
+    const tbody = document.getElementById("tabla-detalles-body");
+
+    // Si es la primera vez, limpia el mensaje de "sin registros"
+    if (tbody.children.length === 1 && tbody.children[0].children[0].colSpan === 5) {
+      tbody.innerHTML = "";
+    }
+
+    // Crear fila
+    const fila = document.createElement("tr");
+
+    fila.innerHTML = `
+      <td>${contadorDetalles++}</td>
+      <td>${mineralNombre}</td>
+      <td>${toneladas}</td>
+      <td>${valorFob}</td>
+      <td class="actions">
+        <button title="Editar" >
+          <i class="fa fa-pencil"></i>
+        </button>
+        <button title="Eliminar" >
+          <i class="fa fa-times-circle" aria-hidden="true"></i>
+        </button>
+      </td>
+    `;
+
+    tbody.appendChild(fila);
+
+    // Limpiar campos
+    mineralSelect.value = "";
+    toneladasInput.value = "";
+    valorFobInput.value = "";
+  });
+</script>
+{% endblock %}
+</body>
+</html>
+
+
+

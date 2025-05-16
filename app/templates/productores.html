@@ -1,0 +1,279 @@
+{% extends "base.html" %}
+{% load static %}
+{% block head %}
+  <style>
+    :root {
+      --sidebar-bg: #1f2937;
+      --sidebar-accent: #3b82f6;
+      --text-light: #f9fafb;
+      --text-muted: #9ca3af;
+      --hover-bg: rgba(59, 130, 246, 0.1);
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: #f4f6f8;
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .sidebar {
+      width: 250px;
+      background-color: var(--sidebar-bg);
+      color: var(--text-light);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: all 0.3s ease-in-out;
+      box-shadow: 2px 0 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .sidebar .menu {
+      padding: 2rem 1rem;
+    }
+
+    .sidebar .menu .logo {
+      font-size: 1.5rem;
+      font-weight: bold;
+      margin-bottom: 2.5rem;
+      text-align: center;
+      letter-spacing: 1px;
+      color: white;
+    }
+
+    .sidebar nav a {
+      display: flex;
+      align-items: center;
+      text-decoration: none;
+      color: var(--text-light);
+      padding: 0.75rem 1rem;
+      margin-bottom: 0.5rem;
+      border-radius: 8px;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    .sidebar nav a:hover,
+    .sidebar nav a.active {
+      background-color: var(--hover-bg);
+      color: var(--sidebar-accent);
+    }
+
+    .sidebar nav a svg {
+      margin-right: 12px;
+      stroke-width: 1.8;
+    }
+
+    .user-footer {
+      padding: 1.2rem;
+      text-align: center;
+      border-top: 1px solid rgba(255,255,255,0.1);
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      background-color: #111827;
+    }
+
+    .main {
+      flex: 1;
+      padding: 2rem;
+      overflow-y: auto;
+      animation: fadeIn 0.4s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 768px) {
+      .sidebar {
+        position: fixed;
+        left: -100%;
+        height: 100vh;
+        z-index: 999;
+      }
+
+      .sidebar.open {
+        left: 0;
+      }
+
+      .toggle-btn {
+        position: fixed;
+        top: 1rem;
+        left: 1rem;
+        z-index: 1000;
+        background: var(--sidebar-accent);
+        color: white;
+        border: none;
+        padding: 0.6rem 1rem;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 1.2rem;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      }
+    }
+    .table-container {
+      background: #fff;
+      border-radius: 12px;
+      padding: 1.5rem;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+      transition: transform 0.3s ease;
+    }
+
+    .table-container:hover {
+      transform: translateY(-3px);
+    }
+
+    .table-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .table-header h2 {
+      font-size: 1.5rem;
+      font-weight: 600;
+    }
+
+    .add-btn {
+      background-color: #004080;
+      color: white;
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background 0.3s ease;
+    }
+
+    .add-btn:hover {
+      background-color: #002a55;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 0.5rem;
+    }
+
+    th, td {
+      padding: 1rem;
+      text-align: left;
+      border-bottom: 1px solid #eee;
+    }
+
+    th {
+      background-color: #f0f2f5;
+      font-weight: 600;
+    }
+
+    .actions button {
+      background: none;
+      border: none;
+      cursor: pointer;
+      margin-right: 0.6rem;
+      font-size: 1.1rem;
+      color: #555;
+      transition: color 0.2s ease;
+    }
+
+    .actions button:hover {
+      color: #004080;
+    }
+
+    .actions .fa-trash:hover {
+      color: #c0392b;
+    }
+
+    @media (max-width: 600px) {
+      th, td {
+        padding: 0.6rem;
+      }
+    }
+  </style>
+
+{% endblock %}
+
+{% block content %}
+
+    <div class="table-container">
+      <div class="table-header">
+        <h2>Listado de Productores Mineros</h2>
+        <div style="display: flex; gap: 0.5rem; align-items: center;">
+        <input 
+          type="text" 
+          id="searchInput" 
+          placeholder="Buscar..." 
+          style="padding: 0.4rem 0.8rem; border-radius: 5px; border: 1px solid #ccc; font-size: 1rem;"
+        />
+        <button class="add-btn" >
+          <i class="fa fa-plus"></i> Agregar
+        </button>
+      </div>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nombre del Productor</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody">
+          {% for productor in productores %}
+          <tr>
+            <td>{{ productor.id_productor_min }}</td>
+            <td>{{ productor.nom_productor_min }}</td>
+            <td class="actions">
+              <button title="Editar" >
+                <i class="fa fa-pencil"></i>
+              </button>
+              
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="3" style="text-align:center; color:#999;">No hay productores registrados.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+
+  {% endblock %}
+  {% block script %}
+
+<script>
+    const searchInput = document.getElementById('searchInput');
+    const tableBody = document.getElementById('tableBody');
+
+    searchInput.addEventListener('input', function () {
+      const filter = this.value.toLowerCase();
+
+      // Recorrer todas las filas
+      Array.from(tableBody.getElementsByTagName('tr')).forEach(row => {
+        const productorName = row.cells[1].textContent.toLowerCase(); // nombre del productor en la columna 2
+
+        if (productorName.includes(filter)) {
+          row.style.display = '';
+        } else {
+          row.style.display = 'none';
+        }
+      });
+    });
+  </script>
+<script>
+  function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('open');
+  }
+
+  // Cargar íconos Lucide
+  lucide.createIcons();
+</script>
+
+  {% endblock %}
+  

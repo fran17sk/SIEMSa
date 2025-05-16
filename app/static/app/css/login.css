@@ -1,0 +1,120 @@
+/* Reseteo básico */
+* {
+    margin: 0; padding: 0; box-sizing: border-box;
+}
+
+html, body {
+    height: 100%;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Imagen de fondo que cubre todo */
+.background-image {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: url("../img/bg-login.jpg") no-repeat center center fixed;
+    background-size: cover;
+    filter: brightness(0.6);
+    z-index: -1;
+}
+
+/* Contenedor del login alineado a la izquierda */
+.login-wrapper {
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start; /* izquierda */
+    padding-left: 6vw; /* espacio desde la izquierda */
+}
+
+/* Tarjeta del login */
+.login-card {
+    border-radius: 14px;
+    padding: 3rem 2.5rem;
+    width: 360px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+    color: #222;
+    user-select: none;
+}
+
+.login-title {
+    font-size: 2.8rem;
+    font-weight: 700;
+    color: #004080;
+    margin-bottom: 0.2rem;
+}
+
+.login-subtitle {
+    font-weight: 600;
+    color: #555;
+    margin-bottom: 2rem;
+}
+
+.login-label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.4rem;
+    color: #333;
+}
+
+.login-input {
+    width: 100%;
+    padding: 0.7rem 1rem;
+    font-size: 1rem;
+    border: 1.5px solid #bbb;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    transition: border-color 0.3s ease;
+}
+
+.login-input:focus {
+    border-color: #004080;
+    outline: none;
+    box-shadow: 0 0 6px rgba(0, 64, 128, 0.4);
+}
+
+.login-button {
+    width: 100%;
+    padding: 0.9rem;
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: #fff;
+    background-color: #004080;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.login-button:hover,
+.login-button:focus {
+    background-color: #002a55;
+    outline: none;
+}
+
+.alert {
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.alert-error {
+    background-color: #f8d7da;
+    color: #842029;
+    border: 1px solid #f5c2c7;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+    .login-wrapper {
+        justify-content: center;
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+    .login-card {
+        width: 100%;
+        padding: 2rem 1.5rem;
+    }
+}

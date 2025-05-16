@@ -1,0 +1,404 @@
+{% extends "base.html" %}
+{% load static %}
+{% block head %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+  <style>
+    :root {
+      --sidebar-bg: #1f2937;
+      --sidebar-accent: #3b82f6;
+      --text-light: #f9fafb;
+      --text-muted: #9ca3af;
+      --hover-bg: rgba(59, 130, 246, 0.1);
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: #f4f6f8;
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .sidebar {
+      width: 250px;
+      background-color: var(--sidebar-bg);
+      color: var(--text-light);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: all 0.3s ease-in-out;
+      box-shadow: 2px 0 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .sidebar .menu {
+      padding: 2rem 1rem;
+    }
+
+    .sidebar .menu .logo {
+      font-size: 1.5rem;
+      font-weight: bold;
+      margin-bottom: 2.5rem;
+      text-align: center;
+      letter-spacing: 1px;
+      color: white;
+    }
+
+    .sidebar nav a {
+      display: flex;
+      align-items: center;
+      text-decoration: none;
+      color: var(--text-light);
+      padding: 0.75rem 1rem;
+      margin-bottom: 0.5rem;
+      border-radius: 8px;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    .sidebar nav a:hover,
+    .sidebar nav a.active {
+      background-color: var(--hover-bg);
+      color: var(--sidebar-accent);
+    }
+
+    .sidebar nav a svg {
+      margin-right: 12px;
+      stroke-width: 1.8;
+    }
+
+    .user-footer {
+      padding: 1.2rem;
+      text-align: center;
+      border-top: 1px solid rgba(255,255,255,0.1);
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      background-color: #111827;
+    }
+
+    .main {
+      flex: 1;
+      padding: 2rem;
+      overflow-y: auto;
+      animation: fadeIn 0.4s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 768px) {
+      .sidebar {
+        position: fixed;
+        left: -100%;
+        height: 100vh;
+        z-index: 999;
+      }
+
+      .sidebar.open {
+        left: 0;
+      }
+
+      .toggle-btn {
+        position: fixed;
+        top: 1rem;
+        left: 1rem;
+        z-index: 1000;
+        background: var(--sidebar-accent);
+        color: white;
+        border: none;
+        padding: 0.6rem 1rem;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 1.2rem;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      }
+    }
+    .table-container {
+      background: #fff;
+      border-radius: 12px;
+      padding: 1.5rem;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+      transition: transform 0.3s ease;
+    }
+
+    .table-container:hover {
+      transform: translateY(-3px);
+    }
+
+    .table-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .table-header h2 {
+      font-size: 1.5rem;
+      font-weight: 600;
+    }
+
+    .add-btn {
+      background-color: #004080;
+      color: white;
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background 0.3s ease;
+    }
+
+    .add-btn:hover {
+      background-color: #002a55;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 0.5rem;
+    }
+
+    th, td {
+      padding: 1rem;
+      font-size: 0.8rem;
+
+      text-align: left;
+      border-bottom: 1px solid #eee;
+    }
+
+    th {
+      background-color: #f0f2f5;
+      font-weight: 600;
+    }
+
+    .actions button {
+      background: none;
+      border: none;
+      cursor: pointer;
+      margin-right: 0.6rem;
+      font-size: 1.1rem;
+      color: #555;
+      transition: color 0.2s ease;
+    }
+
+    .actions button:hover {
+      color: #004080;
+    }
+
+    .actions .fa-trash:hover {
+      color: #c0392b;
+    }
+
+    @media (max-width: 600px) {
+      th, td {
+        padding: 0.6rem;
+      }
+    }
+    .pagination {
+      margin-top: 1.5rem;
+      text-align: center;
+    }
+
+    .pagination a, .pagination span {
+      display: inline-block;
+      margin: 0 6px;
+      padding: 8px 12px;
+      border-radius: 4px;
+      color: #004080;
+      text-decoration: none;
+      border: 1px solid #ddd;
+    }
+
+    .pagination a:hover {
+      background-color: #e0ecff;
+    }
+
+    .pagination span {
+      background-color: #004080;
+      color: white;
+      font-weight: bold;
+    }
+
+    .no-data {
+      text-align: center;
+      color: #888;
+      padding: 20px;
+    }
+    .subtable {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+.subtable th, .subtable td {
+  padding: 5px;
+  border: 1px solid #ddd;
+  text-align: center;
+}
+
+.detail-row {
+  background-color: #f9f9f9;
+}
+  </style>
+{% endblock %}
+
+{% block content %}
+<aside class=main">
+  <div class="table-container">
+    <div class="table-header" style="display: flex; justify-content: space-between; align-items: center;">
+      <h2>Listado de Exportaciones</h2>
+      <div style="display: flex; gap: 0.5rem; align-items: center;">
+        <input 
+          type="text" 
+          id="searchInput" 
+          placeholder="Buscar..." 
+          style="padding: 0.4rem 0.8rem; border-radius: 5px; border: 1px solid #ccc; font-size: 1rem;"
+        />
+        <a href="{% url 'exportacion' %}" class="add-btn">
+          <i class="fa fa-plus"></i> Agregar
+        </a>
+      </div>
+    </div>
+
+    <table>
+  <thead>
+    <tr>
+      <th>Nº Exp</th>
+      <th>Fecha</th>
+      <th>Empresa</th>
+      <th>País</th>
+      <th>Pedido</th>
+      <th>Estado</th>
+      <th>Minerales</th>
+      <th>Tn</th>
+      <th>Total FOB</th>
+      <th>Acciones</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for item in page_obj %}
+      {% with exp=item.exportacion %}
+      <tr>
+        <td>{{ exp.Num_Exped1 }}{% if exp.Num_Exped2 %} / {{ exp.Num_Exped2 }}{% endif %}</td>
+        <td>{{ exp.fecha_export|date:"d/m/Y" }}</td>
+        <td>{{ exp.id_productor_min.nom_productor_min }}</td>
+        <td>{{ exp.id_pais.nom_pais }}</td>
+        <td>{{ exp.pedido_comercial_export }}</td>
+        <td>{{ exp.Estado_anulacion|yesno:"Sí,No" }}</td>
+        <td>
+          {% for me in item.min_exports %}
+            {{ me.id_min.nom_min }}{% if not forloop.last %}, {% endif %}
+          {% endfor %}
+        </td>
+        <td>{{ item.total_tn }}</td>
+        <td>{{ item.total_fob }}</td>
+        <td class="actions">
+          <button title="Editar"><i class="fa fa-pencil"></i></button>
+          {% if item.min_exports|length > 1 %}
+            <button class="toggle-details" data-target="detalle-{{ exp.id_export }}" title="Ver Detalle">
+              <i class="fa fa-chevron-down"></i>
+            </button>
+          {% endif %}
+        </td>
+      </tr>
+
+      {% if item.min_exports|length > 1 %}
+      <tr id="detalle-{{ exp.id_export }}" class="detalle-row" style="display: none;">
+        <td colspan="10" style="padding: 0;">
+          <table style="width: 100%; background: #f8f8f8; border-top: 1px solid #ddd;">
+            <thead>
+              <tr style="background: #efefef;">
+                <th style="padding: 8px;">Mineral</th>
+                <th style="padding: 8px;">Tn</th>
+                <th style="padding: 8px;">FOB</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for me in item.min_exports %}
+              <tr>
+                <td style="padding: 8px;">{{ me.id_min.nom_min }}</td>
+                <td style="padding: 8px;">{{ me.Tn_min_export }}</td>
+                <td style="padding: 8px;">{{ me.FOB_min_export }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </td>
+      </tr>
+      {% endif %}
+      {% endwith %}
+    {% empty %}
+      <tr>
+        <td colspan="10" style="text-align: center; color: #999;">No hay exportaciones registradas.</td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+<!-- Paginación -->
+<div class="pagination">
+  {% if page_obj.has_previous %}
+    <a href="?page={{ page_obj.previous_page_number }}">« Anterior</a>
+  {% endif %}
+
+  <span>Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+
+  {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}">Siguiente »</a>
+  {% endif %}
+</div>
+  </div>
+
+  {% endblock %}
+  {% block script %}
+<script>
+    const searchInput = document.getElementById('searchInput');
+    const tableBody = document.getElementById('tableBody');
+
+    searchInput.addEventListener('input', function() {
+      const filter = this.value.toLowerCase();
+      const rows = tableBody.getElementsByTagName('tr');
+
+      for(let i = 0; i < rows.length; i++) {
+        const cells = rows[i].getElementsByTagName('td');
+        let match = false;
+        for(let j = 0; j < cells.length - 1; j++) { // omitimos columna acciones
+          if(cells[j] && cells[j].textContent.toLowerCase().includes(filter)) {
+            match = true;
+            break;
+          }
+        }
+        rows[i].style.display = match ? '' : 'none';
+      }
+    });
+  </script>
+ <script>
+  // Script para mostrar/ocultar detalle
+  document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.toggle-details').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        const targetId = btn.getAttribute('data-target');
+        const detalleRow = document.getElementById(targetId);
+        if (detalleRow.style.display === 'none') {
+          detalleRow.style.display = 'table-row';
+          btn.querySelector('i').classList.remove('fa-chevron-down');
+          btn.querySelector('i').classList.add('fa-chevron-up');
+        } else {
+          detalleRow.style.display = 'none';
+          btn.querySelector('i').classList.remove('fa-chevron-up');
+          btn.querySelector('i').classList.add('fa-chevron-down');
+        }
+      });
+    });
+  });
+</script>
+<script>
+  function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('open');
+  }
+
+  // Cargar íconos Lucide
+  lucide.createIcons();
+</script>
+{% endblock %}
