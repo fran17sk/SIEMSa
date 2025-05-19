@@ -255,87 +255,104 @@
 {% endblock %}
 
 {% block content %}
+
+
+
+{% if exportacion %}
 <div class="container">
     <h2>Nueva Declaracion Jurada | Exportacion de Minerales</h2>
-    <form>
-      <div>
-        <label>N° Exportación</label>
-        <input type="text" placeholder="Automático" value="{{ numero_exportacion }}" disabled />
+   <form id="form-exportacion" method="POST">
+  {% csrf_token %}
 
-      </div>
-
-      <div>
-        <label>N° de expediente</label>
-        <input type="text" placeholder="123456" />
-      </div>
-
-      <div>
-        <label>Fecha de Exportación</label>
-        <input type="date" />
-      </div>
-
-      <div>
-        <label>Empresa</label>
-        <select name="empresa">
-          <option value="">Seleccionar</option>
-          {% for empresa in empresas %}
-            <option value="{{ empresa.id }}">{{ empresa.nom_productor_min }}</option>
-          {% endfor %}
-        </select>
-      </div>
-
-      <div>
-        <label>País</label>
-        <select>
-          <option value="">Seleccionar</option>
-          {% for pais in paises %}
-            <option value="{{ pais.id }}">{{ pais.nom_pais }}</option>
-          {% endfor %}
-        </select>
-      </div>
-
-      <div>
-        <label>Fecha de presentación</label>
-        <input type="date" />
-      </div>
-
-      <div>
-        <label>Pedido comercial</label>
-        <input type="text" />
-      </div>
-
-      <div class="checkbox-group">
-        <input type="checkbox" id="anulacion" />
-        <label for="anulacion">¿Anulación?</label>
-      </div>
-    </form>
-
-    <div class="divider"></div>
-
-    <form id="mineral-form" style="margin-top: 1rem; display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px;">
   <div>
-    <label>Mineral</label>
-    <select id="mineral" name="mineral">
+    <label>N° Exportación</label>
+    <input type="text" value="{{ exportacion.id_export }}" disabled />
+  </div>
+
+  <div>
+    <label>N° de expediente</label>
+    <input type="text" name="expediente" value="{{ exportacion.Num_Exped1}}"/>
+  </div>
+
+  <div>
+    <label>Fecha de Exportación</label>
+    <input type="date" name="fecha_exportacion" value="{{ exportacion.fecha_export|date:'Y-m-d' }}"/>
+  </div>
+
+  <div>
+    <label>Empresa</label>
+    <select name="empresa">
       <option value="">Seleccionar</option>
-      {% for mineral in minerales %}
-        <option value="{{ mineral.id }}">{{ mineral.nom_min }}</option>
+      {% for empresa in empresas %}
+        <option {% if empresa.id_productor_min == exportacion.id_productor_min_id %}
+        selected
+      {% endif %}">{{ empresa.nom_productor_min }}</option>
       {% endfor %}
     </select>
   </div>
-  <div>
-    <label>Toneladas</label>
-    <input type="text" id="toneladas" name="toneladas" />
-  </div>
-  <div>
-    <label>Valor FOB  (USD)</label>
-    <input type="text" id="valor_fob" name="valor_fob" />
-  </div>
-</form>
 
+  <div>
+    <label>País</label>
+    <select name="pais">
+      <option value="">Seleccionar</option>
+      {% for pais in paises %}
+        <option {% if pais.id_pais == exportacion.id_pais_id %}
+        selected
+      {% endif %}>{{ pais.nom_pais }}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div>
+    <label>Fecha de presentación</label>
+    <input type="date" name="fecha_presentacion" value="{{ exportacion.fecha_present_export|date:'Y-m-d' }}" />
+  </div>
+
+  <div>
+    <label>Pedido comercial</label>
+    <input type="text" name="pedido_comercial" value="{{exportacion.pedido_comercial_export}}" />
+  </div>
+
+  <div class="checkbox-group">
+    <input type="checkbox" id="anulacion" name="anulacion" value="1"
+  {% if exportacion.Estado_anulacion %}
+    checked
+  {% endif %}
+>
+    <label for="anulacion">¿Anulación?</label>
+  </div>
+  
+  <!-- Campo oculto para los detalles -->
+  <input type="hidden" name="detalles" id="detalles-json" />
+  
+</form>
+    
+    <div class="divider"></div>
+    
+    <form id="mineral-form" style="margin-top: 1rem; display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px;">
+      <div>
+        <label>Mineral</label>
+        <select id="mineral" name="mineral">
+          <option value="">Seleccionar</option>
+          {% for mineral in minerales %}
+          <option value="{{ mineral.id_min }}">{{ mineral.nom_min }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label>Toneladas</label>
+        <input type="text" id="toneladas" name="toneladas" />
+      </div>
+      <div>
+        <label>Valor FOB  (USD)</label>
+        <input type="text" id="valor_fob" name="valor_fob" />
+      </div>
+    </form>
+    
     <div class="action-buttons">
       <button class="btn-add"><i class="fa fa-plus"></i> Agregar</button>
     </div>
-
+    
     <table class="details-table">
       <thead>
         <tr>
@@ -347,13 +364,158 @@
         </tr>
       </thead>
       <tbody id="tabla-detalles-body">
-  <tr>
-    <td colspan="5" style="text-align: center; color: #888;">Sin registros aún</td>
-  </tr>
-</tbody>
+        {% if detalles %}
+          {% for detalle in detalles %}
+            <tr>
+          <th>{{detalle.id_min_export}}</th>
+          <th>{{detalle.id_min}}</th>
+          <th>{{detalle.Tn_min_export}}</th>
+          <th>{{detalle.FOB_min_export}}</th>
+          <td class="actions">
+            <button title="Eliminar" onclick="eliminarDetalle(${detalles.length - 1})">
+              <i class="fa fa-times-circle" aria-hidden="true"></i>
+            </button>
+          </td>
+        </tr>
+          {% endfor %}
+        {% else %}
+        <tr>
+          <td colspan="5" style="text-align: center; color: #888;">Sin registros aún</td>
+        </tr>
+        {% endif %}
+      </tbody>
     </table>
     <button class="btn-save"><i class="fa fa-check"></i> Guardar</button>
   </div>
+
+{% else %}
+
+<div class="container">
+    <h2>Nueva Declaracion Jurada | Exportacion de Minerales</h2>
+   <form id="form-exportacion" method="POST">
+  {% csrf_token %}
+
+  <div>
+    <label>N° Exportación</label>
+    <input type="text" value="{{ numero_exportacion }}" disabled />
+  </div>
+
+  <div>
+    <label>N° de expediente</label>
+    <input type="text" name="expediente" value="{{ exportacion.Num_Exped1}}"/>
+  </div>
+
+  <div>
+    <label>Fecha de Exportación</label>
+    <input type="date" name="fecha_exportacion" value="{{ exportacion.fecha_export|date:'Y-m-d' }}"/>
+  </div>
+
+  <div>
+    <label>Empresa</label>
+    <select name="empresa">
+      <option value="">Seleccionar</option>
+      {% for empresa in empresas %}
+        <option {% if empresa.id_productor_min == exportacion.id_productor_min_id %}
+        selected
+      {% endif %}">{{ empresa.nom_productor_min }}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div>
+    <label>País</label>
+    <select name="pais">
+      <option value="">Seleccionar</option>
+      {% for pais in paises %}
+        <option {% if pais.id_pais == exportacion.id_pais_id %}
+        selected
+      {% endif %}>{{ pais.nom_pais }}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div>
+    <label>Fecha de presentación</label>
+    <input type="date" name="fecha_presentacion" value="{{ exportacion.fecha_present_export|date:'Y-m-d' }}" />
+  </div>
+
+  <div>
+    <label>Pedido comercial</label>
+    <input type="text" name="pedido_comercial" value="{{exportacion.pedido_comercial_export}}" />
+  </div>
+
+  <div class="checkbox-group">
+    <input type="checkbox" id="anulacion" name="anulacion" value="1"
+  {% if exportacion.Estado_anulacion %}
+    checked
+  {% endif %}
+>
+    <label for="anulacion">¿Anulación?</label>
+  </div>
+  
+  <!-- Campo oculto para los detalles -->
+  <input type="hidden" name="detalles" id="detalles-json" />
+  
+</form>
+    
+    <div class="divider"></div>
+    
+    <form id="mineral-form" style="margin-top: 1rem; display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px;">
+      <div>
+        <label>Mineral</label>
+        <select id="mineral" name="mineral">
+          <option value="">Seleccionar</option>
+          {% for mineral in minerales %}
+          <option value="{{ mineral.id_min }}">{{ mineral.nom_min }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label>Toneladas</label>
+        <input type="text" id="toneladas" name="toneladas" />
+      </div>
+      <div>
+        <label>Valor FOB  (USD)</label>
+        <input type="text" id="valor_fob" name="valor_fob" />
+      </div>
+    </form>
+    
+    <div class="action-buttons">
+      <button class="btn-add"><i class="fa fa-plus"></i> Agregar</button>
+    </div>
+    
+    <table class="details-table">
+      <thead>
+        <tr>
+          <th>N° Detalle</th>
+          <th>Mineral</th>
+          <th>Toneladas</th>
+          <th>Valor FOB  (USD)</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="tabla-detalles-body">
+        {% if detalles %}
+          {% for detalle in detalles %}
+            <tr>
+          <th>{{detalle.id_min_export}}</th>
+          <th>{{detalle.id_min}}</th>
+          <th>{{detalle.Tn_min_export}}</th>
+          <th>{{detalle.FOB_min_export}}</th>
+          <th></th>
+        </tr>
+          {% endfor %}
+        {% else %}
+        <tr>
+          <td colspan="5" style="text-align: center; color: #888;">Sin registros aún</td>
+        </tr>
+        {% endif %}
+      </tbody>
+    </table>
+    <button class="btn-save"><i class="fa fa-check"></i> Guardar</button>
+  </div>
+
+{% endif %}
 
 {% endblock %}
 
@@ -368,7 +530,11 @@
 </script>
 
 <script>
-  let contadorDetalles = 1;
+  
+
+
+
+  const detalles = [];
 
   document.querySelector(".btn-add").addEventListener("click", function (e) {
     e.preventDefault();
@@ -382,44 +548,39 @@
     const toneladas = toneladasInput.value;
     const valorFob = valorFobInput.value;
 
-    // Validaciones básicas
-    if (!toneladas || !valorFob) {
+    console.log(mineralId,mineralNombre,toneladas,valorFob)
+    if (!mineralId || !toneladas || !valorFob) {
       Swal.fire({
-      icon: 'warning',
-      title: 'Campos incompletos',
-      text: 'Completa todos los campos antes de agregar.',
-      confirmButtonColor: '#3085d6',
-      confirmButtonText: 'Entendido'
-    });
+        icon: 'warning',
+        title: 'Campos incompletos',
+        text: 'Completa todos los campos antes de agregar.',
+      });
       return;
     }
 
+    detalles.push({
+      mineral_id: mineralId,
+      toneladas: toneladas,
+      valor_fob: valorFob
+    });
 
     const tbody = document.getElementById("tabla-detalles-body");
-
-    // Si es la primera vez, limpia el mensaje de "sin registros"
     if (tbody.children.length === 1 && tbody.children[0].children[0].colSpan === 5) {
       tbody.innerHTML = "";
     }
 
-    // Crear fila
     const fila = document.createElement("tr");
-
     fila.innerHTML = `
-      <td>${contadorDetalles++}</td>
+      <td>${detalles.length}</td>
       <td>${mineralNombre}</td>
       <td>${toneladas}</td>
       <td>${valorFob}</td>
       <td class="actions">
-        <button title="Editar" >
-          <i class="fa fa-pencil"></i>
-        </button>
-        <button title="Eliminar" >
+        <button title="Eliminar" onclick="eliminarDetalle(${detalles.length - 1})">
           <i class="fa fa-times-circle" aria-hidden="true"></i>
         </button>
       </td>
     `;
-
     tbody.appendChild(fila);
 
     // Limpiar campos
@@ -427,6 +588,35 @@
     toneladasInput.value = "";
     valorFobInput.value = "";
   });
+
+ function eliminarDetalle(button) {
+  const fila = button.closest("tr");
+  fila.remove();
+  // Actualizar numeración si querés
+  actualizarNumeracion();
+}
+function actualizarNumeracion() {
+  const filas = document.querySelectorAll("#tabla-detalles-body tr");
+  filas.forEach((fila, index) => {
+    fila.children[0].innerText = index + 1;
+  });
+}
+  document.querySelector(".btn-save").addEventListener("click", function (e) {
+    e.preventDefault();
+
+    if (detalles.length === 0) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Sin minerales',
+        text: 'Agrega al menos un mineral antes de guardar.',
+      });
+      return;
+    }
+
+    document.getElementById("detalles-json").value = JSON.stringify(detalles);
+    document.getElementById("form-exportacion").submit();
+  });
+
 </script>
 {% endblock %}
 </body>

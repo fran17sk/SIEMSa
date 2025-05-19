@@ -29,7 +29,7 @@ class Exportacion(models.Model):
     Num_Exped1 = models.CharField(max_length=100)
     Num_Exped2 = models.CharField(max_length=100, blank=True, null=True)
     fecha_export = models.DateField()
-    id_productor_min = models.ForeignKey(ProdMinero, on_delete=models.CASCADE, related_name='exportaciones')
+    id_productor_min = models.ForeignKey(ProdMinero, on_delete=models.CASCADE, related_name='productor_min')
     id_pais = models.ForeignKey(Pais, on_delete=models.CASCADE, related_name='exportaciones')
     fecha_present_export = models.DateField()
     pedido_comercial_export = models.CharField(max_length=255, blank=True, null=True)

@@ -279,6 +279,19 @@
     </form>
   </div>
 </div>
+<!-- MODAL PARA EDITAR MINERAL -->
+<div id="modalEditarMineral" class="modal">
+  <div class="modal-content">
+    <span class="close" id="cerrarModalEditar">&times;</span>
+    <h2>Editar Mineral</h2>
+    <form id="editarMineralForm">
+      <input type="hidden" id="mineralIdEditar" name="id">
+      <label for="nombreEditar">Nombre del Mineral</label>
+      <input type="text" id="nombreEditar" name="nombre" required>
+      <button type="submit" class="btn-registrar">Actualizar</button>
+    </form>
+  </div>
+</div>
 
     <div class="table-container">
       <div class="table-header">
@@ -310,10 +323,7 @@
             <td>{{ mineral.id_min }}</td>
             <td>{{ mineral.nom_min }}</td>
             <td class="actions">
-              <button title="Editar" >
-                <i class="fa fa-pencil"></i>
-              </button>
-              
+              <button onclick="abrirModalEditar({{ mineral.id_min }}, '{{ mineral.nom_min }}')"><i class="fa fa-pencil"></i></button>
             </td>
           </tr>
           {% empty %}
@@ -418,5 +428,57 @@
     }
     return cookieValue;
   }
+
+
+
+const modalEditar = document.getElementById("modalEditarMineral");
+const cerrarModalEditar = document.getElementById("cerrarModalEditar");
+const editarForm = document.getElementById("editarMineralForm");
+
+// Función para abrir el modal con los datos del mineral
+function abrirModalEditar(id, nombre) {
+  document.getElementById("mineralIdEditar").value = id;
+  document.getElementById("nombreEditar").value = nombre;
+  modalEditar.style.display = "block";
+}
+
+// Cerrar modal al hacer clic en la X o fuera del modal
+cerrarModalEditar.onclick = () => modalEditar.style.display = "none";
+window.onclick = (e) => {
+  if (e.target === modalEditar) modalEditar.style.display = "none";
+};
+
+// Envío del formulario de edición (AJAX)
+editarForm.addEventListener("submit", function(e) {
+  e.preventDefault();
+
+  const id = document.getElementById("mineralIdEditar").value;
+  const nombre = document.getElementById("nombreEditar").value.trim().toUpperCase();
+
+  if (!nombre) {
+    Swal.fire("Error", "El nombre no puede estar vacío.", "error");
+    return;
+  }
+
+  fetch("/editar-mineral/", {
+    method: "POST",
+    headers: {
+      "X-CSRFToken": getCookie("csrftoken"),
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ id, nombre })
+  })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        Swal.fire("Actualizado", `Mineral actualizado a "${data.nombre}".`, "success")
+          .then(() => location.reload());
+        modalEditar.style.display = "none";
+      } else {
+        Swal.fire("Error", data.error, "error");
+      }
+    })
+    .catch(() => Swal.fire("Error", "Ocurrió un error inesperado.", "error"));
+});
 </script>
 {% endblock %}

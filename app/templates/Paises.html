@@ -283,6 +283,21 @@
   </div>
 </div>
 
+<!-- MODAL PARA EDITAR MINERAL -->
+<div id="modalEditarPais" class="modal">
+  <div class="modal-content">
+    <span class="close" id="cerrarModalEditar">&times;</span>
+    <h2>Editar Mineral</h2>
+    <form id="editarPaisForm">
+      <input type="hidden" id="paisIdEditar" name="id">
+      <label for="nombreEditar">Nombre del Mineral</label>
+      <input type="text" id="nombreEditar" name="nombre" required>
+      <button type="submit" class="btn-registrar">Actualizar</button>
+    </form>
+  </div>
+</div>
+
+
     <div class="table-container">
       <div class="table-header">
         <h2>Listado de Países</h2>
@@ -314,9 +329,8 @@
             <td>{{ pais.id_pais }}</td>
             <td>{{ pais.nom_pais }}</td>
             <td class="actions">
-              <button title="Editar" >
-                <i class="fa fa-pencil"></i>
-              </button>
+              
+              <button onclick="abrirModalEditar({{ pais.id_pais }}, '{{ pais.nom_pais }}')"><i class="fa fa-pencil"></i></button>
               
             </td>
           </tr>
@@ -365,10 +379,10 @@
 
 
 <script>
-const modal = document.getElementById("modal");
+  const modal = document.getElementById("modal");
   const openBtn = document.getElementById("openModalBtn");
   const closeBtn = document.querySelector(".close");
-  const mineralForm = document.getElementById("mineralForm");
+  const paisForm = document.getElementById("paisForm");
 
   // Abrir modal
   openBtn.addEventListener("click", () => {
@@ -387,16 +401,108 @@ const modal = document.getElementById("modal");
     }
   });
 
-  // Enviar formulario
-  mineralForm.addEventListener("submit", (e) => {
+  paisForm.addEventListener("submit", (e) => {
     e.preventDefault();
-    const nombre = document.getElementById("nombreMineral").value.trim();
-    if (nombre !== "") {
-      // Acá podés enviar los datos al backend o manejarlo como quieras
-      alert("Mineral '" + nombre + "' registrado con éxito.");
-      modal.style.display = "none";
-      mineralForm.reset();
+    const nombre = document.getElementById("nombrePais").value.trim();
+
+    if (!nombre) {
+      Swal.fire("Campo vacío", "El nombre del mineral es obligatorio.", "warning");
+      return;
     }
+
+    fetch("/registrar-pais/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "X-CSRFToken": getCookie("csrftoken"), // importante para seguridad CSRF
+      },
+      body: new URLSearchParams({ nombre })
+    })
+    .then(res => res.json())
+    .then(data => {
+  if (data.success) {
+    Swal.fire("¡Registrado!", `Pais "${data.nombre}" guardado correctamente.`, "success")
+      .then(() => {
+        location.reload();  // Recarga la página cuando se cierra el alert
+      });
+    modal.style.display = "none";
+    paisForm.reset();
+  } else {
+    Swal.fire("Error", data.error, "error");
+  }
+})
+    .catch(() => {
+      Swal.fire("Error", "Ocurrió un error inesperado.", "error");
+    });
   });
+
+  // Función para obtener el token CSRF desde cookies
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+      const cookies = document.cookie.split(';');
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+
+
+const modalEditar = document.getElementById("modalEditarPais");
+const cerrarModalEditar = document.getElementById("cerrarModalEditar");
+const editarForm = document.getElementById("editarPaisForm");
+
+// Función para abrir el modal con los datos del mineral
+function abrirModalEditar(id, nombre) {
+  document.getElementById("paisIdEditar").value = id;
+  document.getElementById("nombreEditar").value = nombre;
+  modalEditar.style.display = "block";
+}
+
+// Cerrar modal al hacer clic en la X o fuera del modal
+cerrarModalEditar.onclick = () => modalEditar.style.display = "none";
+window.onclick = (e) => {
+  if (e.target === modalEditar) modalEditar.style.display = "none";
+};
+
+// Envío del formulario de edición (AJAX)
+editarForm.addEventListener("submit", function(e) {
+  e.preventDefault();
+
+  const id = document.getElementById("paisIdEditar").value;
+  const nombre = document.getElementById("nombreEditar").value.trim().toUpperCase();
+
+  if (!nombre) {
+    Swal.fire("Error", "El nombre no puede estar vacío.", "error");
+    return;
+  }
+
+  fetch("/editar-pais/", {
+    method: "POST",
+    headers: {
+      "X-CSRFToken": getCookie("csrftoken"),
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ id, nombre })
+  })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        Swal.fire("Actualizado", `Pais actualizado a "${data.nombre}".`, "success")
+          .then(() => location.reload());
+        modalEditar.style.display = "none";
+      } else {
+        Swal.fire("Error", data.error, "error");
+      }
+    })
+    .catch(() => Swal.fire("Error", "Ocurrió un error inesperado.", "error"));
+});
+
+  
 </script>
 {% endblock %}

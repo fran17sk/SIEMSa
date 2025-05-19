@@ -192,11 +192,111 @@
         padding: 0.6rem;
       }
     }
+
+    .modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0; top: 0;
+    width: 100%; height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+  }
+
+  /* Contenido del modal */
+  .modal-content {
+    background-color: #fff;
+    margin: 10% auto;
+    padding: 30px 25px;
+    border-radius: 10px;
+    width: 400px;
+    position: relative;
+    animation: fadeIn 0.3s ease;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+  }
+
+  /* Cerrar */
+  .close {
+    color: #aaa;
+    position: absolute;
+    top: 12px;
+    right: 16px;
+    font-size: 24px;
+    cursor: pointer;
+  }
+
+  .close:hover {
+    color: #000;
+  }
+
+  /* Formulario */
+  form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-top: 20px;
+  }
+
+  input[type="text"] {
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 16px;
+  }
+
+  .btn-registrar {
+    padding: 12px;
+    background: linear-gradient(135deg, #2c7be5, #00c9a7);
+    color: white;
+    font-size: 16px;
+    font-weight: bold;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+  }
+
+  .btn-registrar:hover {
+    background: linear-gradient(135deg, #1a66d1, #111827);
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+
   </style>
 
 {% endblock %}
 
 {% block content %}
+
+<div id="modal" class="modal">
+  <div class="modal-content">
+    <span class="close">&times;</span>
+    <h2>Registrar nueva Empresa | Productor Minero</h2>
+    <form id="productorForm">
+      <label for="nombreProductor">Nombre de la Empresa</label>
+      <input type="text" id="nombreProductor" name="nombreProductor" placeholder="Ej: Borax" required />
+      <button type="submit" class="btn-registrar">Registrar</button>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL PARA EDITAR MINERAL -->
+<div id="modalEditarProductor" class="modal">
+  <div class="modal-content">
+    <span class="close" id="cerrarModalEditar">&times;</span>
+    <h2>Editar Productor | Empresa</h2>
+    <form id="editarProductorForm">
+      <input type="hidden" id="productorIdEditar" name="id">
+      <label for="nombreEditar">Nombre de la Empresa</label>
+      <input type="text" id="nombreEditar" name="nombre" required>
+      <button type="submit" class="btn-registrar">Actualizar</button>
+    </form>
+  </div>
+</div>
+
 
     <div class="table-container">
       <div class="table-header">
@@ -208,7 +308,7 @@
           placeholder="Buscar..." 
           style="padding: 0.4rem 0.8rem; border-radius: 5px; border: 1px solid #ccc; font-size: 1rem;"
         />
-        <button class="add-btn" >
+        <button class="add-btn" id="openModalBtn">
           <i class="fa fa-plus"></i> Agregar
         </button>
       </div>
@@ -228,9 +328,8 @@
             <td>{{ productor.id_productor_min }}</td>
             <td>{{ productor.nom_productor_min }}</td>
             <td class="actions">
-              <button title="Editar" >
-                <i class="fa fa-pencil"></i>
-              </button>
+            <button onclick="abrirModalEditar({{ productor.id_productor_min }}, '{{ productor.nom_productor_min }}')"><i class="fa fa-pencil"></i></button>
+
               
             </td>
           </tr>
@@ -273,6 +372,133 @@
 
   // Cargar íconos Lucide
   lucide.createIcons();
+</script>
+
+
+<script>
+  const modal = document.getElementById("modal");
+  const openBtn = document.getElementById("openModalBtn");
+  const closeBtn = document.querySelector(".close");
+  const productorForm = document.getElementById("productorForm");
+
+  // Abrir modal
+  openBtn.addEventListener("click", () => {
+    modal.style.display = "block";
+  });
+
+  // Cerrar con X
+  closeBtn.addEventListener("click", () => {
+    modal.style.display = "none";
+  });
+
+  // Cerrar haciendo click afuera
+  window.addEventListener("click", (e) => {
+    if (e.target === modal) {
+      modal.style.display = "none";
+    }
+  });
+
+  productorForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const nombre = document.getElementById("nombreProductor").value.trim();
+
+    if (!nombre) {
+      Swal.fire("Campo vacío", "El nombre de la Empresa es obligatorio.", "warning");
+      return;
+    }
+
+    fetch("/registrar-productor/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "X-CSRFToken": getCookie("csrftoken"), // importante para seguridad CSRF
+      },
+      body: new URLSearchParams({ nombre })
+    })
+    .then(res => res.json())
+    .then(data => {
+  if (data.success) {
+    Swal.fire("¡Registrado!", `Empresa "${data.nombre}" registrada correctamente.`, "success")
+      .then(() => {
+        location.reload();  // Recarga la página cuando se cierra el alert
+      });
+    modal.style.display = "none";
+    paisForm.reset();
+  } else {
+    Swal.fire("Error", data.error, "error");
+  }
+})
+    .catch(() => {
+      Swal.fire("Error", "Ocurrió un error inesperado.", "error");
+    });
+  });
+
+  // Función para obtener el token CSRF desde cookies
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+      const cookies = document.cookie.split(';');
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+
+const modalEditar = document.getElementById("modalEditarProductor");
+const cerrarModalEditar = document.getElementById("cerrarModalEditar");
+const editarForm = document.getElementById("editarProductorForm");
+
+// Función para abrir el modal con los datos del mineral
+function abrirModalEditar(id, nombre) {
+  document.getElementById("productorIdEditar").value = id;
+  document.getElementById("nombreEditar").value = nombre;
+  modalEditar.style.display = "block";
+}
+
+// Cerrar modal al hacer clic en la X o fuera del modal
+cerrarModalEditar.onclick = () => modalEditar.style.display = "none";
+window.onclick = (e) => {
+  if (e.target === modalEditar) modalEditar.style.display = "none";
+};
+
+// Envío del formulario de edición (AJAX)
+editarForm.addEventListener("submit", function(e) {
+  e.preventDefault();
+
+  const id = document.getElementById("productorIdEditar").value;
+  const nombre = document.getElementById("nombreEditar").value.trim().toUpperCase();
+
+  if (!nombre) {
+    Swal.fire("Error", "El nombre no puede estar vacío.", "error");
+    return;
+  }
+
+  fetch("/editar-productor/", {
+    method: "POST",
+    headers: {
+      "X-CSRFToken": getCookie("csrftoken"),
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ id, nombre })
+  })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        Swal.fire("Actualizado", `Productor actualizado a "${data.nombre}".`, "success")
+          .then(() => location.reload());
+        modalEditar.style.display = "none";
+      } else {
+        Swal.fire("Error", data.error, "error");
+      }
+    })
+    .catch(() => Swal.fire("Error", "Ocurrió un error inesperado.", "error"));
+});
+  
 </script>
 
   {% endblock %}

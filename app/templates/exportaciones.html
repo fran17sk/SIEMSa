@@ -295,7 +295,7 @@
         <td>{{ item.total_tn }}</td>
         <td>{{ item.total_fob }}</td>
         <td class="actions">
-          <button title="Editar"><i class="fa fa-pencil"></i></button>
+          <a href="{% url 'edit_exportacion' exp.id_export %}"><i class="fa fa-pencil"></i></a>
           {% if item.min_exports|length > 1 %}
             <button class="toggle-details" data-target="detalle-{{ exp.id_export }}" title="Ver Detalle">
               <i class="fa fa-chevron-down"></i>

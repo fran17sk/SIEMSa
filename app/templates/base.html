@@ -230,11 +230,38 @@
   lucide.createIcons();
   function toggleCollapse() {
   const sidebar = document.getElementById('sidebar');
+  const collapseBtnIcon = document.querySelector('.collapse-btn i');
+
   sidebar.classList.toggle('collapsed');
-  // Cambia el ícono del botón de colapsar
-  const icon = document.querySelector('.collapse-btn');
-  lucide.createIcons(); // Vuelve a aplicar los íconos
+
+  // Guardar el estado en localStorage
+  if (sidebar.classList.contains('collapsed')) {
+    localStorage.setItem('sidebarCollapsed', 'true');
+    collapseBtnIcon.setAttribute('data-lucide', 'chevrons-right');
+  } else {
+    localStorage.setItem('sidebarCollapsed', 'false');
+    collapseBtnIcon.setAttribute('data-lucide', 'chevrons-left');
+  }
+
+  // Re-renderizar íconos
+  lucide.createIcons();
 }
+
+// Aplicar el estado guardado al cargar la página
+window.addEventListener('DOMContentLoaded', () => {
+  const sidebar = document.getElementById('sidebar');
+  const collapseBtnIcon = document.querySelector('.collapse-btn i');
+  const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+
+  if (isCollapsed) {
+    sidebar.classList.add('collapsed');
+    collapseBtnIcon.setAttribute('data-lucide', 'chevrons-right');
+  } else {
+    collapseBtnIcon.setAttribute('data-lucide', 'chevrons-left');
+  }
+
+  lucide.createIcons(); // Aplicar íconos al inicio
+});
 </script>
 {% block script %}
   
