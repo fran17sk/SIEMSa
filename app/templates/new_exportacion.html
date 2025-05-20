@@ -239,6 +239,14 @@
       margin-top: 2rem;
       padding: 0.7rem 1.5rem;
     }
+    .btn-edit {
+      background-color: #004080;
+      color: white;
+      float: right;
+      margin-top: 2rem;
+      padding: 0.7rem 1.5rem;
+    }
+
 
     @keyframes fadeIn {
       from {
@@ -250,145 +258,52 @@
         transform: translateY(0);
       }
     }
+    a i {
+      color: #000000;
+    }
+
+     .form-group {
+    margin-bottom: 1rem;
+  }
+
+  .label-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: bold;
+    font-size: 1rem;
+    color: #333;
+    margin-bottom: 0.5rem;
+  }
+
+  .label-row button {
+    background-color: #25498d;
+    color: white;
+    border: none;
+    border-radius: 2px;
+    padding: 1px 3px;
+    margin-top: -3px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+
+  .label-row button:hover {
+    background-color: #4665cc;
+  }
+
+  select {
+    width: 100%;
+    padding: 8px 10px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    font-size: 0.95rem;
+  }
   </style>
 
 {% endblock %}
 
 {% block content %}
 
-
-
-{% if exportacion %}
-<div class="container">
-    <h2>Nueva Declaracion Jurada | Exportacion de Minerales</h2>
-   <form id="form-exportacion" method="POST">
-  {% csrf_token %}
-
-  <div>
-    <label>N° Exportación</label>
-    <input type="text" value="{{ exportacion.id_export }}" disabled />
-  </div>
-
-  <div>
-    <label>N° de expediente</label>
-    <input type="text" name="expediente" value="{{ exportacion.Num_Exped1}}"/>
-  </div>
-
-  <div>
-    <label>Fecha de Exportación</label>
-    <input type="date" name="fecha_exportacion" value="{{ exportacion.fecha_export|date:'Y-m-d' }}"/>
-  </div>
-
-  <div>
-    <label>Empresa</label>
-    <select name="empresa">
-      <option value="">Seleccionar</option>
-      {% for empresa in empresas %}
-        <option {% if empresa.id_productor_min == exportacion.id_productor_min_id %}
-        selected
-      {% endif %}">{{ empresa.nom_productor_min }}</option>
-      {% endfor %}
-    </select>
-  </div>
-
-  <div>
-    <label>País</label>
-    <select name="pais">
-      <option value="">Seleccionar</option>
-      {% for pais in paises %}
-        <option {% if pais.id_pais == exportacion.id_pais_id %}
-        selected
-      {% endif %}>{{ pais.nom_pais }}</option>
-      {% endfor %}
-    </select>
-  </div>
-
-  <div>
-    <label>Fecha de presentación</label>
-    <input type="date" name="fecha_presentacion" value="{{ exportacion.fecha_present_export|date:'Y-m-d' }}" />
-  </div>
-
-  <div>
-    <label>Pedido comercial</label>
-    <input type="text" name="pedido_comercial" value="{{exportacion.pedido_comercial_export}}" />
-  </div>
-
-  <div class="checkbox-group">
-    <input type="checkbox" id="anulacion" name="anulacion" value="1"
-  {% if exportacion.Estado_anulacion %}
-    checked
-  {% endif %}
->
-    <label for="anulacion">¿Anulación?</label>
-  </div>
-  
-  <!-- Campo oculto para los detalles -->
-  <input type="hidden" name="detalles" id="detalles-json" />
-  
-</form>
-    
-    <div class="divider"></div>
-    
-    <form id="mineral-form" style="margin-top: 1rem; display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px;">
-      <div>
-        <label>Mineral</label>
-        <select id="mineral" name="mineral">
-          <option value="">Seleccionar</option>
-          {% for mineral in minerales %}
-          <option value="{{ mineral.id_min }}">{{ mineral.nom_min }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <div>
-        <label>Toneladas</label>
-        <input type="text" id="toneladas" name="toneladas" />
-      </div>
-      <div>
-        <label>Valor FOB  (USD)</label>
-        <input type="text" id="valor_fob" name="valor_fob" />
-      </div>
-    </form>
-    
-    <div class="action-buttons">
-      <button class="btn-add"><i class="fa fa-plus"></i> Agregar</button>
-    </div>
-    
-    <table class="details-table">
-      <thead>
-        <tr>
-          <th>N° Detalle</th>
-          <th>Mineral</th>
-          <th>Toneladas</th>
-          <th>Valor FOB  (USD)</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody id="tabla-detalles-body">
-        {% if detalles %}
-          {% for detalle in detalles %}
-            <tr>
-          <th>{{detalle.id_min_export}}</th>
-          <th>{{detalle.id_min}}</th>
-          <th>{{detalle.Tn_min_export}}</th>
-          <th>{{detalle.FOB_min_export}}</th>
-          <td class="actions">
-            <button title="Eliminar" onclick="eliminarDetalle(${detalles.length - 1})">
-              <i class="fa fa-times-circle" aria-hidden="true"></i>
-            </button>
-          </td>
-        </tr>
-          {% endfor %}
-        {% else %}
-        <tr>
-          <td colspan="5" style="text-align: center; color: #888;">Sin registros aún</td>
-        </tr>
-        {% endif %}
-      </tbody>
-    </table>
-    <button class="btn-save"><i class="fa fa-check"></i> Guardar</button>
-  </div>
-
-{% else %}
 
 <div class="container">
     <h2>Nueva Declaracion Jurada | Exportacion de Minerales</h2>
@@ -402,54 +317,57 @@
 
   <div>
     <label>N° de expediente</label>
-    <input type="text" name="expediente" value="{{ exportacion.Num_Exped1}}"/>
+    <input type="text" name="expediente"/>
   </div>
 
   <div>
     <label>Fecha de Exportación</label>
-    <input type="date" name="fecha_exportacion" value="{{ exportacion.fecha_export|date:'Y-m-d' }}"/>
+    <input type="date" name="fecha_exportacion"/>
   </div>
 
   <div>
-    <label>Empresa</label>
-    <select name="empresa">
-      <option value="">Seleccionar</option>
-      {% for empresa in empresas %}
-        <option {% if empresa.id_productor_min == exportacion.id_productor_min_id %}
-        selected
-      {% endif %}">{{ empresa.nom_productor_min }}</option>
-      {% endfor %}
-    </select>
+  <div class="label-row form-group">
+    <label for="empresa">Empresa</label>
+    <button type="button" onclick="agregarEmpresa()" title="Agregar nueva empresa">
+      <i class="fa fa-plus"></i>
+    </button>
   </div>
 
-  <div>
-    <label>País</label>
-    <select name="pais">
+  <select name="empresa" id="empresa">
+    <option value="">Seleccionar</option>
+    {% for empresa in empresas %}
+      <option value="{{ empresa.id_productor_min }}">{{ empresa.nom_productor_min }}</option>
+    {% endfor %}
+  </select>
+</div>
+<div>
+
+  <div class="label-row form-group">
+    <label for="pais">País</label>
+    <button type="button" onclick="agregarPais()" title="Agregar nuevo país">
+      <i class="fa fa-plus"></i>
+    </button>
+  </div>
+    
+    <select name="pais" id="pais">
       <option value="">Seleccionar</option>
       {% for pais in paises %}
-        <option {% if pais.id_pais == exportacion.id_pais_id %}
-        selected
-      {% endif %}>{{ pais.nom_pais }}</option>
+      <option value="{{ pais.id_pais }}">{{ pais.nom_pais }}</option>
       {% endfor %}
     </select>
-  </div>
-
+</div>
   <div>
     <label>Fecha de presentación</label>
-    <input type="date" name="fecha_presentacion" value="{{ exportacion.fecha_present_export|date:'Y-m-d' }}" />
+    <input type="date" name="fecha_presentacion" />
   </div>
 
   <div>
     <label>Pedido comercial</label>
-    <input type="text" name="pedido_comercial" value="{{exportacion.pedido_comercial_export}}" />
+    <input type="text" name="pedido_comercial" />
   </div>
 
   <div class="checkbox-group">
-    <input type="checkbox" id="anulacion" name="anulacion" value="1"
-  {% if exportacion.Estado_anulacion %}
-    checked
-  {% endif %}
->
+    <input type="checkbox" id="anulacion" name="anulacion" value="1">
     <label for="anulacion">¿Anulación?</label>
   </div>
   
@@ -495,27 +413,17 @@
         </tr>
       </thead>
       <tbody id="tabla-detalles-body">
-        {% if detalles %}
-          {% for detalle in detalles %}
-            <tr>
-          <th>{{detalle.id_min_export}}</th>
-          <th>{{detalle.id_min}}</th>
-          <th>{{detalle.Tn_min_export}}</th>
-          <th>{{detalle.FOB_min_export}}</th>
-          <th></th>
-        </tr>
-          {% endfor %}
-        {% else %}
         <tr>
-          <td colspan="5" style="text-align: center; color: #888;">Sin registros aún</td>
+          <td colspan="5" style="text-align: center; padding: 1rem; color: #888; font-style: italic;">
+            No se han agregado minerales aún.
+          </td>
         </tr>
-        {% endif %}
       </tbody>
     </table>
     <button class="btn-save"><i class="fa fa-check"></i> Guardar</button>
   </div>
 
-{% endif %}
+
 
 {% endblock %}
 
@@ -530,9 +438,6 @@
 </script>
 
 <script>
-  
-
-
 
   const detalles = [];
 
@@ -569,19 +474,21 @@
       tbody.innerHTML = "";
     }
 
-    const fila = document.createElement("tr");
-    fila.innerHTML = `
-      <td>${detalles.length}</td>
-      <td>${mineralNombre}</td>
-      <td>${toneladas}</td>
-      <td>${valorFob}</td>
-      <td class="actions">
-        <button title="Eliminar" onclick="eliminarDetalle(${detalles.length - 1})">
-          <i class="fa fa-times-circle" aria-hidden="true"></i>
-        </button>
-      </td>
-    `;
-    tbody.appendChild(fila);
+    const index = detalles.length - 1;
+
+const fila = document.createElement("tr");
+fila.innerHTML = `
+  <td>${detalles.length}</td>
+  <td>${mineralNombre}</td>
+  <td>${toneladas}</td>
+  <td>${valorFob}</td>
+  <td class="actions">
+    <button title="Eliminar" data-index="${index}" onclick="eliminarDetalle(this)">
+      <i class="fa fa-times-circle" aria-hidden="true"></i>
+    </button>
+  </td>
+`;
+tbody.appendChild(fila);
 
     // Limpiar campos
     mineralSelect.value = "";
@@ -590,10 +497,43 @@
   });
 
  function eliminarDetalle(button) {
+  const index = parseInt(button.getAttribute("data-index"));
+  detalles.splice(index, 1); // quitar del array
+
+  // Eliminar la fila
   const fila = button.closest("tr");
   fila.remove();
-  // Actualizar numeración si querés
-  actualizarNumeracion();
+
+  // Volver a renderizar la tabla para actualizar índices y data-index
+  renderizarTabla();
+}
+function renderizarTabla() {
+  const tbody = document.getElementById("tabla-detalles-body");
+  tbody.innerHTML = "";
+
+  if (detalles.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5" class="text-center">No hay minerales agregados</td></tr>`;
+    return;
+  }
+
+  detalles.forEach((detalle, index) => {
+    const mineralSelect = document.getElementById("mineral");
+    const mineralNombre = mineralSelect.querySelector(`option[value="${detalle.mineral_id}"]`)?.text || 'Desconocido';
+
+    const fila = document.createElement("tr");
+    fila.innerHTML = `
+      <td>${index + 1}</td>
+      <td>${mineralNombre}</td>
+      <td>${detalle.toneladas}</td>
+      <td>${detalle.valor_fob}</td>
+      <td class="actions">
+        <button title="Eliminar" data-index="${index}" onclick="eliminarDetalle(this)">
+          <i class="fa fa-times-circle" aria-hidden="true"></i>
+        </button>
+      </td>
+    `;
+    tbody.appendChild(fila);
+  });
 }
 function actualizarNumeracion() {
   const filas = document.querySelectorAll("#tabla-detalles-body tr");
@@ -616,6 +556,7 @@ function actualizarNumeracion() {
     document.getElementById("detalles-json").value = JSON.stringify(detalles);
     document.getElementById("form-exportacion").submit();
   });
+
 
 </script>
 {% endblock %}

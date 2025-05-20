@@ -18,6 +18,7 @@ urlpatterns = [
 
     path('exportaciones/', views.exportacion_list, name='exportaciones'),
     path('exportaciones/nueva', views.new_exportacion ,name='exportacion'),
-    path('exportacion/<int:pk>/editar/', views.edit_exportacion, name='edit_exportacion'),
+    path('exportacion/<int:id_export>/editar/', views.edit_exportacion, name='edit_exportacion'),
+    path('exportacion/<int:id_export>/editar/', views.guardar_exportacion, name='edit_export'),
 
 ]

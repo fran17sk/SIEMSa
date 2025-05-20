@@ -109,35 +109,68 @@ def new_exportacion(request,exportacion_id=None):
         'numero_exportacion': ultima_exportacion.id_export + 1,
     })
 
-def edit_exportacion(request, pk):
-    exportacion = get_object_or_404(Exportacion, pk=pk)
+def edit_exportacion(request, id_export):
+    exportacion = get_object_or_404(Exportacion, id_export=id_export)
     detalles = MinExport.objects.filter(id_export=exportacion.id_export)
 
     if request.method == 'POST':
         # Actualizar los campos principales
-        exportacion.Num_Exped1 = request.POST.get('expediente')
-        exportacion.fecha_export = request.POST.get('fecha_exportacion')
-        exportacion.fecha_present_export = request.POST.get('fecha_presentacion')
-        exportacion.pedido_comercial_export = request.POST.get('pedido_comercial')
-        exportacion.Estado_anulacion = bool(request.POST.get('anulacion'))
-        exportacion.id_productor_min = request.POST.get('empresa')
-        exportacion.id_pais = request.POST.get('pais')
+        data = json.loads(request.body)
+
+        declaracion = data.get('declaracion', {})
+
+        # Guardar datos de la declaración
+        exportacion.Num_Exped1 = declaracion.get('expediente')
+        exportacion.fecha_export = declaracion.get('fecha_exportacion')
+        exportacion.fecha_present_export = declaracion.get('fecha_presentacion')
+        empresa = get_object_or_404(ProdMinero,nom_productor_min = declaracion.get('empresa'))
+        exportacion.id_productor_min = empresa
+        pais = get_object_or_404(Pais,nom_pais=declaracion.get('pais'))
+        exportacion.id_pais = pais
+        exportacion.pedido_comercial_export = declaracion.get('pedido_comercial')
+        if data.get('anulacion') == 0:
+            anulacion = False
+        else:
+            anulacion = True
+        exportacion.Estado_anulacion=anulacion
+
         exportacion.save()
 
-        # Reemplazar los detalles
-        MinExport.objects.filter(exportacion=exportacion).delete()
+        # Agregar nuevos detalles
+        nuevos = data.get("nuevos", [])
+        for detalle in nuevos:
+            mineral_id = detalle.get("mineral_id")
+            toneladas = detalle.get("toneladas")
+            valor_fob = detalle.get("valor_fob")
 
-        import json
-        detalles_data = json.loads(request.POST.get('detalles', '[]'))
-        for detalle in detalles_data:
-            MinExport.objects.create(
-                exportacion=exportacion,
-                id_min=detalle['mineral_id'],
-                Tn_min_export=detalle['toneladas'],
-                FOB_min_export=detalle['valor_fob']
-            )
+            if mineral_id and toneladas and valor_fob:
+                mineral = get_object_or_404(Mineral, id_min=mineral_id)
+                MinExport.objects.create(
+                    id_export=exportacion,
+                    id_min=mineral,
+                    Tn_min_export=toneladas,
+                    FOB_min_export=valor_fob
+                )
 
-        return redirect('exportaciones_list')  # o la vista que quieras
+        
+
+        # Editar detalles existentes
+        editados = data.get("editados", [])
+        for detalle in editados:
+            detalle_id = detalle.get("id")
+            toneladas = detalle.get("toneladas")
+            valor_fob = detalle.get("valor_fob")
+
+            if detalle_id and toneladas and valor_fob:
+                det = get_object_or_404(MinExport, id_min_export=detalle_id, id_export=exportacion)
+                det.Tn_min_export = toneladas
+                det.FOB_min_export = valor_fob
+                det.save()
+        # Eliminar detalles por ID
+        eliminados = data.get("eliminados", [])
+        if eliminados:
+            MinExport.objects.filter(id_min_export__in=eliminados, id_export=exportacion).delete()
+        return JsonResponse({"message": "Exportación guardada correctamente."}, status=200)
 
     context = {
         'exportacion': exportacion,
@@ -146,7 +179,7 @@ def edit_exportacion(request, pk):
         'paises': Pais.objects.all(),
         'minerales': Mineral.objects.all(),
     }
-    return render(request, 'new_exportacion.html', context)
+    return render(request, 'edit_exportacion.html', context)
 
 @login_required(login_url='/login/')
 def exportacion_list(request):
@@ -154,7 +187,7 @@ def exportacion_list(request):
         'id_productor_min', 'id_pais'
     ).prefetch_related(
         'min_exports__id_min'
-    ).order_by('-fecha_export')
+    ).order_by('-id_export')
 
     # Armamos una lista enriquecida
     exportaciones_list = []
@@ -302,3 +335,64 @@ def editar_productor(request):
             return JsonResponse({"success": True, "nombre": nuevo_nombre})
         except Mineral.DoesNotExist:
             return JsonResponse({"success": False, "error": "La empresa no existe."})
+        
+@csrf_exempt
+def guardar_exportacion(request, id_export):
+    try:
+        if request.method == 'POST':
+            data = json.loads(request.body)
+
+            declaracion = data.get('declaracion', {})
+
+            exportacion = get_object_or_404(Exportacion, id=id_export)
+
+            # Guardar datos de la declaración
+            exportacion.Num_Exped1 = declaracion.get('expediente')
+            exportacion.fecha_export = declaracion.get('fecha_exportacion')
+            exportacion.fecha_present_export = declaracion.get('fecha_presentacion')
+            exportacion.id_productor_min = declaracion.get('empresa')
+            exportacion.id_pais = declaracion.get('pais')
+            exportacion.pedido_comercial_export = declaracion.get('pedido_comercial')
+            exportacion.detalles = declaracion.get('detalles', '')
+            #exportacion.save()
+
+            # Agregar nuevos detalles
+            nuevos = data.get("nuevos", [])
+            for detalle in nuevos:
+                mineral_id = detalle.get("mineral_id")
+                toneladas = detalle.get("toneladas")
+                valor_fob = detalle.get("valor_fob")
+
+                if mineral_id and toneladas and valor_fob:
+                    mineral = get_object_or_404(Mineral, id=mineral_id)
+                    MinExport.objects.create(
+                        exportacion=exportacion,
+                        mineral=mineral,
+                        toneladas=toneladas,
+                        valor_fob=valor_fob
+                    )
+
+            # Eliminar detalles por ID
+            eliminados = data.get("eliminados", [])
+            if eliminados:
+                MinExport.objects.filter(id__in=eliminados, exportacion=exportacion).delete()
+
+            # Editar detalles existentes
+            editados = data.get("editados", [])
+            for detalle in editados:
+                detalle_id = detalle.get("id")
+                toneladas = detalle.get("toneladas")
+                valor_fob = detalle.get("valor_fob")
+
+                if detalle_id and toneladas and valor_fob:
+                    det = get_object_or_404(MinExport, id=detalle_id, exportacion=exportacion)
+                    det.toneladas = toneladas
+                    det.valor_fob = valor_fob
+                    det.save()
+
+            return JsonResponse({"message": "Exportación guardada correctamente."}, status=200)
+
+        return JsonResponse({"message": "Método no permitido."}, status=405)
+
+    except Exception as e:
+        return JsonResponse({"message": f"Error al guardar: {str(e)}"}, status=400)

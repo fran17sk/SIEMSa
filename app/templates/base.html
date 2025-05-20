@@ -18,7 +18,9 @@
       --text-muted: #9ca3af;
       --hover-bg: rgba(59, 130, 246, 0.1);
     }
-
+    a{
+      text-decoration: none;
+    }
     body {
       margin: 0;
       font-family: 'Segoe UI', sans-serif;
@@ -188,25 +190,36 @@
   <div class="menu">
     <div class="logo">SIEMSa</div>
     <nav>
-      <a href="{% url 'exportacion' %}" class="{% if request.resolver_match.url_name == 'home' %}active{% endif %}" title="Inicio">
-  <i data-lucide="home"></i> <span>Inicio</span>
-</a>
-<a href="{% url 'exportaciones' %}" class="{% if request.resolver_match.url_name == 'exportaciones' %}active{% endif %}" title="Exportaciones">
-  <i data-lucide="truck"></i> <span>Exportaciones</span>
-</a>
-<a href="{% url 'minerales' %}" class="{% if request.resolver_match.url_name == 'profile' %}active{% endif %}" title="Minerales">
-  <i data-lucide="atom"></i> <span>Minerales</span>
-</a>
-<a href="{% url 'pais' %}" class="{% if request.resolver_match.url_name == 'orders' %}active{% endif %}" title="Países">
-  <i data-lucide="earth"></i> <span>Paises</span>
-</a>
-<a href="{% url 'productores' %}" class="{% if request.resolver_match.url_name == 'orders' %}active{% endif %}" title="Productores">
-  <i data-lucide="building-2"></i> <span>Productores</span>
-</a>
-<a href="{% url 'logout' %}" title="Cerrar sesión">
-  <i data-lucide="log-out"></i> <span>Cerrar sesión</span>
-</a>
-    </nav>
+  <a href="{% url 'exportacion' %}" class="{% if request.resolver_match.url_name == 'home' %}active{% endif %}" title="Inicio">
+    <i data-lucide="home"></i> <span>Inicio</span>
+  </a>
+  <a href="{% url 'exportaciones' %}" class="{% if request.resolver_match.url_name == 'exportaciones' %}active{% endif %}" title="Exportaciones">
+    <i data-lucide="truck"></i> <span>Exportaciones</span>
+  </a>
+  <a href="{% url 'minerales' %}" class="{% if request.resolver_match.url_name == 'profile' %}active{% endif %}" title="Minerales">
+    <i data-lucide="atom"></i> <span>Minerales</span>
+  </a>
+  <a href="{% url 'pais' %}" class="{% if request.resolver_match.url_name == 'orders' %}active{% endif %}" title="Países">
+    <i data-lucide="earth"></i> <span>Países</span>
+  </a>
+  <a href="{% url 'productores' %}" class="{% if request.resolver_match.url_name == 'orders' %}active{% endif %}" title="Productores">
+    <i data-lucide="building-2"></i> <span>Productores</span>
+  </a>
+
+  <!-- Nueva sección Gráficos -->
+  <a href="" class="{% if request.resolver_match.url_name == 'graficos' %}active{% endif %}" title="Gráficos">
+    <i data-lucide="bar-chart-2"></i> <span>Gráficos</span>
+  </a>
+
+  <!-- Nueva sección Administración -->
+  <a href="" class="{% if request.resolver_match.url_name == 'administracion' %}active{% endif %}" title="Administración">
+    <i data-lucide="settings"></i> <span>Administración</span>
+  </a>
+
+  <a href="{% url 'logout' %}" title="Cerrar sesión">
+    <i data-lucide="log-out"></i> <span>Cerrar sesión</span>
+  </a>
+</nav>
 
   </div>
   <div class="user-footer">
