@@ -298,6 +298,102 @@
     border: 1px solid #ccc;
     font-size: 0.95rem;
   }
+      .modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0; top: 0;
+    width: 100%; height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+  }
+
+  /* Contenido del modal */
+  .modal-content {
+    background-color: #fff;
+    margin: 10% auto;
+    padding: 30px 25px;
+    border-radius: 10px;
+    width: 400px;
+    position: relative;
+    animation: fadeIn 0.3s ease;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+  }
+
+  /* Cerrar */
+  .close {
+    color: #aaa;
+    position: absolute;
+    top: 12px;
+    right: 16px;
+    font-size: 24px;
+    cursor: pointer;
+  }
+
+  .close:hover {
+    color: #000;
+  }
+  .close_mineral {
+    color: #aaa;
+    position: absolute;
+    top: 12px;
+    right: 16px;
+    font-size: 24px;
+    cursor: pointer;
+  }
+
+  .close_mineral:hover {
+    color: #000;
+  }
+
+  .close_empresa {
+    color: #aaa;
+    position: absolute;
+    top: 12px;
+    right: 16px;
+    font-size: 24px;
+    cursor: pointer;
+  }
+
+  .close_empresa:hover {
+    color: #000;
+  }
+
+  /* Formulario */
+  .form_modal {
+    display: flex;
+    flex-direction: column;
+    align-items: self-start;
+    gap: 15px;
+    margin: 20px;
+  }
+
+  input[type="text"] {
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 16px;
+  }
+
+  .btn-registrar {
+    padding: 12px;
+    background: linear-gradient(135deg, #2c7be5, #00c9a7);
+    color: white;
+    font-size: 16px;
+    font-weight: bold;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+  }
+
+  .btn-registrar:hover {
+    background: linear-gradient(135deg, #1a66d1, #111827);
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
   </style>
 
 {% endblock %}
@@ -305,123 +401,166 @@
 {% block content %}
 
 
-<div class="container">
-    <h2>Nueva Declaracion Jurada | Exportacion de Minerales</h2>
-   <form id="form-exportacion" method="POST">
-  {% csrf_token %}
-
-  <div>
-    <label>N° Exportación</label>
-    <input type="text" value="{{ numero_exportacion }}" disabled />
-  </div>
-
-  <div>
-    <label>N° de expediente</label>
-    <input type="text" name="expediente"/>
-  </div>
-
-  <div>
-    <label>Fecha de Exportación</label>
-    <input type="date" name="fecha_exportacion"/>
-  </div>
-
-  <div>
-  <div class="label-row form-group">
-    <label for="empresa">Empresa</label>
-    <button type="button" onclick="agregarEmpresa()" title="Agregar nueva empresa">
-      <i class="fa fa-plus"></i>
-    </button>
-  </div>
-
-  <select name="empresa" id="empresa">
-    <option value="">Seleccionar</option>
-    {% for empresa in empresas %}
-      <option value="{{ empresa.id_productor_min }}">{{ empresa.nom_productor_min }}</option>
-    {% endfor %}
-  </select>
-</div>
-<div>
-
-  <div class="label-row form-group">
-    <label for="pais">País</label>
-    <button type="button" onclick="agregarPais()" title="Agregar nuevo país">
-      <i class="fa fa-plus"></i>
-    </button>
-  </div>
-    
-    <select name="pais" id="pais">
-      <option value="">Seleccionar</option>
-      {% for pais in paises %}
-      <option value="{{ pais.id_pais }}">{{ pais.nom_pais }}</option>
-      {% endfor %}
-    </select>
-</div>
-  <div>
-    <label>Fecha de presentación</label>
-    <input type="date" name="fecha_presentacion" />
-  </div>
-
-  <div>
-    <label>Pedido comercial</label>
-    <input type="text" name="pedido_comercial" />
-  </div>
-
-  <div class="checkbox-group">
-    <input type="checkbox" id="anulacion" name="anulacion" value="1">
-    <label for="anulacion">¿Anulación?</label>
-  </div>
-  
-  <!-- Campo oculto para los detalles -->
-  <input type="hidden" name="detalles" id="detalles-json" />
-  
-</form>
-    
-    <div class="divider"></div>
-    
-    <form id="mineral-form" style="margin-top: 1rem; display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px;">
-      <div>
-        <label>Mineral</label>
-        <select id="mineral" name="mineral">
-          <option value="">Seleccionar</option>
-          {% for mineral in minerales %}
-          <option value="{{ mineral.id_min }}">{{ mineral.nom_min }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <div>
-        <label>Toneladas</label>
-        <input type="text" id="toneladas" name="toneladas" />
-      </div>
-      <div>
-        <label>Valor FOB  (USD)</label>
-        <input type="text" id="valor_fob" name="valor_fob" />
-      </div>
+<div id="modal" class="modal">
+  <div class="modal-content">
+    <span class="close">&times;</span>
+    <h2>Registrar nuevo Pais</h2>
+    <form id="paisForm" class="form_modal">
+      <label for="nombrePais">Nombre del Pais</label>
+      <input type="text" id="nombrePais" name="nombrePais" placeholder="Ej: Argentina" required />
+      <button type="submit" class="btn-registrar">Registrar</button>
     </form>
+  </div>
+</div>
+<div id="modal_empresa" class="modal">
+  <div class="modal-content">
+    <span class="close_empresa">&times;</span>
+    <h2>Registrar nueva Empresa | Productor Minero</h2>
+    <form id="productorForm">
+      <label for="nombreProductor">Nombre de la Empresa</label>
+      <input type="text" id="nombreProductor" name="nombreProductor" placeholder="Ej: Borax" required />
+      <button type="submit" class="btn-registrar">Registrar</button>
+    </form>
+  </div>
+</div>
+<div id="modal_mineral" class="modal">
+  <div class="modal-content">
+    <span class="close_mineral">&times;</span>
+    <h2>Registrar nuevo mineral</h2>
+    <form id="mineralForm">
+      <label for="nombreMineral">Nombre del mineral</label>
+      <input type="text" id="nombreMineral" name="nombreMineral" placeholder="Ej: Litio" required />
+      <button type="submit" class="btn-registrar">Registrar</button>
+    </form>
+  </div>
+</div>
+
+<div class="container">
+  <h2>Nueva Declaracion Jurada | Exportacion de Minerales</h2>
+  <form id="form-exportacion" method="POST">
+    {% csrf_token %}
     
-    <div class="action-buttons">
-      <button class="btn-add"><i class="fa fa-plus"></i> Agregar</button>
+    <div>
+      <label>N° Exportación</label>
+      <input type="text" value="{{ numero_exportacion }}" disabled />
     </div>
     
-    <table class="details-table">
-      <thead>
-        <tr>
-          <th>N° Detalle</th>
-          <th>Mineral</th>
-          <th>Toneladas</th>
-          <th>Valor FOB  (USD)</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody id="tabla-detalles-body">
-        <tr>
-          <td colspan="5" style="text-align: center; padding: 1rem; color: #888; font-style: italic;">
-            No se han agregado minerales aún.
-          </td>
-        </tr>
-      </tbody>
-    </table>
-    <button class="btn-save"><i class="fa fa-check"></i> Guardar</button>
+    <div>
+      <label>N° de expediente</label>
+      <input type="text" name="expediente"/>
+    </div>
+    
+    <div>
+      <label>Fecha de Exportación</label>
+      <input type="date" name="fecha_exportacion"/>
+    </div>
+    
+    <div>
+      <div class="label-row form-group">
+        <label for="empresa">Empresa</label>
+        <button type="button" id="openModalBtnEmpresa" title="Agregar nueva empresa">
+          <i class="fa fa-plus"></i>
+        </button>
+      </div>
+      
+      <select name="empresa" id="empresa">
+        <option value="">Seleccionar</option>
+        {% for empresa in empresas %}
+        <option value="{{ empresa.id_productor_min }}">{{ empresa.nom_productor_min }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      
+      <div class="label-row form-group">
+        <label for="pais">País</label>
+        <button type="button" id="openModalBtn" title="Agregar nuevo país">
+          <i class="fa fa-plus"></i>
+        </button>
+      </div>
+      
+      <select name="pais" id="pais">
+        <option value="">Seleccionar</option>
+        {% for pais in paises %}
+        <option value="{{ pais.id_pais }}">{{ pais.nom_pais }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label>Fecha de presentación</label>
+      <input type="date" name="fecha_presentacion" />
+    </div>
+    
+    <div>
+      <label>Pedido comercial</label>
+      <input type="text" name="pedido_comercial" />
+    </div>
+    
+    <div class="checkbox-group">
+      <input type="checkbox" id="anulacion" name="anulacion" value="1">
+      <label for="anulacion">¿Anulación?</label>
+    </div>
+    
+    <!-- Campo oculto para los detalles -->
+    <input type="hidden" name="detalles" id="detalles-json" />
+    
+  </form>
+  
+  <div class="divider"></div>
+  
+  <form id="mineral-form" style="margin-top: 1rem; display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px;">
+    
+    
+    <div>
+      <div class="label-row form-group">
+        <label>Mineral</label>
+      <button type="button" id="openModalBtnMineral" title="Agregar nueva empresa">
+          <i class="fa fa-plus"></i>
+        </button>
+      </div>
+      
+      <select id="mineral" name="mineral">
+        <option value="">Seleccionar</option>
+        {% for mineral in minerales %}
+        <option value="{{ mineral.id_min }}">{{ mineral.nom_min }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    
+    <div>
+      <label>Toneladas</label>
+      <input type="text" id="toneladas" name="toneladas" />
+    </div>
+    <div>
+      <label>Valor FOB  (USD)</label>
+      <input type="text" id="valor_fob" name="valor_fob" />
+    </div>
+  </form>
+  
+  <div class="action-buttons">
+    <button class="btn-add"><i class="fa fa-plus"></i> Agregar</button>
   </div>
+  
+  <table class="details-table">
+    <thead>
+      <tr>
+        <th>N° Detalle</th>
+        <th>Mineral</th>
+        <th>Toneladas</th>
+        <th>Valor FOB  (USD)</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody id="tabla-detalles-body">
+      <tr>
+        <td colspan="5" style="text-align: center; padding: 1rem; color: #888; font-style: italic;">
+          No se han agregado minerales aún.
+        </td>
+      </tr>
+    </tbody>
+  </table>
+  <button class="btn-save"><i class="fa fa-check"></i> Guardar</button>
+</div>
 
 
 
@@ -432,27 +571,27 @@
   function toggleSidebar() {
     document.getElementById('sidebar').classList.toggle('open');
   }
-
+  
   // Cargar íconos Lucide
   lucide.createIcons();
 </script>
 
 <script>
-
+  
   const detalles = [];
-
+  
   document.querySelector(".btn-add").addEventListener("click", function (e) {
     e.preventDefault();
-
+    
     const mineralSelect = document.getElementById("mineral");
     const toneladasInput = document.getElementById("toneladas");
     const valorFobInput = document.getElementById("valor_fob");
-
+    
     const mineralId = mineralSelect.value;
     const mineralNombre = mineralSelect.options[mineralSelect.selectedIndex].text;
     const toneladas = toneladasInput.value;
     const valorFob = valorFobInput.value;
-
+    
     console.log(mineralId,mineralNombre,toneladas,valorFob)
     if (!mineralId || !toneladas || !valorFob) {
       Swal.fire({
@@ -462,22 +601,22 @@
       });
       return;
     }
-
+    
     detalles.push({
       mineral_id: mineralId,
       toneladas: toneladas,
       valor_fob: valorFob
     });
-
+    
     const tbody = document.getElementById("tabla-detalles-body");
     if (tbody.children.length === 1 && tbody.children[0].children[0].colSpan === 5) {
       tbody.innerHTML = "";
     }
-
+    
     const index = detalles.length - 1;
-
-const fila = document.createElement("tr");
-fila.innerHTML = `
+    
+    const fila = document.createElement("tr");
+    fila.innerHTML = `
   <td>${detalles.length}</td>
   <td>${mineralNombre}</td>
   <td>${toneladas}</td>
@@ -556,6 +695,225 @@ function actualizarNumeracion() {
     document.getElementById("detalles-json").value = JSON.stringify(detalles);
     document.getElementById("form-exportacion").submit();
   });
+
+
+</script>
+
+
+<script>
+    const modal = document.getElementById("modal");
+  const openBtn = document.getElementById("openModalBtn");
+  const closeBtn = document.querySelector(".close");
+  const paisForm = document.getElementById("paisForm");
+
+  // Abrir modal
+  openBtn.addEventListener("click", () => {
+    modal.style.display = "block";
+  });
+
+  // Cerrar con X
+  closeBtn.addEventListener("click", () => {
+    modal.style.display = "none";
+  });
+
+  // Cerrar haciendo click afuera
+  window.addEventListener("click", (e) => {
+    if (e.target === modal) {
+      modal.style.display = "none";
+    }
+  });
+
+  paisForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const nombre = document.getElementById("nombrePais").value.trim();
+
+    if (!nombre) {
+      Swal.fire("Campo vacío", "El nombre del pais es obligatorio.", "warning");
+      return;
+    }
+
+    fetch("/registrar-pais/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "X-CSRFToken": getCookie("csrftoken"), // importante para seguridad CSRF
+      },
+      body: new URLSearchParams({ nombre })
+    })
+    .then(res => res.json())
+    .then(data => {
+  if (data.success) {
+    Swal.fire("¡Registrado!", `Pais "${data.nombre}" guardado correctamente.`, "success")
+      .then(() => {
+        const selectPais = document.getElementById("pais");
+        const nuevaOpcion = document.createElement("option");
+        nuevaOpcion.value = data.id;      // id del mineral que debería enviar el backend
+        nuevaOpcion.textContent = data.nombre; // nombre del mineral
+
+        selectPais.appendChild(nuevaOpcion);
+        selectPais.value = data.id; // seleccionarlo automáticamente
+      });
+    modal.style.display = "none";
+    paisForm.reset();
+  } else {
+    Swal.fire("Error", data.error, "error");
+  }
+})
+    .catch(() => {
+      Swal.fire("Error", "Ocurrió un error inesperado.", "error");
+    });
+  });
+
+  // Función para obtener el token CSRF desde cookies
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+      const cookies = document.cookie.split(';');
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+
+
+
+  const modal_empresa = document.getElementById("modal_empresa");
+  const openBtn_empresa = document.getElementById("openModalBtnEmpresa");
+  const closeBtn_empresa = document.querySelector(".close_empresa");
+  const productorForm = document.getElementById("productorForm");
+
+  // Abrir modal
+  openBtn_empresa.addEventListener("click", () => {
+    modal_empresa.style.display = "block";
+  });
+
+  // Cerrar con X
+  closeBtn_empresa.addEventListener("click", () => {
+    modal_empresa.style.display = "none";
+  });
+
+  // Cerrar haciendo click afuera
+  window.addEventListener("click", (e) => {
+    if (e.target === modal_empresa) {
+      modal_empresa.style.display = "none";
+    }
+  });
+
+  productorForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const nombre = document.getElementById("nombreProductor").value.trim();
+
+    if (!nombre) {
+      Swal.fire("Campo vacío", "El nombre de la Empresa es obligatorio.", "warning");
+      return;
+    }
+
+    fetch("/registrar-productor/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "X-CSRFToken": getCookie("csrftoken"), // importante para seguridad CSRF
+      },
+      body: new URLSearchParams({ nombre })
+    })
+    .then(res => res.json())
+    .then(data => {
+  if (data.success) {
+    Swal.fire("¡Registrado!", `Empresa "${data.nombre}" registrada correctamente.`, "success")
+      .then(() => {
+        console.log(data)
+        const selectEmpresa = document.getElementById("empresa");
+        const nuevaOpcion = document.createElement("option");
+        nuevaOpcion.value = data.id;      // id del mineral que debería enviar el backend
+        nuevaOpcion.textContent = data.nombre; // nombre del mineral
+
+        selectEmpresa.appendChild(nuevaOpcion);
+        selectEmpresa.value = data.id; // seleccionarlo automáticamente
+      });
+    modal_empresa.style.display = "none";
+    paisForm.reset();
+  } else {
+    Swal.fire("Error", data.error, "error");
+  }
+})
+    .catch(() => {
+      Swal.fire("Error", "Ocurrió un error inesperado.", "error");
+    });
+  });
+
+  // Función para obtener el token CSRF desde cookies
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+      const cookies = document.cookie.split(';');
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+
+
+  const modal_mineral = document.getElementById("modal_mineral");
+  const openBtn_mineral = document.getElementById("openModalBtnMineral");
+  const closeBtn_mineral = document.querySelector(".close_mineral");
+  const mineralForm = document.getElementById("mineralForm");
+
+  openBtn_mineral.addEventListener("click", () => modal_mineral.style.display = "block");
+  closeBtn_mineral.addEventListener("click", () => modal_mineral.style.display = "none");
+  window.addEventListener("click", (e) => {
+    if (e.target === modal_mineral) modal_mineral.style.display = "none";
+  });
+
+  mineralForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const nombre = document.getElementById("nombreMineral").value.trim();
+
+    if (!nombre) {
+      Swal.fire("Campo vacío", "El nombre del mineral es obligatorio.", "warning");
+      return;
+    }
+
+    fetch("/registrar-mineral/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "X-CSRFToken": getCookie("csrftoken"), // importante para seguridad CSRF
+      },
+      body: new URLSearchParams({ nombre })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+          Swal.fire("¡Registrado!", `Mineral "${data.nombre}" guardado correctamente.`, "success")
+            .then(() => {
+              const selectMineral = document.getElementById("mineral");
+              const nuevaOpcion = document.createElement("option");
+              nuevaOpcion.value = data.id_min;      // id del mineral que debería enviar el backend
+              nuevaOpcion.textContent = data.nombre; // nombre del mineral
+
+              selectMineral.appendChild(nuevaOpcion);
+              selectMineral.value = data.id_min; // seleccionarlo automáticamente
+            });
+          modal_mineral.style.display = "none";
+          mineralForm.reset();
+        } else {
+          Swal.fire("Error", data.error, "error");
+        }
+      })
+      .catch(() => {
+        Swal.fire("Error", "Ocurrió un error inesperado.", "error");
+      });
+    });
 
 
 </script>

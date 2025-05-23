@@ -259,9 +259,13 @@ a i{
           placeholder="Buscar..." 
           style="padding: 0.4rem 0.8rem; border-radius: 5px; border: 1px solid #ccc; font-size: 1rem;"
         />
+        {% if request.user.groups.first.name == "Administrador" or request.user.groups.first.name == "Publicador"   %}
+
         <a href="{% url 'exportacion' %}" class="add-btn">
           <i class="fa fa-plus"></i> Agregar
         </a>
+
+        {% endif %}
       </div>
     </div>
 
@@ -280,11 +284,12 @@ a i{
       <th>Acciones</th>
     </tr>
   </thead>
-  <tbody>
+  <tbody id="tableBody">
+
     {% for item in page_obj %}
       {% with exp=item.exportacion %}
       <tr>
-        <td>{{ exp.Num_Exped1 }}{% if exp.Num_Exped2 %} / {{ exp.Num_Exped2 }}{% endif %}</td>
+        <td>{{ exp.Num_Exped1 }}{% if exp.Num_Exped2 %}/{{ exp.Num_Exped2 }}{% endif %}</td>
         <td>{{ exp.fecha_export|date:"d/m/Y" }}</td>
         <td>{{ exp.id_productor_min.nom_productor_min }}</td>
         <td>{{ exp.id_pais.nom_pais }}</td>
@@ -356,43 +361,47 @@ a i{
   {% endblock %}
   {% block script %}
 <script>
-    const searchInput = document.getElementById('searchInput');
-    const tableBody = document.getElementById('tableBody');
+     const searchInput = document.getElementById('searchInput');
+  const tableBody = document.getElementById('tableBody');
 
-    searchInput.addEventListener('input', function() {
-      const filter = this.value.toLowerCase();
-      const rows = tableBody.getElementsByTagName('tr');
+  searchInput.addEventListener('input', function () {
+    const filter = this.value.toLowerCase();
+    const rows = tableBody.querySelectorAll('tr');
 
-      for(let i = 0; i < rows.length; i++) {
-        const cells = rows[i].getElementsByTagName('td');
-        let match = false;
-        for(let j = 0; j < cells.length - 1; j++) { // omitimos columna acciones
-          if(cells[j] && cells[j].textContent.toLowerCase().includes(filter)) {
-            match = true;
-            break;
-          }
+    let currentExportId = null;
+
+    rows.forEach(row => {
+      const isDetailRow = row.classList.contains('detalle-row');
+      if (!isDetailRow) {
+        currentExportId = row.querySelector('.actions button')?.dataset.target || null;
+        const text = row.innerText.toLowerCase();
+        const visible = text.includes(filter);
+        row.style.display = visible ? '' : 'none';
+
+        // Esconde también la subtabla si la fila principal está oculta
+        const detailRow = document.getElementById(currentExportId);
+        if (detailRow) {
+          detailRow.style.display = visible && detailRow.classList.contains('show') ? '' : 'none';
         }
-        rows[i].style.display = match ? '' : 'none';
       }
     });
-  </script>
- <script>
-  // Script para mostrar/ocultar detalle
-  document.addEventListener('DOMContentLoaded', function () {
-    document.querySelectorAll('.toggle-details').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        const targetId = btn.getAttribute('data-target');
-        const detalleRow = document.getElementById(targetId);
-        if (detalleRow.style.display === 'none') {
-          detalleRow.style.display = 'table-row';
-          btn.querySelector('i').classList.remove('fa-chevron-down');
-          btn.querySelector('i').classList.add('fa-chevron-up');
-        } else {
-          detalleRow.style.display = 'none';
-          btn.querySelector('i').classList.remove('fa-chevron-up');
-          btn.querySelector('i').classList.add('fa-chevron-down');
-        }
-      });
+  });
+
+  // Mostrar/Ocultar detalle de minerales por exportación
+  document.querySelectorAll('.toggle-details').forEach(button => {
+    button.addEventListener('click', () => {
+      const targetId = button.dataset.target;
+      const targetRow = document.getElementById(targetId);
+
+      if (targetRow.style.display === 'none' || !targetRow.style.display) {
+        targetRow.style.display = '';
+        targetRow.classList.add('show');
+        button.querySelector('i').classList.replace('fa-chevron-down', 'fa-chevron-up');
+      } else {
+        targetRow.style.display = 'none';
+        targetRow.classList.remove('show');
+        button.querySelector('i').classList.replace('fa-chevron-up', 'fa-chevron-down');
+      }
     });
   });
 </script>

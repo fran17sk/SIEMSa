@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+
+/* Botones de exportación */
+#btnExportExcel, #btnExportPDF {
+  font-size: 1.2rem;
+  padding: 0.5rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 0.3rem;
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 0.1);
+}
+
+#btnExportExcel {
+  background-color: #198754; /* verde bootstrap */
+  border: none;
+  color: white;
+}
+
+#btnExportExcel:hover {
+  background-color: #157347;
+  box-shadow: 0 4px 10px rgb(25 135 84 / 0.4);
+}
+
+#btnExportPDF {
+  background-color: #dc3545; /* rojo bootstrap */
+  border: none;
+  color: white;
+}
+
+#btnExportPDF:hover {
+  background-color: #bb2d3b;
+  box-shadow: 0 4px 10px rgb(220 53 69 / 0.4);
+}
+
+/* Select Año */
+#yearSelect {
+  border-radius: 0.375rem;
+  border: 1px solid #ced4da;
+  padding: 0.375rem 0.75rem;
+  font-size: 1rem;
+  min-width: 100px;
+  transition: border-color 0.3s ease;
+}
+
+#yearSelect:focus {
+  border-color: #86b7fe;
+  outline: 0;
+  box-shadow: 0 0 0 0.25rem rgb(13 110 253 / 0.25);
+}
+
+/* Etiqueta del año */
+label[for="yearSelect"] {
+  font-weight: 600;
+  font-size: 1rem;
+  color: #495057;
+}
+
+/* Títulos de gráficos */
+h3, h2 {
+  color: #212529;
+  font-weight: 700;
+  margin-bottom: 1rem;
+}
+
+/* Contenedores canvas */
+canvas {
+  background-color: white;
+  border-radius: 0.375rem;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.1);
+  padding: 1rem;
+  max-width: 100%;
+}
+
+/* Ajuste responsive para botones y selects en pantallas pequeñas */
+@media (max-width: 576px) {
+  .d-flex.justify-content-end.gap-2.mb-3,
+  .d-flex.justify-content-end.align-items-center.mb-3 {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  #yearSelect {
+    width: 100%;
+  }
+}
+.dashboard-container {
+    max-width: 900px;
+    margin: 30px auto;
+    padding: 20px 30px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    font-family: Arial, sans-serif;
+  }
+
+  .dashboard-container h2 {
+    text-align: center;
+    margin-bottom: 25px;
+    color: #333;
+  }
+
+.d-flex{
+    display: flex;
+    gap: 10px;
+    flex-flow: row;
+    justify-content: space-between;
+}
+.counters {
+        display: flex;
+        justify-content: space-around;
+        margin-bottom: 30px;
+        gap: 5px;
+        flex-wrap: wrap;
+      }
+      .counter-card {
+        background: white;
+        flex: 1 1 180px;
+        max-width: 200px;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        text-align: center;
+        color: #222;
+      }
+      .counter-number {
+        font-size: 2.8rem;
+        font-weight: 700;
+        margin-bottom: 8px;
+        color: #007bff;
+      }
+      .counter-label {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #555;
+      }
+      @media (max-width: 576px) {
+        .filter-group {
+          justify-content: center !important;
+          gap: 10px;
+        }
+        .counters {
+          justify-content: center;
+        }
+      }
+    </style>
+
+</head>
+<body>
+    <div class="dashboard-container">
+         <!-- CONTADORES -->
+    <div class="counters">
+      <div class="counter-card">
+        <div class="counter-number">{{ total_empresas }}</div>
+        <div class="counter-label">Empresas Registradas</div>
+      </div>
+      <div class="counter-card">
+        <div class="counter-number">{{ total_paises }}</div>
+        <div class="counter-label">Países de Exportación</div>
+      </div>
+      <div class="counter-card">
+        <div class="counter-number">{{ total_minerales }}</div>
+        <div class="counter-label">Minerales Exportados</div>
+      </div>
+      <div class="counter-card">
+        <div class="counter-number">{{ total_exportaciones }}</div>
+        <div class="counter-label">Exportaciones Realizadas</div>
+      </div>
+    </div>
+
+        <div class="d-flex">
+            <div class="d-flex justify-content-end gap-2 mb-3 d-flex">
+                <button id="btnExportExcel" class="btn btn-success" title="Descargar Excel">
+                    <i class="fas fa-file-excel"></i>
+                </button>
+                <button id="btnExportPDF" class="btn btn-danger" title="Descargar PDF">
+                    <i class="fa fa-file-text" aria-hidden="true"></i>
+                </button>
+            </div>
+            <div class="d-flex justify-content-end align-items-center mb-3">
+              <label for="yearSelect" class="form-label me-2 mb-0">Año:</label>
+              <select id="yearSelect" class="form-select" style="width: auto;">
+                {% for year in years %}
+                  <option value="{{ year }}" {% if year == selected_year %}selected{% endif %}>{{ year }}</option>
+                {% endfor %}
+              </select>
+            </div>
+        </div>
+    
+<h3 style="margin-top: 2rem;">Top 5 Productores Mineros por Toneladas Exportadas</h3>
+<canvas id="graficoTopToneladas" height="200"></canvas>
+<h2 style="text-align:center; margin-top: 40px;">Top 5 Empresas Mineras por Valor FOB Exportado (USD)</h2>
+<canvas id="graficoTopValorFOB" height="200" class="mt-5"></canvas>
+    </div>
+<script>
+ let chartToneladas = null;
+let chartFOB = null;
+
+function cargarGraficoToneladas(year) {
+    fetch(`/api/top-productores/?year=${year}`)
+        .then(response => response.json())
+        .then(data => {
+            const ctx = document.getElementById('graficoTopToneladas').getContext('2d');
+            console.log(data)
+            if (chartToneladas) chartToneladas.destroy();
+
+            chartToneladas = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.empresas,
+                    datasets: [{
+                        label: 'Toneladas Exportadas',
+                        data: data.valores,
+                        backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: ctx => ctx.raw.toLocaleString('es-ES', { minimumFractionDigits: 2 }) + ' Tn'
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: 'Top 5 Empresas por Toneladas Exportadas'
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: { display: true, text: 'Toneladas (Tn)' }
+                        },
+                        y: {
+                            title: { display: true, text: 'Empresas' }
+                        }
+                    }
+                }
+            });
+        });
+}
+
+function cargarGraficoFOB(year) {
+    fetch(`/api/top-productores-fob/?year=${year}`)
+        .then(response => response.json())
+        .then(data => {
+            const ctx = document.getElementById('graficoTopValorFOB').getContext('2d');
+            if (chartFOB) chartFOB.destroy();
+
+            chartFOB = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.empresas,
+                    datasets: [{
+                        label: 'Valor FOB Exportado (USD)',
+                        data: data.valores,
+                        backgroundColor: 'rgba(255, 159, 64, 0.6)',
+                        borderColor: 'rgba(255, 159, 64, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: ctx => '$ ' + ctx.raw.toLocaleString('en-US', { minimumFractionDigits: 2 })
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: 'Top 5 Empresas por Valor FOB Exportado (USD)'
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: { display: true, text: 'Valor FOB (USD)' }
+                        },
+                        y: {
+                            title: { display: true, text: 'Empresas' }
+                        }
+                    }
+                }
+            });
+        });
+}
+
+document.getElementById('yearSelect').addEventListener('change', () => {
+    const selectedYear = document.getElementById('yearSelect').value;
+    cargarGraficoToneladas(selectedYear);
+    cargarGraficoFOB(selectedYear);
+});
+
+window.addEventListener('DOMContentLoaded', () => {
+    const defaultYear = document.getElementById('yearSelect').value;
+    cargarGraficoToneladas(defaultYear);
+    cargarGraficoFOB(defaultYear);
+});
+</script>
+<script>
+document.getElementById("btnExportExcel").addEventListener("click", function () {
+  const year = document.getElementById("yearSelect").value;
+  window.open(`/exportar/top_productores/excel/${year}/`, '_blank');
+});
+
+document.getElementById("btnExportPDF").addEventListener("click", function () {
+  const year = document.getElementById("yearSelect").value;
+  window.open(`/exportar/top_productores/pdf/${year}/`, '_blank');
+});
+</script>
+
+
+
+</body>
+</html>

@@ -1,0 +1,6 @@
+<div class="chart-nav">
+  <a href="" class="{% if request.resolver_match.url_name == 'grafico_general' %}active{% endif %}">General</a>
+  <a href="" class="{% if request.resolver_match.url_name == 'grafico_exportacion_pais' %}active{% endif %}">Toneladas Exportadas</a>
+  <a href="" class="{% if request.resolver_match.url_name == 'grafico_exportacion_mineral' %}active{% endif %}">Valor FOB</a>
+  <a href="" class="{% if request.resolver_match.url_name == 'grafico_productores' %}active{% endif %}">Productores</a>
+</div>

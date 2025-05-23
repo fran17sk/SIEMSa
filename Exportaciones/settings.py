@@ -38,6 +38,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'app.middleware.login_required.LoginRequiredMiddleware',
 ]
 
 ROOT_URLCONF = 'Exportaciones.urls'
@@ -110,6 +111,7 @@ LOGIN_REDIRECT_URL = '/exportaciones/nueva'
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = '/static/'
+LOGIN_URL = '/login/'  # Asegúrate de que esta URL exista
 
 # Ruta absoluta donde Django buscará archivos estáticos si hacés collectstatic
 STATICFILES_DIRS = [
@@ -120,3 +122,18 @@ STATICFILES_DIRS = [
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+# Expira la sesión después de X segundos de inactividad
+SESSION_COOKIE_AGE = 900  # 30 minutos (en segundos)
+
+# Restablece el temporizador de expiración con cada solicitud
+SESSION_SAVE_EVERY_REQUEST = True
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.office365.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'siemsa.2025@hotmail.com'           # Cambia por tu email Hotmail real
+EMAIL_HOST_PASSWORD = 'jotspubkqmxfywcz'          # Tu contraseña (ideal: contraseña de aplicación si usás MFA)# NO tu contraseña real
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER

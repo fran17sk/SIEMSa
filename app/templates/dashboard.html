@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block head %}
+
+{% endblock %}
+
+{% block content %}
+
+
+<div class="chart-nav">
+  <a href="{% url 'vista_graficos_general' %}" class="{% if request.resolver_match.url_name == 'vista_graficos_general' %}active{% endif %}">General</a>
+  <a href="{% url 'vista_graficos_toneladas' %}" class="{% if request.resolver_match.url_name == 'vista_graficos_toneladas' %}active{% endif %}">Toneladas Exportadas</a>
+  <a href="{% url 'vista_graficos_fob' %}" class="{% if request.resolver_match.url_name == 'vista_graficos_fob' %}active{% endif %}">Valor FOB</a>
+  <a href="{% url 'mapa_exportaciones' %}" class="{% if request.resolver_match.url_name == 'mapa_exportaciones' %}active{% endif %}">Mapa Interactivo</a>
+</div>
+
+{% if request.resolver_match.url_name == 'vista_graficos_general' %}
+  {% include 'graficos_general.html' %}
+{% elif request.resolver_match.url_name == 'vista_graficos_toneladas' %}
+  {% include 'graficos_toneladas.html' %}
+{% elif request.resolver_match.url_name == 'vista_graficos_fob' %}
+  {% include 'graficos_valor_fob.html' %}
+{% elif request.resolver_match.url_name == 'mapa_exportaciones' %}
+  {% include 'mapa_exportaciones.html' %}
+{% endif %}
+
+
+
+
+{% endblock %}
+
+{% block script %}
+
+
+{% endblock %}
+
+
+

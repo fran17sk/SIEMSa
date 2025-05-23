@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Gráficos de Toneladas</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- En tu <head> -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+    <style>
+  .dashboard-container {
+    max-width: 900px;
+    margin: 30px auto;
+    padding: 20px 30px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    font-family: Arial, sans-serif;
+  }
+
+  .dashboard-container h2 {
+    text-align: center;
+    margin-bottom: 25px;
+    color: #333;
+  }
+
+  .filter-group {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    gap: 1rem;
+  }
+
+  .filter-group label {
+    font-weight: 600;
+    color: #555;
+  }
+
+  select {
+    padding: 6px 10px;
+    font-size: 1rem;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    background-color: white;
+  }
+
+  canvas {
+    margin-bottom: 40px;
+    background-color: white;
+    border-radius: 6px;
+    padding: 10px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+  }
+
+  hr {
+    border: none;
+    border-top: 1px solid #ddd;
+    margin: 40px 0;
+  }
+  .dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 20px;
+  flex-wrap: wrap;
+}
+
+.download-icons {
+  display: flex;
+  gap: 12px;
+}
+
+.icon-button {
+  background-color: #f5f5f5;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 20px;
+  text-decoration: none;
+  color: #333;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.icon-button:hover {
+  background-color: #e2e6ea;
+  transform: scale(1.05);
+}
+</style>
+</head>
+<body>
+    <div class="dashboard-container">
+      <div class="download-icons">
+    <a href="{% url 'exportar_toneladas' 'excel' %}" class="icon-button" title="Descargar Excel" target="_blank">
+      <i class="fas fa-file-excel"></i>
+    </a>
+    <a href="{% url 'exportar_toneladas' 'pdf' %}" class="icon-button" title="Descargar PDF" target="_blank">
+   <i class="fa fa-file-text" aria-hidden="true"></i>
+    </a>
+  </div>
+  <h2>Gráficos de Toneladas Exportadas</h2>
+
+  <div class="filter-group">
+    <div id="yearFilter"></div>
+  </div>
+  <canvas id="graficoLineas" height="150"></canvas>
+
+  <hr>
+
+  <div class="filter-group">
+    <label for="mineralSelect">Filtrar por mineral:</label>
+    <select id="mineralSelect">
+      <option value="Todos">Todos</option>
+    </select>
+  </div>
+  <canvas id="graficoBarras" height="150"></canvas>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+  fetch('/api/datos-toneladas/')
+    .then(res => res.json())
+    .then(data => {
+      const minerales = data.minerales;
+      const anios = data.anios;
+      const datosLineas = data.datos_lineas;
+      const datosBarras = data.datos_barras;
+      const totales = data.totales;
+
+      const colores = ['#ff6384','#36a2eb','#cc65fe','#ffce56','#4bc0c0','#9966ff'];
+
+      // Crear select para elegir rango de años
+      const yearFilterDiv = document.getElementById('yearFilter');
+      const select = document.createElement('select');
+      select.id = 'yearSelect';
+
+      const optionUltimos5 = document.createElement('option');
+      optionUltimos5.value = 'ultimos5';
+      optionUltimos5.textContent = 'Últimos 5 años';
+      select.appendChild(optionUltimos5);
+
+      const optionTodos = document.createElement('option');
+      optionTodos.value = 'todos';
+      optionTodos.textContent = 'Mostrar todos';
+      select.appendChild(optionTodos);
+
+      yearFilterDiv.appendChild(select);
+
+      // Función para obtener últimos n años
+      function getUltimosNAnios(n) {
+        return anios.slice(-n);
+      }
+
+      // Inicializamos mostrando últimos 5 años
+      let añosSeleccionados = getUltimosNAnios(5);
+
+      // Configuración del gráfico
+      const ctx1 = document.getElementById('graficoLineas').getContext('2d');
+      let graficoLineas = new Chart(ctx1, {
+        type: 'line',
+        data: {
+          labels: minerales,
+          datasets: [] // se llenará con actualizarGraficoLineas()
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            title: {
+              display: true,
+              text: 'Toneladas por Mineral por Año'
+            }
+          },
+          layout: {
+            padding: {
+              top: 20,
+              bottom: 20
+            }
+          }
+        }
+      });
+
+      function actualizarGraficoLineas() {
+        const datasetsLineas = añosSeleccionados.map((anio, i) => ({
+          label: anio,
+          data: datosLineas[anio],
+          borderColor: colores[i % colores.length],
+          fill: false,
+          tension: 0.2,
+          borderWidth: 2,
+          pointRadius: 4
+        }));
+
+        graficoLineas.data.datasets = datasetsLineas;
+        graficoLineas.update();
+      }
+
+      // Evento cuando cambia la selección del select
+      select.addEventListener('change', () => {
+        if (select.value === 'ultimos5') {
+          añosSeleccionados = getUltimosNAnios(5);
+        } else {
+          añosSeleccionados = anios;
+        }
+        actualizarGraficoLineas();
+      });
+
+      // Renderizar el gráfico con la selección inicial
+      actualizarGraficoLineas();
+   
+
+      // PINTAR SEGUNDO GRÁFICO: BARRAS CON FILTRO
+      const mineralSelect = document.getElementById("mineralSelect");
+      minerales.forEach(mineral => {
+        const opt = document.createElement("option");
+        opt.value = mineral;
+        opt.textContent = mineral;
+        mineralSelect.appendChild(opt);
+      });
+
+      const ctx2 = document.getElementById('graficoBarras').getContext('2d');
+      let graficoBarras = new Chart(ctx2, {
+        type: 'bar',
+        data: {
+          labels: anios,
+          datasets: [{
+            label: 'Toneladas',
+            backgroundColor: '#36a2eb',
+            data: totales
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: { title: { display: true, text: 'Toneladas por Año' } },
+          scales: { y: { beginAtZero: true } }
+        }
+      });
+
+      mineralSelect.addEventListener('change', () => {
+        const mineralSeleccionado = mineralSelect.value;
+        graficoBarras.data.datasets[0].label = mineralSeleccionado === "Todos" ? 'Toneladas Totales' : mineralSeleccionado;
+        graficoBarras.data.datasets[0].data =
+          mineralSeleccionado === "Todos" ? totales : datosBarras[mineralSeleccionado];
+        graficoBarras.update();
+      });
+    });
+});
+</script>
+</body>
+</html>
