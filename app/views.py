@@ -6,7 +6,8 @@ from django.http import JsonResponse, HttpResponseBadRequest, HttpResponseForbid
 from django.views.decorators.csrf import csrf_exempt
 from django.template.loader import render_to_string
 from django.core.paginator import Paginator
-
+from django.test import RequestFactory
+from urllib.parse import urlencode
 from django.db.models import Sum, Prefetch
 from django.db.models.functions import ExtractYear
 import geopandas as gpd
@@ -167,12 +168,16 @@ def new_exportacion(request,exportacion_id=None):
 
         return redirect('exportaciones')  # Cambia por la URL deseada
     ultima_exportacion = Exportacion.objects.order_by('-id_export').first()
+    if not ultima_exportacion:
+        id_ultima_exportacion = 0 
+    else:
+        id_ultima_exportacion = ultima_exportacion.id_export
 
     return render(request, 'new_exportacion.html', {
         'empresas': empresas,
         'minerales': minerales,
         'paises': paises,
-        'numero_exportacion': ultima_exportacion.id_export + 1,
+        'numero_exportacion': id_ultima_exportacion + 1,
     })
 
 def edit_exportacion(request, id_export):
@@ -1263,53 +1268,67 @@ def export_data_api(request):
             'id_pais': entry['id_export__id_pais__id_pais'],
             'toneladas': float(entry['total_toneladas']),
             'fob': float(entry['total_fob']),
+            'year': year
         })
 
     return JsonResponse(response_data, safe=False)
 
 def exportar_pdf(request):
-    year = request.GET.get("anio")
+    year = request.GET.get("year")
     mineral_nombre = request.GET.get("mineral_nombre", "")
 
     # Definir años a mostrar
-    if not year or year.lower() == "todos":
-        current_year = datetime.now().year
-        years = list(range(current_year - 4, current_year + 1))
-    else:
+    if year and year.lower() != "todos":
         years = [int(year)]
+    else:
+        actual_year = datetime.now().year
+        years = list(range(actual_year - 4, actual_year + 1))
 
     # Obtener datos desde la API original
-    from .views import export_data_api
     parsed_data = []
+    factory = RequestFactory()
 
     if not year or year.lower() == "todos":
-        current_year = datetime.now().year
-        years = list(range(current_year - 4, current_year + 1))
-
-        # Construir y enviar request para cada año
-        original_get = request.GET.copy()
         for y in years:
-            request.GET._mutable = True
-            request.GET["anio"] = str(y)
-            response = export_data_api(request)
-            year_data = json.loads(response.content)
-            for item in year_data:
-                item["anio"] = item.get("anio") or y  # Garantizar año
-            parsed_data.extend(year_data)
+            # Clonar GET y asignar el año correcto
+            params = request.GET.copy()
+            params["year"] = str(y)
 
-        request.GET = original_get  # Restaurar el request original
+            query_string = urlencode(params)
+            url = f"{request.path}?{query_string}"
+
+            print("URL generada:", url)  # Verificá que sea correcta
+
+            fake_req = factory.get(url)
+            fake_req.user = request.user
+
+            response = export_data_api(fake_req)
+            year_data = json.loads(response.content)
+
+            for item in year_data:
+                if "year" not in item or not item["year"]:
+                    continue
+                parsed_data.append(item)
     else:
-        # Un solo año filtrado
         response = export_data_api(request)
         parsed_data = json.loads(response.content)
-
+    print(parsed_data)
     # Organizar datos
     report_data = {}
     for item in parsed_data:
+        if "year" not in item or not item["year"]:
+            continue
+
+        anio = int(item["year"])
+        
+        # Filtro explícito por año consultado (cuando no es "todos")
+        if year and year.lower() != "todos" and anio != int(year):
+            continue
+
         pais = item["pais"]
-        anio = item.get("anio", None) or years[0]
         toneladas = float(item.get("toneladas", 0))
         fob = float(item.get("fob", 0))
+
         if pais not in report_data:
             report_data[pais] = {}
         report_data[pais][anio] = {'toneladas': toneladas, 'fob': fob}
@@ -1345,12 +1364,10 @@ def exportar_pdf(request):
 
     table_data = [header]
 
-    # Totales columnas
     total_por_columna = {y: {'toneladas': 0, 'fob': 0} for y in years}
     total_general_tn = 0
     total_general_fob = 0
 
-    # Rellenar filas por país
     for pais, anios_data in report_data.items():
         fila = [pais]
         suma_tn_fila = 0
@@ -1374,7 +1391,7 @@ def exportar_pdf(request):
 
         table_data.append(fila)
 
-    # Fila totales final
+    # Fila de totales
     fila_totales = ["Totales"]
     for y in years:
         fila_totales.append(f"{total_por_columna[y]['toneladas']:,.2f}")
@@ -1384,9 +1401,7 @@ def exportar_pdf(request):
 
     table_data.append(fila_totales)
 
-    # Anchos de columnas
     col_widths = [120] + [80] * (2 * len(years)) + [90, 90]
-
     t = Table(table_data, repeatRows=1, colWidths=col_widths)
     style = TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#d3d3d3")),
@@ -1399,10 +1414,9 @@ def exportar_pdf(request):
         ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
     ])
     t.setStyle(style)
-    
     elements.append(t)
-    doc.build(elements)
 
+    doc.build(elements)
     buffer.seek(0)
     return HttpResponse(
         buffer,

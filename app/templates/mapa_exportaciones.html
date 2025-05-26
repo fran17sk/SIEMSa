@@ -169,13 +169,13 @@
         let geojsonLayer;
 
         function getColor(fob) {
-            return fob > 10000000 ? '#800026' :
-                   fob > 5000000  ? '#BD0026' :
-                   fob > 1000000  ? '#E31A1C' :
-                   fob > 500000   ? '#FC4E2A' :
-                   fob > 100000   ? '#FD8D3C' :
-                   fob > 10000    ? '#FEB24C' :
-                   fob > 0        ? '#ffffff' :
+            return fob >= 10000000 ? '#800026' :
+                   fob >= 5000000  ? '#BD0026' :
+                   fob >= 1000000  ? '#E31A1C' :
+                   fob >= 500000   ? '#FC4E2A' :
+                   fob >= 100000   ? '#FD8D3C' :
+                   fob >= 10000    ? '#FEB24C' :
+                   fob >= 0        ? '#ffffff' :
                                     '#Ffffff';
         }
 
@@ -246,7 +246,7 @@ document.getElementById("btn-pdf").addEventListener("click", function () {
     const mineral = document.getElementById("mineral")?.value || "";
     const mineral_nombre = document.getElementById("mineral")?.selectedOptions[0]?.text || "";
 
-    const url = `../exportaciones/reporte/pdf/?anio=${anio}&mineral=${mineral}&mineral_nombre=${encodeURIComponent(mineral_nombre)}`;
+    const url = `../exportaciones/reporte/pdf/?year=${anio}&mineral=${mineral}&mineral_nombre=${encodeURIComponent(mineral_nombre)}`;
 
     // Forzar la descarga
     const link = document.createElement("a");

@@ -169,7 +169,7 @@
           plugins: {
             title: {
               display: true,
-              text: 'Toneladas por Mineral por Año'
+              text: 'FOB (USD) por Mineral por Año'
             }
           },
           layout: {
@@ -225,21 +225,21 @@
         data: {
           labels: anios,
           datasets: [{
-            label: 'Toneladas',
+            label: 'USD',
             backgroundColor: '#36a2eb',
             data: totales
           }]
         },
         options: {
           responsive: true,
-          plugins: { title: { display: true, text: 'Toneladas por Año' } },
+          plugins: { title: { display: true, text: 'USD por Año' } },
           scales: { y: { beginAtZero: true } }
         }
       });
 
       mineralSelect.addEventListener('change', () => {
         const mineralSeleccionado = mineralSelect.value;
-        graficoBarras.data.datasets[0].label = mineralSeleccionado === "Todos" ? 'Toneladas Totales' : mineralSeleccionado;
+        graficoBarras.data.datasets[0].label = mineralSeleccionado === "Todos" ? 'FOB (USD) Totales' : mineralSeleccionado;
         graficoBarras.data.datasets[0].data =
           mineralSeleccionado === "Todos" ? totales : datosBarras[mineralSeleccionado];
         graficoBarras.update();
