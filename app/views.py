@@ -1297,7 +1297,6 @@ def exportar_pdf(request):
             query_string = urlencode(params)
             url = f"{request.path}?{query_string}"
 
-            print("URL generada:", url)  # Verificá que sea correcta
 
             fake_req = factory.get(url)
             fake_req.user = request.user
@@ -1312,7 +1311,6 @@ def exportar_pdf(request):
     else:
         response = export_data_api(request)
         parsed_data = json.loads(response.content)
-    print(parsed_data)
     # Organizar datos
     report_data = {}
     for item in parsed_data:
