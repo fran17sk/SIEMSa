@@ -522,7 +522,11 @@
       <select id="mineral" name="mineral">
         <option value="">Seleccionar</option>
         {% for mineral in minerales %}
-        <option value="{{ mineral.id_min }}">{{ mineral.nom_min }} | {{mineral.coment_min}}</option>
+        <option value="{{ mineral.id_min }}">{{ mineral.nom_min }} 
+          {% if mineral.coment_min %}
+          | {{mineral.coment_min}}
+          {% endif %}
+        </option>
         {% endfor %}
       </select>
     </div>
