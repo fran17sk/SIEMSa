@@ -271,7 +271,7 @@ def exportacion_list(request):
         'id_productor_min', 'id_pais'
     ).prefetch_related(
         'min_exports__id_min'
-    ).order_by('-fecha_export')
+    ).order_by('-id_export')
 
     # Si hay filtro, lo aplicamos
     if search:
