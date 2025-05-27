@@ -13,6 +13,9 @@ from django.db.models.functions import ExtractYear
 import geopandas as gpd
 from .models import *
 from .forms import MineralForm
+from django.db.models import Sum, Q, Prefetch
+from django.core.paginator import Paginator
+from django.shortcuts import render
 
 from datetime import datetime
 from collections import defaultdict
@@ -266,42 +269,34 @@ def edit_exportacion(request, id_export):
 def exportacion_list(request):
     search = request.GET.get("search", "").strip()
 
-    # Cargamos las exportaciones base
+    # Base queryset con anotaciones de totales
     exportaciones_base = Exportacion.objects.select_related(
         'id_productor_min', 'id_pais'
     ).prefetch_related(
-        'min_exports__id_min'
+        Prefetch(
+            'min_exports',
+            queryset=MinExport.objects.select_related('id_min')
+        )
+    ).annotate(
+        total_tn=Sum('min_exports__Tn_min_export'),
+        total_fob=Sum('min_exports__FOB_min_export')
     ).order_by('-id_export')
 
-    # Si hay filtro, lo aplicamos
+    # Filtro por búsqueda (en el queryset)
     if search:
         exportaciones_base = exportaciones_base.filter(
             Q(id_productor_min__nombre__icontains=search) |
             Q(min_exports__id_min__nombre__icontains=search)
         ).distinct()
 
-    # Armamos la lista enriquecida
-    exportaciones_list = []
-    for exp in exportaciones_base:
-        minerales = exp.min_exports.all()
-        total_tn = sum([m.Tn_min_export for m in minerales])
-        total_fob = sum([m.FOB_min_export for m in minerales])
-
-        exportaciones_list.append({
-            'exportacion': exp,
-            'min_exports': minerales,
-            'total_tn': total_tn,
-            'total_fob': total_fob,
-        })
-
-    # Paginación
-    paginator = Paginator(exportaciones_list, 50)
+    # Paginación directamente sobre el queryset
+    paginator = Paginator(exportaciones_base, 50)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
     return render(request, 'exportaciones.html', {
         'page_obj': page_obj,
-        'search': search  # <-- para mantener el valor del input
+        'search': search,
     })
 
 
