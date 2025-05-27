@@ -314,6 +314,7 @@
           <tr>
             <th>ID</th>
             <th>Nombre del Mineral</th>
+            <th>Observaciones</th>
             <th>Acciones</th>
           </tr>
         </thead>
@@ -322,6 +323,7 @@
           <tr>
             <td>{{ mineral.id_min }}</td>
             <td>{{ mineral.nom_min }}</td>
+            <td>{{ mineral.coment_min }}</td>
             <td class="actions">
               <button onclick="abrirModalEditar({{ mineral.id_min }}, '{{ mineral.nom_min }}')"><i class="fa fa-pencil"></i></button>
             </td>

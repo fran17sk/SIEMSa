@@ -3,6 +3,7 @@ from django.db import models
 class Mineral(models.Model):
     id_min = models.AutoField(primary_key=True,unique=True)
     nom_min = models.CharField(max_length=255,default='')
+    coment_min = models.CharField(max_length=255,default='',blank=True,null=True)
 
     
 
