@@ -272,6 +272,7 @@ a i{
     <table>
   <thead>
     <tr>
+      <th>Cod Exp</th>
       <th>Nº Exp</th>
       <th>Fecha</th>
       <th>Empresa</th>
@@ -289,6 +290,7 @@ a i{
     {% for item in page_obj %}
       {% with exp=item.exportacion %}
       <tr>
+        <td>{{ exp.id_export }}</td>
         <td>{{ exp.Num_Exped1 }}{% if exp.Num_Exped2 %}/{{ exp.Num_Exped2 }}{% endif %}</td>
         <td>{{ exp.fecha_export|date:"d/m/Y" }}</td>
         <td>{{ exp.id_productor_min.nom_productor_min }}</td>
