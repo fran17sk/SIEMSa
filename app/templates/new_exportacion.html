@@ -442,7 +442,7 @@
     
     <div>
       <label>N° Exportación</label>
-      <input type="text" value="{{ numero_exportacion }}" disabled />
+      <input type="text" value="*******" disabled />
     </div>
     
     <div>
@@ -579,85 +579,67 @@
 <script>
   
   const detalles = [];
-  
-  document.querySelector(".btn-add").addEventListener("click", function (e) {
-    e.preventDefault();
-    
-    const mineralSelect = document.getElementById("mineral");
-    const toneladasInput = document.getElementById("toneladas");
-    const valorFobInput = document.getElementById("valor_fob");
-    
-    const mineralId = mineralSelect.value;
-    const mineralNombre = mineralSelect.options[mineralSelect.selectedIndex].text;
-    const toneladas = toneladasInput.value;
-    const valorFob = valorFobInput.value;
-    
-    console.log(mineralId,mineralNombre,toneladas,valorFob)
-    if (!mineralId || !toneladas || !valorFob) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Campos incompletos',
-        text: 'Completa todos los campos antes de agregar.',
-      });
-      return;
-    }
-    
-    detalles.push({
-      mineral_id: mineralId,
-      toneladas: toneladas,
-      valor_fob: valorFob
-    });
-    
-    const tbody = document.getElementById("tabla-detalles-body");
-    if (tbody.children.length === 1 && tbody.children[0].children[0].colSpan === 5) {
-      tbody.innerHTML = "";
-    }
-    
-    const index = detalles.length - 1;
-    
-    const fila = document.createElement("tr");
-    fila.innerHTML = `
-  <td>${detalles.length}</td>
-  <td>${mineralNombre}</td>
-  <td>${toneladas}</td>
-  <td>${valorFob}</td>
-  <td class="actions">
-    <button title="Eliminar" data-index="${index}" onclick="eliminarDetalle(this)">
-      <i class="fa fa-times-circle" aria-hidden="true"></i>
-    </button>
-  </td>
-`;
-tbody.appendChild(fila);
 
-    // Limpiar campos
-    mineralSelect.value = "";
-    toneladasInput.value = "";
-    valorFobInput.value = "";
+document.querySelector(".btn-add").addEventListener("click", function (e) {
+  e.preventDefault();
+
+  const mineralSelect = document.getElementById("mineral");
+  const toneladasInput = document.getElementById("toneladas");
+  const valorFobInput = document.getElementById("valor_fob");
+
+  const mineralId = mineralSelect.value;
+  const mineralNombre = mineralSelect.options[mineralSelect.selectedIndex].text;
+  const toneladas = toneladasInput.value.trim();
+  const valorFob = valorFobInput.value.trim();
+
+  if (!mineralId || !toneladas || !valorFob) {
+    Swal.fire({
+      icon: "warning",
+      title: "Campos incompletos",
+      text: "Completa todos los campos antes de agregar.",
+    });
+    return;
+  }
+
+  detalles.push({
+    mineral_id: mineralId,
+    toneladas: toneladas,
+    valor_fob: valorFob,
   });
 
- function eliminarDetalle(button) {
+  const tbody = document.getElementById("tabla-detalles-body");
+  if (tbody.children.length === 1 && tbody.children[0].children[0].colSpan === 5) {
+    tbody.innerHTML = "";
+  }
+
+  renderizarTabla();
+
+  // Limpiar campos
+  mineralSelect.value = "";
+  toneladasInput.value = "";
+  valorFobInput.value = "";
+});
+
+function eliminarDetalle(button) {
   const index = parseInt(button.getAttribute("data-index"));
   detalles.splice(index, 1); // quitar del array
 
-  // Eliminar la fila
-  const fila = button.closest("tr");
-  fila.remove();
-
-  // Volver a renderizar la tabla para actualizar índices y data-index
   renderizarTabla();
 }
+
 function renderizarTabla() {
   const tbody = document.getElementById("tabla-detalles-body");
   tbody.innerHTML = "";
 
   if (detalles.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="5" class="text-center">No hay minerales agregados</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5" class="text-center" style="text-align:center; padding: 1rem; color: #888; font-style: italic;">No hay minerales agregados</td></tr>`;
     return;
   }
 
   detalles.forEach((detalle, index) => {
     const mineralSelect = document.getElementById("mineral");
-    const mineralNombre = mineralSelect.querySelector(`option[value="${detalle.mineral_id}"]`)?.text || 'Desconocido';
+    const mineralNombre =
+      mineralSelect.querySelector(`option[value="${detalle.mineral_id}"]`)?.text || "Desconocido";
 
     const fila = document.createElement("tr");
     fila.innerHTML = `
@@ -674,28 +656,73 @@ function renderizarTabla() {
     tbody.appendChild(fila);
   });
 }
-function actualizarNumeracion() {
-  const filas = document.querySelectorAll("#tabla-detalles-body tr");
-  filas.forEach((fila, index) => {
-    fila.children[0].innerText = index + 1;
-  });
-}
-  document.querySelector(".btn-save").addEventListener("click", function (e) {
-    e.preventDefault();
 
-    if (detalles.length === 0) {
+document.querySelector(".btn-save").addEventListener("click", async function (e) {
+  e.preventDefault();
+
+  if (detalles.length === 0) {
+    Swal.fire({
+      icon: "warning",
+      title: "Sin minerales",
+      text: "Agrega al menos un mineral antes de guardar.",
+    });
+    return;
+  }
+
+  const form = document.getElementById("form-exportacion");
+  const formData = new FormData(form);
+
+  // Poner detalles en el input oculto
+  document.getElementById("detalles-json").value = JSON.stringify(detalles);
+
+  // Actualizar FormData para que incluya el campo detalles-json
+  formData.set("detalles", JSON.stringify(detalles));
+
+  // Obtener token CSRF (Django)
+  const csrfToken = form.querySelector('[name="csrfmiddlewaretoken"]').value;
+
+  try {
+    const response = await fetch(form.action || window.location.href, {
+      method: "POST",
+      headers: {
+        "X-CSRFToken": csrfToken,
+      },
+      body: formData,
+    });
+
+    if (!response.ok) throw new Error("Error en la respuesta del servidor");
+
+    const data = await response.json();
+
+    if (data.status === "success") {
       Swal.fire({
-        icon: 'warning',
-        title: 'Sin minerales',
-        text: 'Agrega al menos un mineral antes de guardar.',
+        icon: "success",
+        title: "EXPORTACION GENERADA CON EXITO!",
+        text: `Codigo de exportacion: ${data.id_exportacion}`,
       });
-      return;
+
+      // Limpiar formulario y tabla
+      form.reset();
+      detalles.length = 0;
+      renderizarTabla();
+    } else {
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: data.message || "Error desconocido al guardar",
+      });
     }
+  } catch (error) {
+    Swal.fire({
+      icon: "error",
+      title: "Error",
+      text: error.message || "Error en la petición",
+    });
+  }
+});
 
-    document.getElementById("detalles-json").value = JSON.stringify(detalles);
-    document.getElementById("form-exportacion").submit();
-  });
-
+// Inicializar tabla con mensaje
+renderizarTabla();
 
 </script>
 

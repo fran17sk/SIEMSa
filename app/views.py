@@ -138,35 +138,45 @@ def mineral_delete(request, pk):
 def new_exportacion(request,exportacion_id=None):
 
     if request.user.groups.filter(name='Lector').exists():
-        return redirect('exportaciones')
+        return JsonResponse({'status': 'error', 'message': 'No tienes permiso para crear exportaciones.'})
 
     empresas = ProdMinero.objects.all().order_by('nom_productor_min')
     minerales = Mineral.objects.all().order_by('nom_min')
     paises = Pais.objects.all().order_by('nom_pais')
 
     if request.method == 'POST':
-        data = request.POST
-        detalles = json.loads(request.POST.get('detalles'))
+        try:
+            data = request.POST
+            detalles = json.loads(request.POST.get('detalles'))
 
-        exportacion = Exportacion.objects.create(
-            Num_Exped1=data.get('expediente'),
-            fecha_export=data.get('fecha_exportacion'),
-            id_productor_min_id=int(data.get('empresa')),
-            id_pais_id=int(data.get('pais')),
-            fecha_present_export=data.get('fecha_presentacion'),
-            pedido_comercial_export=data.get('pedido_comercial'),
-            Estado_anulacion=bool(data.get('anulacion')),
-        )
-
-        for det in detalles:
-            MinExport.objects.create(
-                id_export=exportacion,
-                id_min_id=int(det['mineral_id']),
-                Tn_min_export=det['toneladas'],
-                FOB_min_export=det['valor_fob']
+            exportacion = Exportacion.objects.create(
+                Num_Exped1=data.get('expediente'),
+                fecha_export=data.get('fecha_exportacion'),
+                id_productor_min_id=int(data.get('empresa')),
+                id_pais_id=int(data.get('pais')),
+                fecha_present_export=data.get('fecha_presentacion'),
+                pedido_comercial_export=data.get('pedido_comercial'),
+                Estado_anulacion=bool(data.get('anulacion')),
             )
 
-        return redirect('exportaciones')  # Cambia por la URL deseada
+            for det in detalles:
+                MinExport.objects.create(
+                    id_export=exportacion,
+                    id_min_id=int(det['mineral_id']),
+                    Tn_min_export=det['toneladas'],
+                    FOB_min_export=det['valor_fob']
+                )
+
+            return JsonResponse({
+                'status': 'success',
+                'id_exportacion': exportacion.id_export
+            })
+
+        except Exception as e:
+            return JsonResponse({
+                'status': 'error',
+                'message': str(e)
+            })
     ultima_exportacion = Exportacion.objects.order_by('-id_export').first()
     if not ultima_exportacion:
         id_ultima_exportacion = 0 
