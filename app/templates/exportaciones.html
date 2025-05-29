@@ -360,32 +360,61 @@ a i{
   {% endblock %}
   {% block script %}
 <script>
-     const searchInput = document.getElementById('searchInput');
-  const tableBody = document.getElementById('tableBody');
+  const searchInput = document.getElementById('searchInput');
+const tableBody = document.getElementById('tableBody');
 
-  searchInput.addEventListener('input', function () {
-    const filter = this.value.toLowerCase();
-    const rows = tableBody.querySelectorAll('tr');
+searchInput.addEventListener('input', function () {
+  const filter = this.value.toLowerCase();
 
-    let currentExportId = null;
+  if (filter.length >= 3) {
+    fetch(`/exportaciones/?search=${encodeURIComponent(filter)}`)
+      .then(response => response.json())
+      .then(data => {
+        renderTable(data);
+        console.log(data)
+      })
+      .catch(error => {
+        console.error('Error al buscar:', error);
+      });
+  } else {
+    
+  }
+});
 
-    rows.forEach(row => {
-      const isDetailRow = row.classList.contains('detalle-row');
-      if (!isDetailRow) {
-        currentExportId = row.querySelector('.actions button')?.dataset.target || null;
-        const text = row.innerText.toLowerCase();
-        const visible = text.includes(filter);
-        row.style.display = visible ? '' : 'none';
+function renderTable(exportaciones) {
+  tableBody.innerHTML = ''; // Limpiar tabla
 
-        // Esconde también la subtabla si la fila principal está oculta
-        const detailRow = document.getElementById(currentExportId);
-        if (detailRow) {
-          detailRow.style.display = visible && detailRow.classList.contains('show') ? '' : 'none';
-        }
-      }
-    });
+  exportaciones.forEach(exp => {
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <td>${exp.codigo}</td>
+      <td>${exp.fecha}</td>
+      <td>${exp.empresa}</td>
+      <td>${exp.mineral}</td>
+      <td>${exp.pais}</td>
+      <td>
+        <button class="btn btn-sm btn-info" data-target="detalle-${exp.id}">Ver Detalle</button>
+      </td>
+    `;
+
+    const detailRow = document.createElement('tr');
+    detailRow.classList.add('detalle-row');
+    detailRow.id = `detalle-${exp.id}`;
+    detailRow.style.display = 'none';
+    detailRow.innerHTML = `
+      <td colspan="6">
+        <strong>Detalles:</strong> ${exp.detalles || 'Sin detalles'}
+      </td>
+    `;
+
+    tableBody.appendChild(row);
+    tableBody.appendChild(detailRow);
   });
+}
 
+function clearTable() {
+  tableBody.innerHTML = '';
+}
   // Mostrar/Ocultar detalle de minerales por exportación
   document.querySelectorAll('.toggle-details').forEach(button => {
     button.addEventListener('click', () => {

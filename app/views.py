@@ -285,8 +285,8 @@ def exportacion_list(request):
     # Filtro por búsqueda (en el queryset)
     if search:
         exportaciones_base = exportaciones_base.filter(
-            Q(id_productor_min__nombre__icontains=search) |
-            Q(min_exports__id_min__nombre__icontains=search)
+            Q(id_productor_min__nom_productor_min__icontains=search) |
+            Q(min_exports__id_min__nom_min__icontains=search)
         ).distinct()
 
     # Paginación directamente sobre el queryset
