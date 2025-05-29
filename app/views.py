@@ -1178,7 +1178,7 @@ def export_data_api(request):
             "MALASIA": "Malaysia",
             "REINO UNIDO": "United Kingdom",
             "BANGLADESH": "Bangladesh",
-            "ESTADOS UNIDOS": "United States",
+            "ESTADOS UNIDOS": "United States of America",
             "INDIA": "India",
             "AUSTRALIA": "Australia",
             "PAKISTAN": "Pakistan",
