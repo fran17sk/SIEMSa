@@ -200,6 +200,7 @@ def edit_exportacion(request, id_export):
     if request.method == 'POST':
         # Actualizar los campos principales
         data = json.loads(request.body)
+        print(data)
 
         declaracion = data.get('declaracion', {})
 
@@ -212,11 +213,11 @@ def edit_exportacion(request, id_export):
         pais = get_object_or_404(Pais,nom_pais=declaracion.get('pais'))
         exportacion.id_pais = pais
         exportacion.pedido_comercial_export = declaracion.get('pedido_comercial')
-        if data.get('anulacion') == 0:
-            anulacion = False
+        print(data['declaracion'].get('anulacion'))
+        if data['declaracion'].get('anulacion'):
+            exportacion.Estado_anulacion = 1
         else:
-            anulacion = True
-        exportacion.Estado_anulacion=anulacion
+            exportacion.Estado_anulacion = 0
 
         exportacion.save()
 
