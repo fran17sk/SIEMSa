@@ -141,7 +141,7 @@ def mineral_delete(request, pk):
 def new_exportacion(request,exportacion_id=None):
 
     if request.user.groups.filter(name='Lector').exists():
-        return JsonResponse({'status': 'error', 'message': 'No tienes permiso para crear exportaciones.'})
+        return redirect('exportaciones')
 
     empresas = ProdMinero.objects.all().order_by('nom_productor_min')
     minerales = Mineral.objects.all().order_by('nom_min')
