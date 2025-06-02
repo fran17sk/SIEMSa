@@ -131,6 +131,7 @@ case "$1" in
         ;;
 esac
 
+
 Otorgar permisos al archivo 
 chmod +x manage_server.sh
 
@@ -138,3 +139,82 @@ chmod +x manage_server.sh
 mv manage_server.sh siemsa
 chmod +x siemsa
 sudo mv siemsa /usr/local/bin/
+
+como usarlo 
+    siemsa start
+    siemsa stop
+    siemsa restart
+    siemsa status
+
+
+Script: siemsa-logs
+
+#!/bin/bash
+
+# ✅ Validación: ejecutarse desde la raíz del proyecto
+if [ ! -f manage.py ]; then
+    echo "❌ Este comando debe ejecutarse desde la raíz del proyecto Django (donde está manage.py)"
+    exit 1
+fi
+
+# CONFIGURACIÓN
+APP_NAME="tu_app"  # Nombre definido en supervisor
+LOG_DIR="/var/log/supervisor"  # Ruta por defecto de logs de supervisor (ajustá si cambia)
+GUNICORN_LOG="/var/log/gunicorn/gunicorn.log"
+NGINX_LOG="/var/log/nginx/access.log"
+NGINX_ERR="/var/log/nginx/error.log"
+
+# FUNCIONES
+show_supervisor_log() {
+    LOG_FILE="$LOG_DIR/$APP_NAME-stderr---supervisor-*.log"
+    echo "📄 Mostrando logs de Supervisor para $APP_NAME..."
+    tail -n 100 -F $LOG_FILE
+}
+
+show_gunicorn_log() {
+    echo "📄 Mostrando logs de Gunicorn..."
+    tail -n 100 -F "$GUNICORN_LOG"
+}
+
+show_nginx_access() {
+    echo "📄 Mostrando logs de acceso NGINX..."
+    tail -n 100 -F "$NGINX_LOG"
+}
+
+show_nginx_error() {
+    echo "📄 Mostrando logs de error NGINX..."
+    tail -n 100 -F "$NGINX_ERR"
+}
+
+# INTERFAZ
+case "$1" in
+    supervisor)
+        show_supervisor_log
+        ;;
+    gunicorn)
+        show_gunicorn_log
+        ;;
+    nginx)
+        show_nginx_access
+        ;;
+    nginx-error)
+        show_nginx_error
+        ;;
+    *)
+        echo "🔧 Uso: siemsa-logs {supervisor|gunicorn|nginx|nginx-error}"
+        ;;
+esac
+
+
+darle los permisos
+chmod +x siemsa-logs
+
+
+sudo mv siemsa-logs /usr/local/bin/
+
+como usarlo 
+    siemsa-logs supervisor     # Logs supervisord de la app
+    siemsa-logs gunicorn       # Logs gunicorn
+    siemsa-logs nginx          # Logs de acceso NGINX
+    siemsa-logs nginx-error    # Logs de error NGINX
+        

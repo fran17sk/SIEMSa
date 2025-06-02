@@ -1245,7 +1245,8 @@ def export_data_api(request):
             "SINGAPUR": "Singapore",
             "RUMANIA": "Romania",
             "FILIPINAS": "Philippines",
-            "ISRAEL": "Israel"
+            "ISRAEL": "Israel",
+            "JORDANIA":"Jordan"
         }
 
     qs = MinExport.objects.all()
