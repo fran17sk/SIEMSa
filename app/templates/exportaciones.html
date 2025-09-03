@@ -363,78 +363,50 @@ a i{
   {% endblock %}
   {% block script %}
 <script>
-  const searchInput = document.getElementById('searchInput');
+const searchInput = document.getElementById('searchInput');
 const tableBody = document.getElementById('tableBody');
 
-searchInput.addEventListener('input', function () {
-  const filter = this.value.toLowerCase();
+searchInput.addEventListener('keyup', function () {
+  const filter = this.value.trim();
 
-  if (filter.length >= 3) {
-    fetch(`/exportaciones/?search=${encodeURIComponent(filter)}`)
-      .then(response => response.json())
-      .then(data => {
-        renderTable(data);
-        console.log(data)
-      })
-      .catch(error => {
-        console.error('Error al buscar:', error);
-      });
-  } else {
-    
-  }
+  fetch(`/exportaciones/?search=${encodeURIComponent(filter)}`, {
+    headers: { "x-requested-with": "XMLHttpRequest" }
+  })
+    .then(response => response.json())
+    .then(data => {
+      renderTable(data.exportaciones);
+    })
+    .catch(error => console.error('Error al buscar:', error));
 });
 
 function renderTable(exportaciones) {
-  tableBody.innerHTML = ''; // Limpiar tabla
+  tableBody.innerHTML = ''; // limpiar tabla
+
+  if (exportaciones.length === 0) {
+    tableBody.innerHTML = `<tr><td colspan="11" style="text-align:center; color:#999;">No se encontraron resultados.</td></tr>`;
+    return;
+  }
 
   exportaciones.forEach(exp => {
     const row = document.createElement('tr');
     row.innerHTML = `
+      <td>${exp.id}</td>
       <td>${exp.codigo}</td>
       <td>${exp.fecha}</td>
       <td>${exp.empresa}</td>
-      <td>${exp.mineral}</td>
       <td>${exp.pais}</td>
-      <td>
-        <button class="btn btn-sm btn-info" data-target="detalle-${exp.id}">Ver Detalle</button>
+      <td>-</td>
+      <td>-</td>
+      <td>${exp.minerales.join(", ")}</td>
+      <td>${exp.total_tn}</td>
+      <td>${exp.total_fob}</td>
+      <td class="actions">
+        <a href="/exportaciones/${exp.id}/edit"><i class="fa fa-pencil"></i></a>
       </td>
     `;
-
-    const detailRow = document.createElement('tr');
-    detailRow.classList.add('detalle-row');
-    detailRow.id = `detalle-${exp.id}`;
-    detailRow.style.display = 'none';
-    detailRow.innerHTML = `
-      <td colspan="6">
-        <strong>Detalles:</strong> ${exp.detalles || 'Sin detalles'}
-      </td>
-    `;
-
     tableBody.appendChild(row);
-    tableBody.appendChild(detailRow);
   });
 }
-
-function clearTable() {
-  tableBody.innerHTML = '';
-}
-  // Mostrar/Ocultar detalle de minerales por exportación
-  document.querySelectorAll('.toggle-details').forEach(button => {
-    button.addEventListener('click', () => {
-      const targetId = button.dataset.target;
-      const targetRow = document.getElementById(targetId);
-
-      if (targetRow.style.display === 'none' || !targetRow.style.display) {
-        targetRow.style.display = '';
-        targetRow.classList.add('show');
-        button.querySelector('i').classList.replace('fa-chevron-down', 'fa-chevron-up');
-      } else {
-        targetRow.style.display = 'none';
-        targetRow.classList.remove('show');
-        button.querySelector('i').classList.replace('fa-chevron-up', 'fa-chevron-down');
-      }
-    });
-  });
 </script>
 <script>
   function toggleSidebar() {

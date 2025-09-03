@@ -266,11 +266,9 @@ def edit_exportacion(request, id_export):
     }
     return render(request, 'edit_exportacion.html', context)
 
-@login_required(login_url='/login/')
 def exportacion_list(request):
     search = request.GET.get("search", "").strip()
 
-    # Base queryset con anotaciones de totales
     exportaciones_base = Exportacion.objects.select_related(
         'id_productor_min', 'id_pais'
     ).prefetch_related(
@@ -283,23 +281,37 @@ def exportacion_list(request):
         total_fob=Sum('min_exports__FOB_min_export')
     ).order_by('-id_export')
 
-    # Filtro por búsqueda (en el queryset)
     if search:
         exportaciones_base = exportaciones_base.filter(
             Q(id_productor_min__nom_productor_min__icontains=search) |
             Q(min_exports__id_min__nom_min__icontains=search)
         ).distinct()
 
-    # Paginación directamente sobre el queryset
     paginator = Paginator(exportaciones_base, 50)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
+    # 👉 Si es AJAX devolvemos JSON
+    if request.headers.get("x-requested-with") == "XMLHttpRequest":
+        data = []
+        for exp in page_obj:
+            data.append({
+                "id": exp.id_export,
+                "codigo": f"{exp.Num_Exped1}/{exp.Num_Exped2}" if exp.Num_Exped2 else exp.Num_Exped1,
+                "fecha": exp.fecha_export.strftime("%d/%m/%Y"),
+                "empresa": exp.id_productor_min.nom_productor_min,
+                "pais": exp.id_pais.nom_pais,
+                "minerales": [me.id_min.nom_min for me in exp.min_exports.all()],
+                "total_tn": f"{exp.total_tn:.2f}" if exp.total_tn else "0.00",
+                "total_fob": f"{exp.total_fob:.2f}" if exp.total_fob else "0.00",
+            })
+        return JsonResponse({"exportaciones": data})
+
+    # 👉 Render normal
     return render(request, 'exportaciones.html', {
         'page_obj': page_obj,
         'search': search,
     })
-
 
 
 
