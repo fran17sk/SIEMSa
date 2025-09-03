@@ -395,13 +395,13 @@ function renderTable(exportaciones) {
       <td>${exp.fecha}</td>
       <td>${exp.empresa}</td>
       <td>${exp.pais}</td>
-      <td>-</td>
-      <td>-</td>
+      <td>${exp.pedido_comercial}</td>
+      <td></td>
       <td>${exp.minerales.join(", ")}</td>
       <td>${exp.total_tn}</td>
       <td>${exp.total_fob}</td>
       <td class="actions">
-        <a href="/exportaciones/${exp.id}/editar"><i class="fa fa-pencil"></i></a>
+        <a href="/exportacion/${exp.id}/editar"><i class="fa fa-pencil"></i></a>
       </td>
     `;
     tableBody.appendChild(row);

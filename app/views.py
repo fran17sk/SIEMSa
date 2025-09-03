@@ -301,6 +301,7 @@ def exportacion_list(request):
                 "fecha": exp.fecha_export.strftime("%d/%m/%Y"),
                 "empresa": exp.id_productor_min.nom_productor_min,
                 "pais": exp.id_pais.nom_pais,
+                "pedido_comercial" : exp.pedido_comercial,
                 "minerales": [me.id_min.nom_min for me in exp.min_exports.all()],
                 "total_tn": f"{exp.total_tn:.2f}" if exp.total_tn else "0.00",
                 "total_fob": f"{exp.total_fob:.2f}" if exp.total_fob else "0.00",
