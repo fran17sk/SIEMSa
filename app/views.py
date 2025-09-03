@@ -284,8 +284,9 @@ def exportacion_list(request):
     if search:
         exportaciones_base = exportaciones_base.filter(
             Q(id_productor_min__nom_productor_min__icontains=search) |
-            Q(min_exports__id_min__nom_min__icontains=search) |
-            Q(pedido_comercial_export = search)
+            Q(pedido_comercial_export = search) |
+            Q(id_export = search) |
+            Q(Num_Exped1 = search)
         ).distinct()
 
     paginator = Paginator(exportaciones_base, 50)
