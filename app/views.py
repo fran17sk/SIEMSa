@@ -55,6 +55,14 @@ from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.contrib.auth.decorators import user_passes_test
 
+from django.http import HttpResponse
+from django.db import connection
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.lib.pagesizes import A4
+from reportlab.lib import colors
+from reportlab.lib.styles import getSampleStyleSheet
+
+
 def group_required(group_names):
     def in_groups(u):
         if u.is_authenticated:
