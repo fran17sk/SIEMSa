@@ -244,6 +244,19 @@
 a i{
   color: #111827;
 }
+.btn-pdf {
+    display: inline-block;
+    padding: 10px 20px;
+    background-color: #003366; /* azul oscuro */
+    color: white;
+    font-weight: bold;
+    border-radius: 6px;
+    text-decoration: none;
+    transition: background 0.3s ease;
+}
+.btn-pdf:hover {
+    background-color: #0055a5;
+}
   </style>
 {% endblock %}
 
@@ -260,7 +273,9 @@ a i{
           style="padding: 0.4rem 0.8rem; border-radius: 5px; border: 1px solid #ccc; font-size: 1rem;"
         />
         {% if request.user.groups.first.name == "Administrador" or request.user.groups.first.name == "Publicador"   %}
-
+        <a href="{% url 'exportaciones_duplicadas_pdf' %}" class="btn-pdf" target="_blank">
+            Descargar PDF
+        </a>
         <a href="{% url 'exportacion' %}" class="add-btn">
           <i class="fa fa-plus"></i> Agregar
         </a>

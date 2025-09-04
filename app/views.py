@@ -1695,3 +1695,83 @@ def eliminar_usuario(request, pk):
         return JsonResponse({'mensaje': 'Usuario eliminado correctamente.'})
 
     return HttpResponseBadRequest('Método no permitido.')
+
+
+
+def exportaciones_duplicadas_pdf(request):
+    # Ejecutar la consulta SQL con cursor
+    query = """
+        SELECT 
+            e.id_export      AS id_export_a,
+            e."Num_Exped1"   AS num_exped_a,
+            e.pedido_comercial_export,
+            p.nom_productor_min AS empresa,
+            e.fecha_present_export AS fecha_a,
+            e2.id_export     AS id_export_b,
+            e2."Num_Exped1"  AS num_exped_b,
+            e2.fecha_present_export AS fecha_b
+        FROM app_exportacion e
+        JOIN app_exportacion e2 
+            ON e.pedido_comercial_export = e2.pedido_comercial_export
+           AND e.id_productor_min_id = e2.id_productor_min_id
+           AND e.id_export < e2.id_export
+           AND EXTRACT(YEAR FROM e.fecha_present_export) = EXTRACT(YEAR FROM CURRENT_DATE)
+           AND EXTRACT(YEAR FROM e2.fecha_present_export) = EXTRACT(YEAR FROM CURRENT_DATE)
+           AND e."Estado_anulacion" = false
+           AND e2."Estado_anulacion" = false
+        JOIN app_prodminero p 
+            ON e.id_productor_min_id = p.id_productor_min
+        ORDER BY empresa, e.pedido_comercial_export, fecha_a, fecha_b;
+    """
+
+    with connection.cursor() as cursor:
+        cursor.execute(query)
+        rows = cursor.fetchall()
+
+    # Preparar respuesta PDF
+    response = HttpResponse(content_type="application/pdf")
+    response["Content-Disposition"] = 'attachment; filename="exportaciones_duplicadas.pdf"'
+
+    # Crear documento
+    doc = SimpleDocTemplate(response, pagesize=A4)
+    elements = []
+    styles = getSampleStyleSheet()
+
+    # Título
+    elements.append(Paragraph("Exportaciones con Pedido Comercial Duplicado (Año Actual)", styles["Title"]))
+    elements.append(Spacer(1, 12))
+
+    # Encabezados de tabla
+    data = [["ID A", "Exped A", "Fecha A", "ID B", "Exped B", "Fecha B", "Pedido Comercial", "Empresa"]]
+
+    # Agregar filas
+    for row in rows:
+        data.append([
+            row[0],  # id_export_a
+            row[1],  # num_exped_a
+            row[4].strftime("%d/%m/%Y"),  # fecha_a
+            row[5],  # id_export_b
+            row[6],  # num_exped_b
+            row[7].strftime("%d/%m/%Y"),  # fecha_b
+            row[2],  # pedido_comercial_export
+            row[3],  # empresa
+        ])
+
+    # Tabla
+    table = Table(data, repeatRows=1)
+    table.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#003366")),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("FONTSIZE", (0, 0), (-1, 0), 10),
+        ("BOTTOMPADDING", (0, 0), (-1, 0), 8),
+        ("BACKGROUND", (0, 1), (-1, -1), colors.whitesmoke),
+        ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+    ]))
+
+    elements.append(table)
+
+    # Construir PDF
+    doc.build(elements)
+    return response
