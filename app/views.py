@@ -1757,7 +1757,7 @@ def exportaciones_duplicadas_pdf(request):
     elements.append(Spacer(1, 12))
 
     # Encabezados de tabla
-    data = [["ID A", "Exped A", "Fecha A", "ID B", "Exped B", "Fecha B", "Pedido Comercial", "Empresa"]]
+    data = [["Cod Export 1", "N° Exped 1", "Fecha 1", "Cod Export 2", "N° Exped 2", "Fecha 2", "Pedido Comercial", "Empresa"]]
 
     # Agregar filas
     for row in rows:
