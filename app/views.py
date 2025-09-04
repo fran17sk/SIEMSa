@@ -569,7 +569,7 @@ def dashboard(request):
         'total_empresas' : ProdMinero.objects.count(),
         'total_paises' : Pais.objects.filter(exportaciones__isnull=False).distinct().count(),
         'total_minerales' : Mineral.objects.count(),
-        'total_exportaciones' : Exportacion.objects.filter(estado_anulacion=False).count(),
+        'total_exportaciones' : Exportacion.objects.filter(Estado_anulacion=False).count(),
         'minerales':minerales
     }
     return render(request, 'dashboard.html',context)
