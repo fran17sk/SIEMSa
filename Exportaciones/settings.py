@@ -131,7 +131,7 @@ MEDIA_ROOT = BASE_DIR / "media"
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Expira la sesión después de X segundos de inactividad
-SESSION_COOKIE_AGE = 900  # 30 minutos (en segundos)
+SESSION_COOKIE_AGE = 3600  # 30 minutos (en segundos)
 
 # Restablece el temporizador de expiración con cada solicitud
 SESSION_SAVE_EVERY_REQUEST = True
