@@ -1707,7 +1707,7 @@ def eliminar_usuario(request, pk):
 
 
 def exportaciones_duplicadas_pdf(request):
-    # Ejecutar la consulta SQL con cursor
+    # Consulta SQL
     query = """
         SELECT 
             e.id_export      AS id_export_a,
@@ -1736,12 +1736,19 @@ def exportaciones_duplicadas_pdf(request):
         cursor.execute(query)
         rows = cursor.fetchall()
 
-    # Preparar respuesta PDF
+    # Respuesta PDF
     response = HttpResponse(content_type="application/pdf")
     response["Content-Disposition"] = 'attachment; filename="exportaciones_duplicadas.pdf"'
 
-    # Crear documento
-    doc = SimpleDocTemplate(response, pagesize=A4)
+    # Documento con márgenes ajustados
+    doc = SimpleDocTemplate(
+        response,
+        pagesize=A4,
+        leftMargin=20,
+        rightMargin=20,
+        topMargin=30,
+        bottomMargin=20
+    )
     elements = []
     styles = getSampleStyleSheet()
 
@@ -1765,21 +1772,25 @@ def exportaciones_duplicadas_pdf(request):
             row[3],  # empresa
         ])
 
-    # Tabla
-    table = Table(data, repeatRows=1)
+    # Definir anchos de columna para que no se pase de margen
+    col_widths = [40, 55, 55, 40, 55, 55, 80, 110]
+
+    # Crear tabla
+    table = Table(data, repeatRows=1, colWidths=col_widths)
     table.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#003366")),
         ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
         ("ALIGN", (0, 0), (-1, -1), "CENTER"),
         ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-        ("FONTSIZE", (0, 0), (-1, 0), 10),
-        ("BOTTOMPADDING", (0, 0), (-1, 0), 8),
+        ("FONTSIZE", (0, 0), (-1, -1), 8),  # texto más chico
+        ("BOTTOMPADDING", (0, 0), (-1, 0), 6),
+        ("TOPPADDING", (0, 1), (-1, -1), 4),
         ("BACKGROUND", (0, 1), (-1, -1), colors.whitesmoke),
-        ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+        ("GRID", (0, 0), (-1, -1), 0.25, colors.grey),
     ]))
 
     elements.append(table)
 
-    # Construir PDF
+    # Generar PDF
     doc.build(elements)
     return response

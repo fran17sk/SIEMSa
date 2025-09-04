@@ -274,7 +274,7 @@ a i{
         />
         {% if request.user.groups.first.name == "Administrador" or request.user.groups.first.name == "Publicador"   %}
         <a href="{% url 'exportaciones_duplicadas_pdf' %}" class="btn-pdf" target="_blank">
-            Descargar PDF
+            Reporte Duplicados
         </a>
         <a href="{% url 'exportacion' %}" class="add-btn">
           <i class="fa fa-plus"></i> Agregar
