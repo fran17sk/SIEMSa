@@ -1773,7 +1773,7 @@ def exportaciones_duplicadas_pdf(request):
         ])
 
     # Definir anchos de columna para que no se pase de margen
-    col_widths = [40, 55, 55, 40, 55, 55, 80, 110]
+    col_widths = [55, 55, 55, 55, 55, 55, 80, 120]
 
     # Crear tabla
     table = Table(data, repeatRows=1, colWidths=col_widths)
