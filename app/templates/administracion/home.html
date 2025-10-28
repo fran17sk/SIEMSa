@@ -357,12 +357,12 @@
         {% if request.user.groups.first.name == "Administrador" or request.user.groups.first.name == "Publicador" %}
         {% endif %}
         <!-- Nueva sección Administración -->
+        {% if request.user.groups.first.name == "Administrador" %}
         <a href="{% url 'administration' %}"
         class="{% if request.resolver_match.url_name == 'administration' %}active{% endif %}" title="Administración">
         <i data-lucide="settings"></i> <span>Administración</span>
       </a>
       
-      {% if request.user.groups.first.name == "Administrador" %}
         {% endif %}
 
 
