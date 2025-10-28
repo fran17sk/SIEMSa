@@ -1,0 +1,831 @@
+{% extends "administracion/home.html" %}
+
+
+{% block head %}
+<style>
+
+
+
+.expediente-container {
+  margin: 0;
+  font-family: 'Segoe UI', sans-serif;
+  color: #333;
+  margin: 50px;
+}
+
+/* ✨ Importante: scopea el table al contenedor */
+.expediente-container table {
+  border-collapse: collapse;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.expediente-container.collapsed {
+  margin-left: 50px;
+  width: 95%;
+}
+
+.expediente-container.collapsed table {
+  width: 100%;
+}
+
+  thead {
+    background-color: #243b55;
+    color: white;
+  }
+
+  th, td {
+    padding: 12px;
+    text-align: center;
+    border-bottom: 1px solid #eee;
+  }
+
+  tbody tr:hover {
+    background-color: #f6f6f6;
+  }
+
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+  }
+
+  .header h2 {
+    font-size: 1.6rem;
+    margin: 0;
+    color: #243b55;
+  }
+
+  .search-box {
+    display: flex;
+    gap: 8px;
+  }
+
+  .search-box input {
+    padding: 8px 12px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    outline: none;
+    font-size: 14px;
+    width: 350px;
+  }
+
+  .search-box button {
+    padding: 8px 14px;
+    background-color: #243b55;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+
+  .search-box button:hover {
+    background-color: #004999;
+    transform: scale(1.05);
+    transition: 0.2s;
+  }
+
+  
+
+  .badge {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: bold;
+    display: inline-block;
+  }
+
+  .bg-success {
+    background-color: #4CAF50;
+    color: white;
+  }
+
+  .bg-muted {
+    background-color: #a50d0d;
+    color: #ffffff;
+  }
+
+  .bg-info {
+    background-color: #17a2b8;
+    color: white;
+  }
+
+  .bg-light {
+    background-color: #eee;
+    color: #444;
+  }
+
+  .no-users {
+    text-align: center;
+    padding: 20px;
+    color: #999;
+  }
+.accion {
+    margin: 0 2px;
+    font-size: 1rem;
+    text-decoration: none;
+    color: #000;
+    transition: transform 0.2s ease;
+  }
+
+  .accion:hover {
+    transform: scale(1.2);
+  }
+
+  .messages {
+    max-width: 1000px;
+    margin: 10px auto;
+    padding: 10px;
+    font-size: 15px;
+    background-color: #e6f7ff;
+    border: 1px solid #b3e5fc;
+    border-radius: 6px;
+    color: #004d66;
+  }
+
+
+
+  
+  
+  @keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  .badge {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.badge-info {
+  background-color: #17a2b8;
+  color: white;
+}
+
+.badge-warning {
+  background-color: #f0ad4e;
+  color: white;
+}
+
+.badge-light {
+  background-color: #e0e0e0;
+  color: #333;
+}
+
+.info-btn {
+  border: none;
+  background: none;
+  cursor: pointer;
+  margin-left: 6px;
+  font-size: 14px;
+}
+
+.info-popup {
+  display: none;
+  position: absolute;
+  background: white;
+  border: 1px solid #ccc;
+  padding: 8px;
+  box-shadow: 0px 2px 8px rgba(0,0,0,0.2);
+  border-radius: 6px;
+  z-index: 100;
+}
+
+.info-popup ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.info-popup li {
+  padding: 2px 0;
+}
+
+
+/* Botón para abrir modal */
+    .btn-open {
+      background: #2563eb;
+      color: #fff;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background 0.3s ease;
+    }
+
+    .btn-open:hover {
+      background: #1e40af;
+    }
+
+    /* Overlay del modal */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+    
+    .form-section{
+      display:flex;
+      flex-flow: row;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* Contenido del modal */
+    .modal {
+      background: #fff;
+      width: 800px;
+      max-width: 90%;
+      border-radius: 12px;
+      padding: 25px;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+      position: relative;
+      animation: fadeIn 0.3s ease-in-out;
+      z-index: 2001;
+
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Botón cerrar */
+    .close-btn {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      background: transparent;
+      border: none;
+      font-size: 22px;
+      cursor: pointer;
+      color: #555;
+      transition: color 0.2s ease;
+    }
+    .close-btn:hover {
+      color: #000;
+    }
+
+    .modal h2 {
+      margin: 0 0 20px;
+      color: #1f2937;
+      font-size: 22px;
+      text-align: center;
+    }
+
+    .form-group {
+      margin: 5px;
+      margin-bottom: 15px;
+    }
+
+    .form-group label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: #374151;
+    }
+
+    .form-group input,
+    .form-group select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 14px;
+      outline: none;
+      transition: border 0.2s ease;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus {
+      border-color: #2563eb;
+    }
+
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 20px;
+      gap: 10px;
+    }
+
+    .btn-cancel {
+      background: #e5e7eb;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background 0.2s ease;
+    }
+
+    .btn-cancel:hover {
+      background: #d1d5db;
+    }
+
+    .btn-submit {
+      background: #2563eb;
+      color: #fff;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background 0.3s ease;
+    }
+
+    .btn-submit:hover {
+      background: #1e40af;
+    }
+.password-wrapper {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-generate {
+  background: #28a745;
+  height: 16px;
+  color: #fff;
+  border: none;
+  padding: 1px 1px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 11px;
+  transition: background 0.2s;
+}
+.modal-edit {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0; top: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.6);
+}
+.modal-content {
+  background: #fff;
+  margin: 8% auto;
+  padding: 20px;
+  border-radius: 10px;
+  width: 400px;
+  box-shadow: 0 0 15px rgba(0,0,0,0.3);
+}
+.close-btn {
+  float: right;
+  font-size: 20px;
+  cursor: pointer;
+}
+label {
+  display: block;
+  margin: 10px 0 5px;
+}
+input[type="text"], input[type="email"] {
+  width: 100%;
+  padding: 8px;
+  margin-bottom: 10px;
+}
+#organismos_container {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 15px;
+}
+.btn-generate:hover {
+  background: #218838;
+}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+{% endblock %}
+
+
+{% block content %}
+
+
+
+<div class="expediente-container" id="cards">
+  
+  <div class="header">
+    <h2>👥 Usuarios del Sistema</h2>
+    <form method="get" class="search-box">
+      <input type="search" name="q" placeholder="Buscar usuario, email o nombre" value="{{ query }}">
+      <button type="submit">Buscar</button>
+    </form>
+      <button class="btn-open">➕ Nuevo Usuario</button>
+  </div>
+
+  <div class="table-wrapper">
+    <table>
+      <thead>
+  <tr>
+    <th>#</th>
+    <th>Usuario</th>
+    <th>Email</th>
+    <th>Nombre completo</th>
+    <th>Celular</th>
+    <th>Cambiar pass</th>
+    <th>Organismos</th>
+    <th>Activo</th>
+    <th>Staff</th>
+    <th></th>
+  </tr>
+</thead>
+<tbody>
+  {% for u in usuarios %}
+  <tr>
+    <td>{{ u.id }}</td>
+    <td><strong>{{ u.username }}</strong></td>
+    <td>{{ u.email|default:"—" }}</td>
+    <td>{{ u.perfilusuario.usuarionom|default:u.get_full_name }}</td>
+    <td>{{ u.perfilusuario.usuariocelular|default:"—" }}</td>
+    <td>
+      {% if u.perfilusuario.debe_cambiar_password %}
+        <span class="badge bg-warning"><i class="fa fa-check" aria-hidden="true"></i></span>
+      {% else %}
+        <span class="badge "><i class="fa fa-times-circle" aria-hidden="true"></i></span>
+      {% endif %}
+    </td>
+    <td>
+  {% if u.organismos_usuario.count == 0 %}
+  {% elif u.organismos_usuario.count == 1 %}
+    <span class="badge badge-info">{{ u.organismos_usuario.first.organismo.organismonombre }}</span>
+  {% else %}
+    <span class="badge badge-warning">Varios</span>
+    <button class="info-btn" onclick="toggleInfo('info-{{ u.id }}')"><i class="fa fa-info-circle" aria-hidden="true"></i></button>
+
+    <!-- Contenedor oculto con la info -->
+    <div id="info-{{ u.id }}" class="info-popup">
+      <ul>
+        {% for org in u.organismos_usuario.all %}
+          <li>{{ org.organismo.organismonombre }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% endif %}
+</td>
+    <td>
+      {% if u.is_active %}
+        <span class="badge bg-success"><i class="fa fa-check" aria-hidden="true"></i></span>
+      {% else %}
+        <span class="badge bg-muted"><i class="fa fa-times-circle" aria-hidden="true"></i></span>
+      {% endif %}
+    </td>
+    <td>
+      {% if u.is_staff %}
+        <span class="badge bg-info"><i class="fa fa-check" aria-hidden="true"></i></span>
+      {% else %}
+        <span class="badge bg-light"><i class="fa fa-times-circle" aria-hidden="true"></i></span>
+      {% endif %}
+    </td>
+    <td style="display: flex;flex-flow: row nowrap;"> <button class="edit-btn" style="background:none; border:none; cursor:pointer;" data-userid="{{ u.id }}"><i class="fa fa-pencil accion" aria-hidden="true"></i></button><button class="accion btn-toggle" data-url="{% url 'usuario_toggle_activo' u.id %}" data-username="{{ u.username }}" data-activo="{{ u.is_active }}" title="Activar/Desactivar" style="background:none; border:none; cursor:pointer;" > {% if u.is_active %}<i class="fa fa-thumbs-down" aria-hidden="true"></i>{% else %}<i class="fa fa-thumbs-up" aria-hidden="true"></i>{% endif %} </button> <a href="#" class="accion blanquear-password" data-url="{% url 'usuario_blanquear_password' u.id %}" title="Blanquear contraseña"> <i class="fa fa-unlock-alt" aria-hidden="true"></i> </a> </td>
+  </tr>
+  {% endfor %}
+</tbody>
+    </table>
+  </div>
+
+<!-- Modal -->
+  <div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <button class="close-btn" id="closeModal">&times;</button>
+    <h2 id="modalTitle">Crear Usuario</h2>
+    <form id="userForm">
+      {% csrf_token %}
+      <input type="hidden" id="userId" name="userId"> <!-- Solo para edición -->
+
+      <div class="form-section">
+        <div class="form-group">
+          <label for="username">Usuario (login)</label>
+          <input type="text" id="username" name="username" required>
+        </div>
+
+        <div class="form-group password-group">
+          <div class="form-section">
+            <label for="usuariopass">Contraseña</label>
+            <button type="button" class="btn-generate" id="generatePass">Generar</button>
+          </div>
+          <div class="password-wrapper">
+            <input type="password" id="usuariopass" name="usuariopass">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="usuariopass_repeat">Repetir Contraseña</label>
+          <input type="password" id="usuariopass_repeat" name="usuariopass_repeat">
+        </div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-group">
+          <label for="usuarionom">Nombre completo</label>
+          <input type="text" id="usuarionom" name="usuarionom" required>
+        </div>
+
+        <div class="form-group">
+          <label for="usuarioemail">Correo electrónico</label>
+          <input type="email" id="usuarioemail" name="usuarioemail" required>
+        </div>
+
+        <div class="form-group">
+          <label for="usuariocelular">Celular</label>
+          <input type="text" id="usuariocelular" name="usuariocelular">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="organismos">Organismos</label>
+        <select id="organismos" name="organismos" multiple required>
+          {% for org in organismos %}
+            <option value="{{ org.organismoid }}">{{ org.organismonombre }}</option>
+          {% endfor %}
+        </select>
+        <small>Puedes seleccionar más de uno (Ctrl o Shift + clic).</small>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-cancel" id="cancelBtn">Cancelar</button>
+        <button type="submit" class="btn-submit">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+
+<div id="editModal" class="modal-edit">
+  <div class="modal-content">
+    <span class="close-btn">&times;</span>
+    <h2>Editar Usuario</h2>
+    <form id="editUserForm">
+      <input type="hidden" id="edit_user_id">
+
+      <div class="form-group">
+          <label for="username">Usuario (login)</label>
+          <input type="text" id="username" name="username" required>
+        </div>
+
+      <label>Nombre:</label>
+      <input type="text" id="edit_first_name" name="first_name">
+
+      <label>Apellido:</label>
+      <input type="text" id="edit_last_name" name="last_name">
+
+      <label>Email:</label>
+      <input type="email" id="edit_email" name="email">
+
+      <label>Organismos:</label>
+      <div id="organismos_container"></div>
+
+      <button type="submit">Guardar Cambios</button>
+    </form>
+  </div>
+</div>
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  // ELEMENTOS
+  const usernameInput = document.getElementById('username');
+  const userForm = document.getElementById("userForm");
+  const modalOverlay = document.getElementById("modalOverlay");
+  const modalTitle = document.getElementById("modalTitle");
+  const closeBtn = document.getElementById("closeModal");
+  const cancelBtn = document.getElementById("cancelBtn");
+  const openBtn = document.querySelector(".btn-open");
+  const generateBtn = document.getElementById('generatePass');
+  const passwordInput = document.getElementById('usuariopass');
+  const passwordRepeatInput = document.getElementById('usuariopass_repeat');
+
+  // SMALL PARA FEEDBACK
+  const userFeedback = document.createElement('small');
+  userFeedback.style.color = 'red';
+  usernameInput.parentNode.appendChild(userFeedback);
+
+  let timeout = null;
+
+  // VALIDACION USERNAME EN TIEMPO REAL
+  usernameInput.addEventListener('input', () => {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => {
+      const username = usernameInput.value.trim();
+      if (!username || username.includes(' ')) {
+        userFeedback.textContent = 'No puede estar vacío ni contener espacios';
+        usernameInput.style.borderColor = 'red';
+        return;
+      }
+
+      fetch(`/ajax/check-username/?username=${encodeURIComponent(username)}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.invalid) {
+            userFeedback.textContent = 'No puede estar vacío ni contener espacios';
+            usernameInput.style.borderColor = 'red';
+          } else if (data.exists) {
+            userFeedback.textContent = 'Este usuario ya existe';
+            usernameInput.style.borderColor = 'red';
+          } else {
+            userFeedback.textContent = '';
+            usernameInput.style.borderColor = 'green';
+          }
+        });
+    }, 500);
+  });
+
+  // GENERAR CONTRASEÑA
+  function generatePassword(length = 12) {
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+";
+    let pass = "";
+    for (let i = 0; i < length; i++) {
+      pass += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return pass;
+  }
+
+  generateBtn.addEventListener('click', () => {
+    const newPass = generatePassword();
+    passwordInput.value = newPass;
+    passwordRepeatInput.value = newPass;
+  });
+
+  // ABRIR MODAL NUEVO USUARIO
+  if (openBtn && modalOverlay) {
+    openBtn.addEventListener("click", () => {
+      modalTitle.textContent = "Crear Usuario";
+      userForm.removeAttribute("data-userid"); // limpiar dataset
+      userForm.reset();
+      modalOverlay.style.display = "flex";
+    });
+  }
+
+  // CERRAR MODAL
+  [closeBtn, cancelBtn].forEach(btn => {
+    if(btn){
+      btn.addEventListener("click", () => {
+        modalOverlay.style.display = "none";
+      });
+    }
+  });
+
+  modalOverlay.addEventListener("click", (e) => {
+    if (e.target === modalOverlay) modalOverlay.style.display = "none";
+  });
+
+  // ABRIR MODAL EDITAR
+  document.querySelectorAll(".edit-btn").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const userId = btn.dataset.userid;
+      try {
+        const res = await fetch(`/usuarios/${userId}/data/`);
+        const data = await res.json();
+        if (data.success) {
+          modalTitle.textContent = "Editar Usuario";
+          userForm.dataset.userid = userId;
+
+          document.getElementById("userId").value = data.user.id;
+          document.getElementById("username").value = data.user.username;
+          document.getElementById("usuarionom").value = data.user.nombre;
+          document.getElementById("usuarioemail").value = data.user.email;
+          document.getElementById("usuariocelular").value = data.user.usuariocelular || "";
+
+          const organismosSelect = document.getElementById("organismos");
+          Array.from(organismosSelect.options).forEach(opt => {
+            opt.selected = data.user.organismos.includes(parseInt(opt.value));
+          });
+
+          modalOverlay.style.display = "flex";
+        } else {
+          Swal.fire("Error", "No se pudo cargar el usuario.", "error");
+        }
+      } catch (error) {
+        console.error(error);
+        Swal.fire("Error", "Error al obtener datos del usuario.", "error");
+      }
+    });
+  });
+
+  // ENVIAR FORMULARIO CREAR / EDITAR
+  userForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    // VALIDACION LOCAL
+    if (!usernameInput.value.trim() || usernameInput.value.includes(' ')) {
+      Swal.fire("Error", "Usuario inválido", "error");
+      return;
+    }
+
+    const formData = userForm.dataset.userid
+      ? new FormData(userForm) // editar usuario
+      : {
+          username: usernameInput.value.trim(),
+          usuariopass: passwordInput.value,
+          usuarionom: document.getElementById('usuarionom').value.trim(),
+          usuarioemail: document.getElementById('usuarioemail').value.trim(),
+          usuariocelular: document.getElementById('usuariocelular').value.trim(),
+          organismos: Array.from(document.getElementById('organismos').selectedOptions).map(opt => opt.value)
+        };
+
+    const url = userForm.dataset.userid
+      ? `/usuarios/${userForm.dataset.userid}/editar/`
+      : "{% url 'crear_usuario' %}";
+
+    const options = userForm.dataset.userid
+      ? { method: "POST", body: formData, headers: { "X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken]").value } }
+      : { method: "POST", headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' }, body: JSON.stringify(formData) };
+
+    try {
+      const res = await fetch(url, options);
+      const data = await res.json();
+      if (data.success) {
+        Swal.fire({
+          icon: 'success',
+          title: userForm.dataset.userid ? 'Usuario actualizado correctamente' : 'Usuario creado correctamente',
+          timer: 2000,
+          showConfirmButton: false
+        });
+        userForm.reset();
+        modalOverlay.style.display = "none";
+        location.reload();
+      } else {
+        Swal.fire("Error", data.error || "Ocurrió un error", "error");
+      }
+    } catch (error) {
+      console.error(error);
+      Swal.fire("Error", "Error en la comunicación con el servidor", "error");
+    }
+  });
+
+  // BOTONES DE BLANQUEO DE CONTRASEÑA
+  document.querySelectorAll('.blanquear-password').forEach(link => {
+    link.addEventListener('click', function (e) {
+      e.preventDefault();
+      const url = this.dataset.url;
+      Swal.fire({
+        title: '¿Estás seguro?',
+        text: 'Esta acción blanqueará la contraseña del usuario.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, blanquear',
+        cancelButtonText: 'Cancelar'
+      }).then(result => {
+        if (result.isConfirmed) window.location.href = url;
+      });
+    });
+  });
+
+  // BOTONES TOGGLE USUARIO
+  document.querySelectorAll('.btn-toggle').forEach(btn => {
+    btn.addEventListener('click', function () {
+      const url = this.dataset.url;
+      const username = this.dataset.username;
+      const estaActivo = this.dataset.activo === 'True';
+      Swal.fire({
+        title: estaActivo ? `¿Dar de baja a "${username}"?` : `¿Activar a "${username}"?`,
+        text: estaActivo ? 'El usuario no podrá ingresar al sistema hasta ser reactivado.' : 'El usuario podrá volver a iniciar sesión.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: estaActivo ? '#d33' : '#3085d6',
+        cancelButtonColor: '#aaa',
+        confirmButtonText: estaActivo ? 'Sí, dar de baja' : 'Sí, dar de alta',
+        cancelButtonText: 'Cancelar'
+      }).then(result => {
+        if (result.isConfirmed) window.location.href = url;
+      });
+    });
+  });
+
+  // TOGGLE INFO
+  window.toggleInfo = function(id) {
+    const el = document.getElementById(id);
+    el.style.display = (el.style.display === "block") ? "none" : "block";
+  }
+
+  // MENSAJES DE Django
+  {% if messages %}
+    {% for message in messages %}
+      Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: '{% if "success" in message.tags %}success{% elif "error" in message.tags %}error{% elif "warning" in message.tags %}warning{% else %}info{% endif %}',
+        title: "{{ message|escapejs }}",
+        showConfirmButton: false,
+        timer: 4000,
+        timerProgressBar: true,
+        didOpen: (toast) => {
+          toast.addEventListener('mouseenter', Swal.stopTimer)
+          toast.addEventListener('mouseleave', Swal.resumeTimer)
+        }
+      });
+    {% endfor %}
+  {% endif %}
+});
+</script>
+
+
+
+
+{% endblock %}

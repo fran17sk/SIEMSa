@@ -1,0 +1,214 @@
+{% extends "administracion/home.html" %}
+{% block content %}
+<style>
+  body, input, button, select, label {
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 14px;
+    color: #2c3e50;
+  }
+  .form-container {
+    margin-left: 200px;
+    padding: 28px 32px;
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 6px 20px rgba(44, 62, 80, 0.1);
+  }
+  .form-container.collapsed{
+    margin-left: 50px;
+  }
+  h2 {
+    font-weight: 700;
+    font-size: 1.9rem;
+    color: #34495e;
+    margin-bottom: 28px;
+    letter-spacing: 0.02em;
+  }
+  /* Contenedor por sección */
+  .section {
+    background: #f7f9fc;
+    padding: 18px 24px;
+    margin-bottom: 20px;
+    border-radius: 10px;
+    border: 1px solid #d1d9e6;
+  }
+  .section h3 {
+    margin-top: 0;
+    margin-bottom: 18px;
+    color: #1e88e5;
+    font-weight: 700;
+    border-bottom: 2px solid #1e88e5;
+    padding-bottom: 6px;
+    user-select: none;
+  }
+  form {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px 22px;
+  }
+  label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 600;
+    color: #34495e;
+    user-select: none;
+  }
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  select {
+    width: 90%;
+    padding: 9px 12px;
+    border: 1.7px solid #b8c0cc;
+    border-radius: 8px;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    outline-offset: 2px;
+    font-size: 14px;
+    color: #2c3e50;
+  }
+  input[type="text"]:focus,
+  input[type="email"]:focus,
+  select:focus {
+    border-color: #1e88e5;
+    box-shadow: 0 0 5px rgba(30, 136, 229, 0.4);
+  }
+
+  /* Layout para inputs según sección */
+  /* Datos personales ocupa 3 columnas en total pero campos distribuidos */
+  .section-personal form > div {
+    grid-column: span 1;
+  }
+  .section-personal form > div.estado {
+    grid-column: span 1;
+  }
+  /* Datos contacto todos campos a 3 columnas (full width) */
+  .section-contacto form > div {
+    grid-column: 1 / -1;
+  }
+  /* Datos autenticación campos a 1 columna */
+  .section-auth form > div {
+    grid-column: span 1;
+  }
+
+  /* Checkbox grupo en sección auth */
+  .checkbox-group {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px 14px;
+    margin-top: 4px;
+    padding: 8px 12px;
+    background: #e8f0fe;
+    border-radius: 8px;
+    border: 1px solid #b4c6ff;
+  }
+  .checkbox-group label {
+    font-weight: 500;
+    color: #1a237e;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    user-select: none;
+    padding: 5px 7px;
+    border-radius: 6px;
+    transition: background-color 0.2s ease;
+  }
+  .checkbox-group label:hover {
+    background: #c5d9ff;
+  }
+  .checkbox-group input[type="checkbox"] {
+    width: 17px;
+    height: 17px;
+    cursor: pointer;
+  }
+
+  
+  
+
+  /* Responsive - colapsar a 1 columna */
+  @media (max-width: 660px) {
+    form {
+      grid-template-columns: 1fr;
+    }
+    .checkbox-group {
+      grid-template-columns: 1fr;
+    }
+    button[type="submit"] {
+      grid-column: span 1;
+    }
+  }
+</style>
+
+<div class="form-container" id="cards" role="main" aria-label="Formulario para editar usuario">
+  <h2>✏️ Editar usuario: <span style="color:#1e88e5;">{{ usuario.username }}</span></h2>
+
+  <form method="post" novalidate>
+    {% csrf_token %}
+
+    <!-- Datos personales -->
+    <section class="section section-personal" aria-labelledby="datos-personales-title">
+      <h3 id="datos-personales-title">Datos personales</h3>
+      <div>
+        <label for="first_name">Nombre</label>
+        <input type="text" id="first_name" name="first_name" value="{{ usuario.first_name }}" required aria-required="true" autocomplete="given-name">
+      </div>
+      <div>
+        <label for="last_name">Apellido</label>
+        <input type="text" id="last_name" name="last_name" value="{{ usuario.last_name }}" required aria-required="true" autocomplete="family-name">
+      </div>
+      <div class="estado">
+        <label for="usuarioestado">Estado</label>
+        <input type="text" id="usuarioestado" name="usuarioestado" value="{{ usuario.is_active }}" autocomplete="off">
+      </div>
+    </section>
+
+    <!-- Datos contacto -->
+    <section class="section section-contacto" aria-labelledby="datos-contacto-title">
+      <h3 id="datos-contacto-title">Datos de contacto</h3>
+      <div>
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" value="{{ usuario.email }}" required aria-required="true" autocomplete="email">
+      </div>
+      <div>
+        <label for="usuariocelular">Celular</label>
+        <input type="text" id="usuariocelular" name="usuariocelular" value="{{ perfil.usuariocelular }}" autocomplete="tel">
+      </div>
+      <div>
+        <label for="usuarioemail">Email perfil</label>
+        <input type="email" id="usuarioemail" name="usuarioemail" value="{{ perfil.usuarioemail }}" autocomplete="email">
+      </div>
+    </section>
+
+    <!-- Datos autenticacion -->
+    <section class="section section-auth" aria-labelledby="datos-auth-title">
+      <h3 id="datos-auth-title">Datos de autenticación</h3>
+      <div>
+        <label for="usuariopin">Pin</label>
+        <input type="password" id="usuariopin" name="usuariopin" value="{{ perfil.usuariopin }}" maxlength="10" autocomplete="off">
+      </div>
+
+      <!-- Si querés mostrar perfilid y serialaudit, que no sean editables o solo texto -->
+      <div>
+        <label>Perfil ID</label>
+        <input type="text" value="{{ perfil.perfilid }}" disabled>
+      </div>
+      <div>
+        <label>Serial Audit</label>
+        <input type="text" value="{{ perfil.usuarioserialaudit }}" disabled>
+      </div>
+    </section>
+
+   <div class="checkbox-group" role="group" aria-labelledby="organismos-label">
+        <label id="organismos-label" style="grid-column: 1 / -1; margin-bottom:8px; font-weight:700; color:#1e88e5;">Organismos a los que pertenece</label>
+        {% for org in organismos_todos %}
+          <label>
+            <input type="checkbox" name="organismos" value="{{ org.organismoid }}" {% if org.organismoid in organismos_usuario %}checked{% endif %}>
+            {{ org.organismonombre }} 
+          </label>
+        {% endfor %}
+      </div>
+
+    <button type="submit" aria-label="Guardar cambios en usuario">Guardar cambios</button>
+  </form>
+</div>
+{% endblock %}

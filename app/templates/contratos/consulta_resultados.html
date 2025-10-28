@@ -1,0 +1,73 @@
+{% extends 'contratos/home.html' %}
+
+{% block content %}
+<div class="container py-5">
+  <h2 class="mb-4">Resultados para expediente: <strong>{{ expediente }}</strong></h2>
+
+  {% if not contratos and not cantera_cateo_minas and not grupos_mineros %}
+    <div class="alert alert-warning">
+      No se encontraron contratos ni información relacionada para este expediente.
+    </div>
+  {% endif %}
+
+  {% if contratos %}
+    <h4>Contratos asociados</h4>
+    <div class="table-responsive mb-4">
+      <table class="table table-striped table-bordered">
+        <thead class="table-dark">
+          <tr>
+            <th>ID Relación</th>
+            <th>Explotación</th>
+            <th>Mineral</th>
+            <th>Exploración</th>
+            <th>IIA</th>
+            <th>Fecha Inicio</th>
+            <th>Fecha Fin</th>
+            <th>Pago Cañó</th>
+            <th>Regalías</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for contrato in contratos %}
+            <tr>
+              <td>{{ contrato.relacion_id_concesionario }}</td>
+              <td>{{ contrato.explotacion }}</td>
+              <td>{{ contrato.mineral_explotacion }}</td>
+              <td>{{ contrato.exploracion }}</td>
+              <td>{{ contrato.iia }}</td>
+              <td>{{ contrato.fecha_ini }}</td>
+              <td>{{ contrato.fecha_fin }}</td>
+              <td>{{ contrato.pago_cano|yesno:"Sí,No" }}</td>
+              <td>{{ contrato.pago_regalias|yesno:"Sí,No" }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% endif %}
+
+  {% if cantera_cateo_minas %}
+    <h4>Canteras / Cateos / Minas asociadas</h4>
+    <ul class="list-group mb-4">
+      {% for item in cantera_cateo_minas %}
+        <li class="list-group-item">
+          <strong>{{ item.nombre }}</strong> - {{ item.concesionario }} ({{ item.mineral }})<br>
+          Departamento: {{ item.departamento }} | Estado: {{ item.estado }} | Superficie: {{ item.superficie }} ha
+        </li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+
+  {% if grupos_mineros %}
+    <h4>Grupos Mineros asociados</h4>
+    <ul class="list-group mb-4">
+      {% for grupo in grupos_mineros %}
+        <li class="list-group-item">
+          <strong>{{ grupo.nombre }}</strong> - {{ grupo.concesionario }}<br>
+          Minas: {{ grupo.minas }} | Departamento: {{ grupo.departamento }} | Superficie: {{ grupo.superficie }} ha
+        </li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+</div>
+{% endblock %}

@@ -72,7 +72,20 @@ DATABASES = {
         'PASSWORD': 'hnl49sec',
         'HOST': 'localhost',  # o IP de tu servidor PostgreSQL
         'PORT': '5432',       # puerto por defecto
+    },
+    'catastro':{
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'catastro_test',
+        'USER': 'postgres',
+        'PASSWORD': 'veldspar',
+        'HOST': '192.168.0.4',  # o IP de tu servidor PostgreSQL
+        'PORT': '5432',  
     }
+    #DB_NAME=CatastroMineroSalta
+#DB_USER=postgres
+#DB_PASSWORD=veldspar
+#DB_HOST=192.168.0.4
+#DB_PORT=5432
 }
 
 '''DATABASES = {
@@ -113,7 +126,7 @@ USE_I18N = True
 
 USE_TZ = True
 LOGIN_URL = '/login/'
-LOGIN_REDIRECT_URL = '/exportaciones/nueva'
+LOGIN_REDIRECT_URL = '/home'
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
@@ -139,9 +152,12 @@ EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.office365.com'
+EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
+EMAIL_HOST_USER = 'secretariademineriadesalta@gmail.com'
+EMAIL_HOST_PASSWORD = 'coja wtju azwh kaxv'  # Contraseña de aplicación (segura)
+
+#EMAIL_HOST_USER = "mesadeayudasimsa@gmail.com"
+#EMAIL_HOST_PASSWORD = "rkfw qytu qntg auua"
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'siemsa.2025@hotmail.com'           # Cambia por tu email Hotmail real
-EMAIL_HOST_PASSWORD = 'jotspubkqmxfywcz'          # Tu contraseña (ideal: contraseña de aplicación si usás MFA)# NO tu contraseña real
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER

@@ -1,0 +1,272 @@
+{% extends 'contratos/home.html' %}
+
+{% block head %}
+<style>
+ 
+  .consulta-wrapper {
+    margin-left: 200px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 80vh;
+  }
+  .consulta-wrapper.collapsed {
+    margin-left: 50px;
+  }
+
+  .consulta-card {
+    background-color: #ffffff;
+    padding: 3rem 2.5rem;
+    border-radius: 1rem;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
+    max-width: 450px;
+    width: 100%;
+    text-align: center;
+  }
+
+  .consulta-card h1 {
+    font-size: 1.75rem;
+    margin-bottom: 1.5rem;
+    font-weight: 600;
+    color: #2c3e50;
+  }
+
+  .form-control-lg {
+    font-size: 1.125rem;
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+  }
+
+  .btn-consultar {
+    margin-top: 1rem;
+    font-size: 1.125rem;
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    width: 100%;
+    background: #0056b3;
+    border: none;
+    color: white;
+    transition: background 0.3s ease;
+  }
+
+  .btn-consultar:hover {
+    background: #004494;
+  }
+
+  .form-label {
+    font-weight: 500;
+    color: #495057;
+    text-align: left;
+    display: block;
+    margin-bottom: 0.5rem;
+  }
+  .container {
+    max-width: 1200px;
+    width: 85%;
+    margin-left: 200px;
+    background: white;
+    padding: 1rem 3rem;
+    border-radius: 12px;
+    box-shadow: 0 12px 35px rgb(0 0 0 / 0.12);
+  }
+  .container.collapsed{
+    margin-left: 50px;
+    width: 90%;
+
+  }
+  * {
+  box-sizing: border-box;
+}
+
+
+.card {
+  background: #fff;
+  border-radius: 6px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+  margin-bottom: 2rem;
+  overflow: hidden;
+  transition: 0.3s ease-in-out;
+}
+
+.card-header {
+  padding: .05rem .8rem;
+  color: #fff;
+}
+
+.card-header.primary { background-color: #243b55; }
+.card-header.success { background-color: #243b55; }
+.card-header.warning { background-color: #243b55; }
+
+.card-body {
+  padding: .5rem;
+}
+
+/* Tablas */
+.custom-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.custom-table th,
+.custom-table td {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
+}
+
+.custom-table th {
+  background-color: #f1f1f1;
+  font-weight: bold;
+}
+
+.custom-table tr:hover {
+  background-color: #f9f9f9;
+}
+
+/* Bloques informativos */
+.info-block {
+  border-left: 4px solid #243b55;
+  background-color: #f9fafb;
+  padding: 1rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+}
+
+.info-block h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1.1rem;
+  color: #0f172a;
+}
+.title-display{
+    display: flex;
+    flex-flow: row nowrap;
+    justify-content: space-between;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+{% if not serch %}
+<div class="consulta-wrapper" id="cards">
+  <div class="consulta-card">
+    <h1>Ingresar Número de Expediente</h1>
+    <form method="GET" action="">
+      <div class="mb-3 text-start">
+        <input type="text" class="form-control form-control-lg" id="expediente" name="expediente" 
+        placeholder="Ej: 10245" required>
+      </div>
+      <button type="submit" class="btn btn-consultar">Consultar</button>
+    </form>
+  </div>
+</div>
+{% endif %}
+
+
+    {% if serch %}
+
+<div class="container py-5">
+    <h2 class="mb-4">Resultados para expediente: <strong>{{ expediente }}</strong></h2>
+    
+    {% if not contratos and not cantera_cateo_minas and not grupos_mineros %}
+    <div class="alert alert-warning">
+      No se encontraron contratos ni información relacionada para este expediente.
+    </div>
+  {% endif %}
+
+  {% if contratos %}
+  <section class="card">
+    <div class="card-header primary">
+      <h2>Contratos Asociados</h2>
+    </div>
+    
+    <div class="card-body">
+      <table class="custom-table">
+        <thead>
+          <tr>
+            <th>ID Relación</th>
+            <th>Explotación</th>
+            <th>Mineral</th>
+            <th>Exploración</th>
+            <th>IIA</th>
+            <th>Inicio</th>
+            <th>Fin</th>
+            <th>Pago Canon</th>
+            <th>Regalías</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for contrato in contratos %}
+          <tr>
+            <td>{{ contrato.nombre_concesionario }}</td>
+            <td>{{ contrato.explotacion }}</td>
+            <td>{{ contrato.mineral_explotacion }}</td>
+            <td>{{ contrato.exploracion }}</td>
+            <td>{{ contrato.iia }}</td>
+            <td>{{ contrato.fecha_ini }}</td>
+            <td>{{ contrato.fecha_fin }}</td>
+            <td>{{ contrato.pago_cano|yesno:"Sí,No" }}</td>
+            <td>{{ contrato.pago_regalias|yesno:"Sí,No" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+  {% else %}
+  <section class="card">
+    <div class="card-header primary">
+      <h2>Contratos Asociados</h2>
+    </div>
+    <div class="card-body">
+      <div class="info-block">
+        <p><strong>No tiene contratos asociados!!!</strong></p>
+      </div>
+    </div>
+  </section>
+  {% endif %}
+
+  {% if cantera_cateo_minas %}
+  <section class="card">
+    <div class="card-header success">
+      <h2>Canteras / Cateos / Minas Asociadas</h2>
+    </div>
+    <div class="card-body">
+      {% for item in cantera_cateo_minas %}
+      <div class="info-block">
+        <div class="title-display">
+            <h3>Nombre: {{ item.nombre }}</h3>
+            <h3>Tipo: {{item.tipo }}</h3>
+            <h3>Dueño</h3>
+        </div>
+        <p><strong>Concesionario:</strong> {{ item.concesionario }}</p>
+        <p><strong>Mineral:</strong> {{ item.mineral }} | <strong>Departamento:</strong> {{ item.departamento }}</p>
+        <p><strong>Estado:</strong> {{ item.estado }} | <strong>Superficie:</strong> {{ item.superficie }} ha</p>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  {% if grupos_mineros %}
+  <section class="card">
+    <div class="card-header warning">
+      <h2>Grupos Mineros Asociados</h2>
+    </div>
+    <div class="card-body">
+      {% for grupo in grupos_mineros %}
+      <div class="info-block">
+        <h3>{{ grupo.nombre }}</h3>
+        <p><strong>Concesionario:</strong> {{ grupo.concesionario }}</p>
+        <p><strong>Minas:</strong> {{ grupo.minas }} | <strong>Departamento:</strong> {{ grupo.departamento }}</p>
+        <p><strong>Superficie:</strong> {{ grupo.superficie }} ha</p>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+  {% endif %}
+{% endblock %}
+
+{% block script %}
+{% endblock %}

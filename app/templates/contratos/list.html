@@ -1,0 +1,264 @@
+{% extends 'contratos/home.html' %}
+  {% block head %}
+  <style>
+    
+
+    .container {
+      max-width: 1200px;
+      width: 80%;
+      margin: 20px;
+      margin-left: 200px;
+      background: white;
+      padding: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    
+    .container.collapsed{
+      width: 90%;
+      margin-left: 50px;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 0.6rem;
+      margin-bottom: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+
+    th, td {
+      padding: 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid #ddd;
+    }
+
+    th {
+      background-color: #f2f2f2;
+      text-transform: uppercase;
+      font-weight: bold;
+    }
+
+    .true {
+      color: green;
+      font-weight: bold;
+    }
+
+    .false {
+      color: red;
+      font-weight: bold;
+    }
+
+    tr:hover {
+      background-color: #f5f5f5;
+    }
+    
+  
+   .detalle-row {
+    background-color: #f8f9fa;
+  }
+
+  .detalle-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 10px;
+    padding: 10px;
+    font-size: 0.95em;
+  }
+
+  .detalle-grid div {
+    padding: 5px;
+    background-color: #ffffff;
+    border-radius: 6px;
+    box-shadow: 0 0 3px rgba(0, 0, 0, 0.1);
+  }
+
+  </style>
+
+  <style>
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.pagination button {
+  padding: 5px 10px;
+}
+</style>
+{% endblock %}
+
+
+
+
+  {% block content %}
+      <div class="container" id="cards">
+          <h1>Lista de Contratos</h1>
+          
+          <input type="text" id="searchInput" placeholder="Buscar por ID, concesionario, mineral...">
+          
+          <table id="contractsTable">
+              <thead>
+                  <tr>
+                      <th>ID</th>
+                      <th>Exp</th>
+                      <th>Nombre</th>
+                      <th>Tipo</th>
+                      <th>Concesionario</th>
+                      <th>Can</th>
+                      <th>Reg</th>
+                      <th>Comp</th>
+                      <th>activo</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for contrato in contratos %}
+                      <tr>
+                        <td>{{ contrato.id }}</td>
+                        <td>{{ contrato.nro_expediente }}</td>
+                        <td>{{ contrato.nro_expediente }}</td>
+                        <td>{{ contrato.nro_expediente }}</td>
+                        <td>{{ contrato.relacion_id_concesionario }}</td>
+                        <td class="{{ contrato.pago_cano|yesno:'true,false' }}">{{ contrato.pago_cano|yesno:'✔️,❌' }}</td>
+                        <td class="{{ contrato.pago_regalias|yesno:'true,false' }}">{{ contrato.pago_regalias|yesno:'✔️,❌' }}</td>
+                        <td class="{{ contrato.opcion_compra|yesno:'true,false' }}">{{ contrato.opcion_compra|yesno:'✔️,❌' }}</td>
+                        <td class="{{ contrato.activo|yesno:'true,false' }}">{{ contrato.activo|yesno:'✔️,❌' }}</td>
+                        <td>
+                          <button class="btn btn-sm btn-primary" onclick="toggleDetails({{ contrato.id }})">Detalles</button>
+                        </td>
+                      </tr>
+
+                      <tr id="detalle-{{ contrato.id }}" class="detalle-row" style="display: none;">
+                      <td colspan="8">
+                        <div class="detalle-grid">
+                          <div><strong>Explotación:</strong> {{ contrato.explotacion }}</div>
+                          <div><strong>Mineral Explotación:</strong> {{ contrato.mineral_explotacion }}</div>
+                          <div><strong>Exploración:</strong> {{ contrato.exploracion }}</div>
+                          <div><strong>IIA:</strong> {{ contrato.iia }}</div>
+                          <div><strong>Fecha Inicio:</strong> {{ contrato.fecha_ini }}</div>
+                          <div><strong>Fecha Fin:</strong> {{ contrato.fecha_fin }}</div>
+                        </div>
+                      </td>
+                    </tr>
+                      {% empty %}
+                      <tr><td colspan="8">No hay contratos registrados.</td></tr>
+                      {% endfor %}
+                </tbody>
+            </table>
+            <div id="paginationControls" class="pagination">
+  <button onclick="cambiarPagina(-1)">Anterior</button>
+  <span id="currentPageInfo"></span>
+  <button onclick="cambiarPagina(1)">Siguiente</button>
+</div>
+        </div>
+{% endblock %}
+
+
+
+  {% block script %}
+  <script>
+let paginaActual = 1;
+let totalPaginas = 1;
+
+function buscarContratos(pagina = 1) {
+  const query = document.getElementById('searchInput').value;
+
+  fetch(`?q=${encodeURIComponent(query)}&page=${pagina}`, {
+    headers: {
+      'X-Requested-With': 'XMLHttpRequest'
+    }
+  })
+  .then(response => response.json())
+  .then(data => {
+    const tbody = document.getElementById('contractsBody');
+    tbody.innerHTML = '';
+
+    if (data.contratos.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7">No se encontraron resultados.</td></tr>';
+    } else {
+      data.contratos.forEach(c => {
+        tbody.innerHTML += `
+          <tr>
+            <td>${c.id}</td>
+            <td>${c.nro_expediente}</td>
+            <td>${c.concesionario}</td>
+            <td>${c.pago_cano ? '✔️' : '❌'}</td>
+            <td>${c.pago_regalias ? '✔️' : '❌'}</td>
+            <td>${c.opcion_compra ? '✔️' : '❌'}</td>
+            <td>${c.activo ? '✔️' : '❌'}</td>
+          </tr>
+        `;
+      });
+    }
+
+    // Actualizar controles de paginación
+    paginaActual = data.current_page;
+    totalPaginas = data.num_pages;
+    actualizarControlesPaginacion();
+  });
+}
+
+function actualizarControlesPaginacion() {
+  const pageInfo = document.getElementById('currentPageInfo');
+  pageInfo.textContent = `Página ${paginaActual} de ${totalPaginas}`;
+
+  document.querySelector("#paginationControls button:first-child").disabled = (paginaActual === 1);
+  document.querySelector("#paginationControls button:last-child").disabled = (paginaActual === totalPaginas);
+}
+
+function cambiarPagina(offset) {
+  const nuevaPagina = paginaActual + offset;
+  if (nuevaPagina >= 1 && nuevaPagina <= totalPaginas) {
+    buscarContratos(nuevaPagina);
+  }
+}
+
+// Buscar automáticamente al cargar
+document.addEventListener('DOMContentLoaded', () => {
+  buscarContratos();
+});
+</script>
+  <script>
+  function toggleDetails(id) {
+    const row = document.getElementById('detalle-' + id);
+    if (row.style.display === 'none') {
+      row.style.display = 'table-row';
+    } else {
+      row.style.display = 'none';
+    }
+  }
+</script>
+  <script>
+      const searchInput = document.getElementById("searchInput");
+      const tableRows = document.querySelectorAll("#contractsTable tbody tr:not(.detalle-row)");
+      
+      searchInput.addEventListener("keyup", function() {
+          const query = searchInput.value.toLowerCase();
+          tableRows.forEach(row => {
+    const text = row.textContent.toLowerCase();
+    const visible = text.includes(query);
+    row.style.display = visible ? "" : "none";
+
+    // Ocultar también su fila de detalle si existe
+    const detalleRow = document.getElementById(`detalle-${row.children[0]?.textContent.trim()}`);
+    if (detalleRow) {
+        detalleRow.style.display = visible ? "none" : "none";  // siempre ocultar al filtrar
+    }
+});
+        });
+        </script>
+
+
+{% endblock %}

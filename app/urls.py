@@ -7,7 +7,6 @@ urlpatterns = [
     path('logout/', views.custom_logout, name='logout'),
     path('home/', views.home, name='home'),
     path('paises/', views.paises, name='pais'),
-    path('administracion/', views.gestion_usuarios, name='admin_users'),
     path('editar-usuario/', views.editar_usuario, name='editar_usuario'),
     path('usuarios/eliminar/<int:pk>/', views.eliminar_usuario, name='eliminar_usuario'),
     path('registrar-pais/', views.registrar_pais, name='registrar_pais'),
@@ -53,4 +52,21 @@ urlpatterns = [
 
     path('reset/done/', auth_views.PasswordResetCompleteView.as_view(template_name='registration/password_reset_complete.html'), name='password_reset_complete'),
     path("exportaciones/duplicadas/pdf/", views.exportaciones_duplicadas_pdf, name="exportaciones_duplicadas_pdf"),
+
+    path('contratos/', views.contratos_view, name='contratos'),
+    path('contratos-list/', views.lista_contratos, name='lista_contratos'),
+    path('contratos-list/new', views.crear_contrato, name='create_new'),
+    path('verificar-expediente/<str:nro>/', views.verificar_expediente, name='verificar_expediente'),
+    path('contratos/serch', views.consultar_contratos_por_expediente, name='serch'),
+     path('consulta-expediente/', views.consulta_expediente_view, name='consulta_expediente'),
+
+    path('administration/', views.admin_home, name='administration'),
+    path('ajax/check-username/', views.check_username, name='check_username'),
+    path('administrations/users/create',views.crear_usuario,name='crear_usuario'),
+    path('usuarios/<int:user_id>/data/', views.get_usuario_data, name='usuario_data'),
+    path('usuarios/<int:user_id>/activar-deshabilitar/', views.toggle_usuario_activo, name='usuario_toggle_activo'),
+    path('usuarios/<int:user_id>/blanquear/', views.blanquear_contraseña, name='usuario_blanquear_password'),
+    path('usuarios/<int:user_id>/editar/', views.editar_usuario_view, name='usuario_editar'),
+
+
 ]

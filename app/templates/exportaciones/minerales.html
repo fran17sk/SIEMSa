@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "exportaciones/base.html" %}
 {% load static %}
 {% block head %}
   <style>
@@ -263,10 +263,7 @@
     from { opacity: 0; transform: translateY(-20px); }
     to { opacity: 1; transform: translateY(0); }
   }
-
-
   </style>
-
 {% endblock %}
 
 {% block content %}
@@ -274,33 +271,31 @@
 <div id="modal" class="modal">
   <div class="modal-content">
     <span class="close">&times;</span>
-    <h2>Registrar nueva Empresa | Productor Minero</h2>
-    <form id="productorForm">
-      <label for="nombreProductor">Nombre de la Empresa</label>
-      <input type="text" id="nombreProductor" name="nombreProductor" placeholder="Ej: Borax" required />
+    <h2>Registrar nuevo mineral</h2>
+    <form id="mineralForm">
+      <label for="nombreMineral">Nombre del mineral</label>
+      <input type="text" id="nombreMineral" name="nombreMineral" placeholder="Ej: Litio" required />
       <button type="submit" class="btn-registrar">Registrar</button>
     </form>
   </div>
 </div>
-
 <!-- MODAL PARA EDITAR MINERAL -->
-<div id="modalEditarProductor" class="modal">
+<div id="modalEditarMineral" class="modal">
   <div class="modal-content">
     <span class="close" id="cerrarModalEditar">&times;</span>
-    <h2>Editar Productor | Empresa</h2>
-    <form id="editarProductorForm">
-      <input type="hidden" id="productorIdEditar" name="id">
-      <label for="nombreEditar">Nombre de la Empresa</label>
+    <h2>Editar Mineral</h2>
+    <form id="editarMineralForm">
+      <input type="hidden" id="mineralIdEditar" name="id">
+      <label for="nombreEditar">Nombre del Mineral</label>
       <input type="text" id="nombreEditar" name="nombre" required>
       <button type="submit" class="btn-registrar">Actualizar</button>
     </form>
   </div>
 </div>
 
-
     <div class="table-container">
       <div class="table-header">
-        <h2>Listado de Productores Mineros</h2>
+        <h2>Listado de Minerales Exportados</h2>
         <div style="display: flex; gap: 0.5rem; align-items: center;">
         <input 
           type="text" 
@@ -318,19 +313,19 @@
         <thead>
           <tr>
             <th>ID</th>
-            <th>Nombre del Productor</th>
+            <th>Nombre del Mineral</th>
+            <th>Observaciones</th>
             <th>Acciones</th>
           </tr>
         </thead>
         <tbody id="tableBody">
-          {% for productor in productores %}
+          {% for mineral in minerales %}
           <tr>
-            <td>{{ productor.id_productor_min }}</td>
-            <td>{{ productor.nom_productor_min }}</td>
+            <td>{{ mineral.id_min }}</td>
+            <td>{{ mineral.nom_min }}</td>
+            <td>{{ mineral.coment_min }}</td>
             <td class="actions">
-            <button onclick="abrirModalEditar({{ productor.id_productor_min }}, '{{ productor.nom_productor_min }}')"><i class="fa fa-pencil"></i></button>
-
-              
+              <button onclick="abrirModalEditar({{ mineral.id_min }}, '{{ mineral.nom_min }}')"><i class="fa fa-pencil"></i></button>
             </td>
           </tr>
           {% empty %}
@@ -343,9 +338,10 @@
     </div>
 
 
-  {% endblock %}
-  {% block script %}
+    
 
+{% endblock %}
+  {% block script %}
 <script>
     const searchInput = document.getElementById('searchInput');
     const tableBody = document.getElementById('tableBody');
@@ -353,11 +349,10 @@
     searchInput.addEventListener('input', function () {
       const filter = this.value.toLowerCase();
 
-      // Recorrer todas las filas
       Array.from(tableBody.getElementsByTagName('tr')).forEach(row => {
-        const productorName = row.cells[1].textContent.toLowerCase(); // nombre del productor en la columna 2
+        const paisNombre = row.cells[1].textContent.toLowerCase(); // columna nombre país
 
-        if (productorName.includes(filter)) {
+        if (paisNombre.includes(filter)) {
           row.style.display = '';
         } else {
           row.style.display = 'none';
@@ -373,41 +368,31 @@
   // Cargar íconos Lucide
   lucide.createIcons();
 </script>
-
-
 <script>
   const modal = document.getElementById("modal");
   const openBtn = document.getElementById("openModalBtn");
   const closeBtn = document.querySelector(".close");
-  const productorForm = document.getElementById("productorForm");
+  const mineralForm = document.getElementById("mineralForm");
 
-  // Abrir modal
   openBtn.addEventListener("click", () => {
-    modal.style.display = "block";
+    modal.style.display = "block"
+    document.getElementById("nombreMineral").focus()
   });
-
-  // Cerrar con X
-  closeBtn.addEventListener("click", () => {
-    modal.style.display = "none";
-  });
-
-  // Cerrar haciendo click afuera
+  closeBtn.addEventListener("click", () => modal.style.display = "none");
   window.addEventListener("click", (e) => {
-    if (e.target === modal) {
-      modal.style.display = "none";
-    }
+    if (e.target === modal) modal.style.display = "none";
   });
 
-  productorForm.addEventListener("submit", (e) => {
+  mineralForm.addEventListener("submit", (e) => {
     e.preventDefault();
-    const nombre = document.getElementById("nombreProductor").value.trim();
+    const nombre = document.getElementById("nombreMineral").value.trim();
 
     if (!nombre) {
-      Swal.fire("Campo vacío", "El nombre de la Empresa es obligatorio.", "warning");
+      Swal.fire("Campo vacío", "El nombre del mineral es obligatorio.", "warning");
       return;
     }
 
-    fetch("/registrar-productor/", {
+    fetch("/registrar-mineral/", {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
@@ -418,12 +403,12 @@
     .then(res => res.json())
     .then(data => {
   if (data.success) {
-    Swal.fire("¡Registrado!", `Empresa "${data.nombre}" registrada correctamente.`, "success")
+    Swal.fire("¡Registrado!", `Mineral "${data.nombre}" guardado correctamente.`, "success")
       .then(() => {
         location.reload();  // Recarga la página cuando se cierra el alert
       });
     modal.style.display = "none";
-    paisForm.reset();
+    mineralForm.reset();
   } else {
     Swal.fire("Error", data.error, "error");
   }
@@ -449,13 +434,15 @@
     return cookieValue;
   }
 
-const modalEditar = document.getElementById("modalEditarProductor");
+
+
+const modalEditar = document.getElementById("modalEditarMineral");
 const cerrarModalEditar = document.getElementById("cerrarModalEditar");
-const editarForm = document.getElementById("editarProductorForm");
+const editarForm = document.getElementById("editarMineralForm");
 
 // Función para abrir el modal con los datos del mineral
 function abrirModalEditar(id, nombre) {
-  document.getElementById("productorIdEditar").value = id;
+  document.getElementById("mineralIdEditar").value = id;
   document.getElementById("nombreEditar").value = nombre;
   modalEditar.style.display = "block";
 }
@@ -470,7 +457,7 @@ window.onclick = (e) => {
 editarForm.addEventListener("submit", function(e) {
   e.preventDefault();
 
-  const id = document.getElementById("productorIdEditar").value;
+  const id = document.getElementById("mineralIdEditar").value;
   const nombre = document.getElementById("nombreEditar").value.trim().toUpperCase();
 
   if (!nombre) {
@@ -478,7 +465,7 @@ editarForm.addEventListener("submit", function(e) {
     return;
   }
 
-  fetch("/editar-productor/", {
+  fetch("/editar-mineral/", {
     method: "POST",
     headers: {
       "X-CSRFToken": getCookie("csrftoken"),
@@ -489,7 +476,7 @@ editarForm.addEventListener("submit", function(e) {
     .then(res => res.json())
     .then(data => {
       if (data.success) {
-        Swal.fire("Actualizado", `Productor actualizado a "${data.nombre}".`, "success")
+        Swal.fire("Actualizado", `Mineral actualizado a "${data.nombre}".`, "success")
           .then(() => location.reload());
         modalEditar.style.display = "none";
       } else {
@@ -498,8 +485,5 @@ editarForm.addEventListener("submit", function(e) {
     })
     .catch(() => Swal.fire("Error", "Ocurrió un error inesperado.", "error"));
 });
-  
 </script>
-
-  {% endblock %}
-  
+{% endblock %}

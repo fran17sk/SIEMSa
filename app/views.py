@@ -1,3 +1,26 @@
+from django.contrib.auth import authenticate, login
+from django.shortcuts import render, redirect
+from django.contrib.auth.models import User
+from django.shortcuts import render, redirect
+from django.views.generic import ListView
+from django.contrib import messages
+from .forms import ContratosForm
+from django.http import JsonResponse
+from .models import *
+from .models_catastro import *
+from django.utils.crypto import get_random_string
+from email.mime.image import MIMEImage
+from django.core.mail import EmailMultiAlternatives
+from django.core.mail import EmailMessage
+import json
+import os
+from django.db.models import OuterRef, Subquery
+import json
+import uuid
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from .models import Contratos
+from datetime import datetime
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
@@ -16,6 +39,7 @@ from .forms import MineralForm
 from django.db.models import Sum, Q, Prefetch
 from django.core.paginator import Paginator
 from django.shortcuts import render
+from django.core.mail import send_mail
 
 from datetime import datetime
 from collections import defaultdict
@@ -23,6 +47,8 @@ import json
 import locale
 import tempfile
 import io
+from django.db.models import F
+from django.utils import timezone
 
 # ReportLab - PDF
 from reportlab.lib.pagesizes import letter, landscape, A4, A3
@@ -55,13 +81,43 @@ from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.contrib.auth.decorators import user_passes_test
 
+import unicodedata
+from difflib import get_close_matches
+from django.http import JsonResponse
+from django.views.decorators.http import require_GET
+import pandas as pd
+from django.views.decorators.csrf import csrf_exempt
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+from django.urls import reverse_lazy
+from django.contrib.auth.views import PasswordChangeView
+import random
+import string
+from django.contrib.auth.hashers import make_password
+from django.db import transaction
+import secrets
+from django.views.generic import CreateView
+from .models import PerfilUsuario, OrganismoUsuario
+from datetime import date, timedelta
+
+from django.db import connections
+from django.db.utils import OperationalError
+from django.core import serializers
+from django.db.models import Subquery, OuterRef, Value
+from django.db.models.functions import Cast
+from django.db.models import UUIDField
+
 from django.http import HttpResponse
-from django.db import connection
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from io import BytesIO
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
-from reportlab.lib.styles import getSampleStyleSheet
-
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Image
+from django.templatetags.static import static
+from django.db.models import OuterRef, Exists
+import uuid
+from openpyxl.utils import get_column_letter
+import csv
+from django.db import connection
 
 def group_required(group_names):
     def in_groups(u):
@@ -111,20 +167,20 @@ def home(request):
 @login_required(login_url='/login/')
 def paises(request):
     paises = Pais.objects.all().order_by('nom_pais')  # ordenado alfabéticamente
-    return render(request, 'Paises.html', {'paises': paises})
+    return render(request, 'exportaciones/Paises.html', {'paises': paises})
 
 
 @login_required(login_url='/login/')
 def productores_min(request):
     productores = ProdMinero.objects.all().order_by('nom_productor_min')
-    return render(request, 'productores.html', {'productores': productores})
+    return render(request, 'exportaciones/productores.html', {'productores': productores})
 
 
 
 @login_required(login_url='/login/')
 def minerales_list(request):
     minerales = Mineral.objects.all().order_by('-id_min')
-    return render(request, 'minerales.html', {'minerales': minerales})
+    return render(request, 'exportaciones/minerales.html', {'minerales': minerales})
 
 def mineral_create(request):
     if request.method == "POST":
@@ -134,14 +190,14 @@ def mineral_create(request):
             return redirect('minerales_list')
     else:
         form = MineralForm()
-    return render(request, 'minerales_create_modal.html', {'form': form})
+    return render(request, 'exportaciones/minerales_create_modal.html', {'form': form})
 
 def mineral_delete(request, pk):
     mineral = get_object_or_404(Mineral, pk=pk)
     if request.method == "POST":
         mineral.delete()
         return redirect('minerales_list')
-    return render(request, 'minerales_delete_modal.html', {'mineral': mineral})
+    return render(request, 'exportaciones/minerales_delete_modal.html', {'mineral': mineral})
 
 
 
@@ -194,7 +250,7 @@ def new_exportacion(request,exportacion_id=None):
     else:
         id_ultima_exportacion = ultima_exportacion.id_export
 
-    return render(request, 'new_exportacion.html', {
+    return render(request, 'exportaciones/new_exportacion.html', {
         'empresas': empresas,
         'minerales': minerales,
         'paises': paises,
@@ -272,7 +328,7 @@ def edit_exportacion(request, id_export):
         'paises': Pais.objects.all(),
         'minerales': Mineral.objects.all(),
     }
-    return render(request, 'edit_exportacion.html', context)
+    return render(request, 'exportaciones/edit_exportacion.html', context)
 
 def exportacion_list(request):
     search = request.GET.get("search", "").strip()
@@ -320,7 +376,7 @@ def exportacion_list(request):
         return JsonResponse({"exportaciones": data})
 
     # 👉 Render normal
-    return render(request, 'exportaciones.html', {
+    return render(request, 'exportaciones/exportaciones.html', {
         'page_obj': page_obj,
         'search': search,
     })
@@ -555,7 +611,7 @@ def dashboard_exportaciones(request):
         'anios': [a.year for a in anios],
     }
 
-    return render(request, 'graficos.html', context)
+    return render(request, 'exportaciones/graficos.html', context)
 
 
 def dashboard(request):
@@ -572,7 +628,7 @@ def dashboard(request):
         'total_exportaciones' : Exportacion.objects.filter(Estado_anulacion=False).count(),
         'minerales':minerales
     }
-    return render(request, 'dashboard.html',context)
+    return render(request, 'exportaciones/dashboard.html',context)
 
 
 def datos_toneladas_exportadas(request):
@@ -1794,3 +1850,481 @@ def exportaciones_duplicadas_pdf(request):
     # Generar PDF
     doc.build(elements)
     return response
+
+
+
+    ################################################CONTRATOS######################################################
+def contratos_view(request):
+    if request.method == 'POST':
+        form = ContratosForm(request.POST)
+        if form.is_valid():
+            form.save()
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({'success': True, 'message': 'Contrato creado correctamente.'})
+            messages.success(request, 'Contrato creado correctamente.')
+            return redirect('contrato_create')
+        else:
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'errors': form.errors})
+            messages.error(request, 'Por favor corrige los errores en el formulario.')
+    else:
+        form = ContratosForm()
+        concesionarios = Concesionarios.objects.using('catastro').all().order_by('concesionario')
+        return render(request, 'contratos/new.html', {'form': form , 'concesionarios':concesionarios})
+
+
+def lista_contratos(request):
+    print('actualizando estados')
+    today = timezone.now().date()
+
+    # Contratos actualmente vigentes → activo = True
+    Contratos.objects.filter(fecha_ini__lte=today, fecha_fin__gte=today).update(activo=True)
+
+    # Contratos no vigentes (ya finalizaron o aún no comenzaron) → activo = False
+    Contratos.objects.exclude(fecha_ini__lte=today, fecha_fin__gte=today).update(activo=False)
+    print('actualizados')
+
+
+    search = request.GET.get('q', '').strip()
+    page_number = request.GET.get('page', 1)
+
+    
+    subquery = Simsaexpedientescontratos.objects.filter(
+        id_contrato=OuterRef('pk')
+    ).order_by('id').values('nro_expediente')[:1]
+
+    contratos = Contratos.objects.annotate(
+        nro_expediente=Subquery(subquery)
+    ).order_by('id')
+    
+    if search:
+        contratos = contratos.filter(
+            relacion_id_concesionario__icontains=search
+        ) | contratos.filter(
+            id__icontains=search
+        ) | contratos.filter(
+            expedientes__nro_expediente__icontains=search
+        ).distinct()
+
+    paginator = Paginator(contratos, 10)  # 10 contratos por página
+    page_obj = paginator.get_page(page_number)
+
+    # Si es una solicitud AJAX, devolver JSON
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        data = []
+        for contrato in page_obj:
+            expediente = contrato.expedientes.first()  
+            data.append({
+                'id': contrato.id,
+                'nro_expediente': expediente.nro_expediente if expediente else '',
+                'concesionario': contrato.relacion_id_concesionario,
+                'pago_cano': contrato.pago_cano,
+                'pago_regalias': contrato.pago_regalias,
+                'opcion_compra': contrato.opcion_compra,
+                'activo': contrato.activo,
+            })
+
+        return JsonResponse({
+            'contratos': data,
+            'num_pages': paginator.num_pages,
+            'current_page': page_obj.number,
+        })
+
+    return render(request, 'contratos/list.html', {
+        'contratos': page_obj,
+        'search': search,
+    })
+
+
+def str_to_bool(value):
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        return value.strip().lower() in ['sí', 'si', 'true', '1']
+    return False
+
+def crear_contrato(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+
+            # Manejo de booleano 'activo'
+            activo = str(data.get('activo', '')).lower() == 'si'
+
+            contrato = Contratos.objects.create(
+                expediente=data.get('nro_expediente'),
+                id_concesionario=data.get('relacion_id_concesionario'),
+                paga_canon=data.get('pago_cano', False),
+                opcion_compra=data.get('opcion_compra', False),
+                mineral_explotacion=data.get('mineral_explotacion'),
+                activo=activo,
+                fecha_ini=data.get('fecha_ini') or None,
+                fecha_fin=data.get('fecha_fin') or None,
+                createby=data.get('createby', 'Cargador'),  # se setea "a mano"
+                createdate=data.get('createdate') or timezone.now().date()  # se setea "a mano"
+            )
+
+            return JsonResponse({'message': 'Contrato creado correctamente', 'id': contrato.id}, status=201)
+
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)
+
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+
+def consultar_contratos_por_expediente(request):
+    expediente = request.GET.get('expediente', '').strip()
+    contratos = []
+    cantera_cateo_minas = []
+    grupos_mineros = []
+
+    if expediente:
+        concesionario_subquery = Concesionarios.objects.using('catastro').filter(
+            concesionario=OuterRef('relacion_id_concesionario')
+        ).values('concesionario')[:1]
+        
+        contratos = Contratos.objects.filter(
+            id__in=Simsaexpedientescontratos.objects.using('catastro').filter(
+                nro_expediente__icontains=expediente
+            ).values_list('contrato_id', flat=True)
+        ).annotate(
+            nombre_concesionario=Subquery(concesionario_subquery)
+        )
+
+        cantera_cateo_minas = CanteraCateoMina.objects.using('catastro').filter(expediente__icontains=expediente)
+        for item in cantera_cateo_minas:
+            item.concesionario = item.concesionario.replace('"','')
+            item.concesionario = item.concesionario.replace('{','')
+            item.concesionario = item.concesionario.replace('}','')
+            item.mineral = item.mineral.replace('"','')
+            item.mineral = item.mineral.replace('{','')
+            item.mineral = item.mineral.replace('}','')
+
+        grupos_mineros = GrupoMinero.objects.using('catastro').filter(expediente__icontains=expediente)
+
+    context = {
+        'serch': True if expediente else False,
+        'expediente': expediente,
+        'contratos': contratos,
+        'cantera_cateo_minas': cantera_cateo_minas,
+        'grupos_mineros': grupos_mineros,
+    }
+    return render(request, 'contratos/serch.html', context)
+
+
+def consulta_expediente_view(request):
+    expediente = request.GET.get('expediente', '').strip()
+    contratos = []
+    cantera_cateo_minas = []
+    grupos_mineros = []
+
+    if expediente:
+        concesionario_subquery = Concesionarios.objects.using('catastro').filter(
+            concesionario=OuterRef('relacion_id_concesionario')
+        ).values('id')[:1]
+        
+        contratos = Contratos.objects.filter(
+            id__in=Simsaexpedientescontratos.objects.filter(
+                nro_expediente__icontains=expediente
+            ).values_list('contrato_id', flat=True)
+        ).annotate(
+            nombre_concesionario=Subquery(concesionario_subquery)
+        )
+        
+        cantera_cateo_minas = CanteraCateoMina.objects.using('catastro').filter(expediente__icontains=expediente)
+        grupos_mineros = GrupoMinero.objects.using('catastro').filter(expediente__icontains=expediente)
+        concesionarios = Concesionarios.objects.using('catastro').all().order_by('concesionario')
+        print('hola')
+        for item in concesionarios:
+            print('concesionario',item.concesionario)
+    context = {
+        'expediente': expediente,
+        'contratos': contratos,
+        'cantera_cateo_minas': cantera_cateo_minas,
+        'grupos_mineros': grupos_mineros,
+    }
+    return render(request, 'contratos/consulta_resultados.html', context)
+
+
+
+def verificar_expediente(request, nro):
+    expediente = None
+
+    try:
+        expediente = CanteraCateoMina.objects.using('catastro').get(expediente=nro)
+        estado = (expediente.estado or "").strip().lower()
+        nombre = expediente.nombre
+        if expediente.tipo == 'minas':
+            tipo = 'Mina'
+        elif expediente.tipo == 'canteras':
+            tipo = 'Cantera'
+        else:
+            tipo = expediente.tipo
+    except CanteraCateoMina.DoesNotExist:
+        try:
+            expediente = GrupoMinero.objects.using('catastro').get(expediente=nro)
+            estado = (expediente.estado or "").strip().lower()
+            nombre = expediente.nombre
+            tipo = 'Grupo Minero'
+
+        except GrupoMinero.DoesNotExist:
+            return HttpResponse(status=404)  # No encontrado en ninguna de las dos
+
+    
+
+    if estado == "vigente":
+        return JsonResponse({"nombre": nombre, "tipo": tipo}, status=200)
+    elif estado == "archivo":
+        return JsonResponse({"nombre": nombre, "tipo": tipo}, status=300)
+    else:
+        return HttpResponse("Estado desconocido", status=500)
+
+
+########################################ADMINISTRACION################################
+def admin_home(request):
+
+    query = request.GET.get('q', '')
+    usuarios = User.objects.all()
+    organismos = Organismo.objects.all()
+
+    if query:
+        usuarios = usuarios.filter(
+            Q(username__icontains=query) |
+            Q(email__icontains=query) |
+            Q(first_name__icontains=query) |
+            Q(last_name__icontains=query)
+        )
+
+    usuarios = usuarios.order_by('username')
+    return render(request, 'administracion/usuarios.html', {
+        'usuarios': usuarios,
+        'query': query,
+        'organismos':organismos
+    })
+
+def check_username(request):
+    username = request.GET.get('username', '').strip()
+    exists = User.objects.filter(username=username).exists()
+    return JsonResponse({'exists': exists})
+
+def crear_usuario(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        print(data)
+        username = data.get('username', '').strip()
+        password = data.get('usuariopass', '')
+        nombre = data.get('usuarionom', '').strip()
+        email = data.get('usuarioemail', '').strip()
+        celular = data.get('usuariocelular', '').strip()
+        organismos_ids = data.get('organismos', [])
+
+        # Validaciones
+        if not username or ' ' in username or User.objects.filter(username=username).exists():
+            return JsonResponse({'success': False, 'error': 'Usuario inválido o ya existe'})
+
+        # Crear usuario
+        user = User.objects.create_user(username=username, password=password, email=email, first_name=nombre)
+        user.save()  # Esto disparará tu signal para crear PerfilUsuario automáticamente
+
+        # Asignar organismos
+        organismos_asignados = []
+        for org_id in organismos_ids:
+            try:
+                org = Organismo.objects.get(organismoid=org_id)
+                OrganismoUsuario.objects.create(usuario=user, organismo=org)
+                organismos_asignados.append(org.organismonombre)
+            except Organismo.DoesNotExist:
+                continue  # Ignorar si no existe el organismo
+        try:
+            organismo_str = ", ".join(organismos_asignados) if organismos_asignados else "Ninguno asignado"
+
+            subject = f"Bienvenido/a al {getattr(settings, 'ORGANISMO', 'Secretaría de Minería y Energía')}"
+            message = (
+                f"Estimado/a {nombre},\n\n"
+                f"Le damos la bienvenida a la {getattr(settings, 'ORGANISMO', 'Secretaría de Minería y Energía')}.\n\n"
+                f"Puede acceder al sistema en la siguiente URL:\n"
+                f"{getattr(settings, 'SITE_URL', 'http://localhost:8000')}\n\n"
+                f"Sus credenciales de acceso son:\n"
+                f"Usuario: {username}\n"
+                f"Contraseña Temporal: {password} \n\n"
+                f"Organismo(s) asignado(s): {organismo_str}\n\n"
+                f"Por favor, conserve estos datos de manera segura.\n\n"
+                f"Atentamente,\n"
+                f"{getattr(settings, 'ORGANISMO', 'Secretaría de Minería y Energía')}"
+            )
+
+            send_mail(
+                subject,
+                message,
+                getattr(settings, 'DEFAULT_FROM_EMAIL', 'no-reply@mineria.gob.ar'),
+                [email],
+                fail_silently=False,
+            )
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': f'Usuario creado, pero no se pudo enviar el email: {str(e)}'})
+
+        return JsonResponse({'success': True})
+
+    return JsonResponse({'success': False, 'error': 'Método no permitido'})
+
+def get_usuario_data(request, user_id):
+    usuario = get_object_or_404(User, id=user_id)
+
+    # organismos asociados a este usuario
+    organismos_usuario_ids = list(usuario.organismos_usuario.values_list("organismo_id", flat=True))
+
+    # todos los organismos (opcional para dropdown)
+    todos_organismos = [
+        {
+            "id": o.organismoid,
+            "nombre": o.organismonombre,
+            "asociado": o.organismoid in organismos_usuario_ids
+        }
+        for o in Organismo.objects.all()
+    ]
+
+    # perfil
+    perfil = getattr(usuario, 'perfilusuario', None)
+
+    data = {
+        "success": True,
+        "user": {
+            "id": usuario.id,
+            "username": usuario.username,
+            "nombre": usuario.first_name + ' ' + usuario.last_name if usuario else '',
+            "email": usuario.email if perfil else usuario.email,
+            "celular": perfil.usuariocelular if perfil else "",
+            "organismos": organismos_usuario_ids
+        },
+        "todos_organismos": todos_organismos
+    }
+
+    return JsonResponse(data)
+
+@login_required
+def toggle_usuario_activo(request, user_id):
+    usuario = get_object_or_404(User, pk=user_id)
+    usuario.is_active = not usuario.is_active
+    usuario.save()
+    estado = "activado" if usuario.is_active else "desactivado"
+    messages.success(request, f"✅ Usuario {usuario.username} {estado}.")
+    return redirect('administration')
+
+@login_required
+@require_POST
+def editar_usuario_modal(request, user_id):
+    usuario = get_object_or_404(User, pk=user_id)
+    usuario.first_name = request.POST.get('first_name', '')
+    usuario.last_name = request.POST.get('last_name', '')
+    usuario.email = request.POST.get('email', '')
+    usuario.save()
+
+    messages.success(request, f"✏️ Usuario {usuario.username} actualizado correctamente.")
+    return redirect('administration')
+
+def editar_usuario_view(request, user_id):
+    usuario = get_object_or_404(User, pk=user_id)
+    perfil, _ = PerfilUsuario.objects.get_or_create(user=usuario)
+
+    if request.method == "POST":
+        try:
+            # Actualizar datos User
+            usuario.first_name = request.POST.get('first_name', usuario.first_name)
+            usuario.last_name = request.POST.get('last_name', usuario.last_name)
+            usuario.email = request.POST.get('email', usuario.email)
+            usuario.save()
+
+            # Actualizar datos PerfilUsuario
+            perfil.usuariopin = request.POST.get('usuariopin', perfil.usuariopin)
+            perfil.usuarioemail = request.POST.get('usuarioemail', perfil.usuarioemail)
+            perfil.usuarioestado = request.POST.get('usuarioestado', perfil.usuarioestado)
+            perfil.usuariocelular = request.POST.get('usuariocelular', perfil.usuariocelular)
+            perfil.usuarionom = request.POST.get('usuarionom', perfil.usuarionom)
+            perfil.save()
+
+            # Actualizar organismos
+            organismos_seleccionados = request.POST.getlist('organismos')
+
+            # Eliminamos todos los que no están seleccionados
+            OrganismoUsuario.objects.filter(usuario=usuario).exclude(
+                organismo_id__in=organismos_seleccionados
+            ).delete()
+
+            # Añadimos los nuevos seleccionados (si no existen)
+            for org_id in organismos_seleccionados:
+                org = Organismo.objects.filter(pk=org_id).first()
+                if org:
+                    OrganismoUsuario.objects.get_or_create(usuario=usuario, organismo=org)
+
+            return JsonResponse({
+                "success": True,
+                "message": f"✏️ Usuario {usuario.username} actualizado correctamente."
+            })
+
+        except Exception as e:
+            return JsonResponse({
+                "success": False,
+                "error": str(e)
+            }, status=400)
+
+    return JsonResponse({
+        "success": False,
+        "error": "Método no permitido"
+    }, status=405)
+@login_required
+def blanquear_contraseña(request, user_id):
+    usuario = get_object_or_404(User, pk=user_id)
+    nueva_password = get_random_string(length=8)
+    usuario.set_password(nueva_password)
+    usuario.save()
+    send_mail(
+                subject='🔐 Recuperación de contraseña – Sistema de la Secretaria de Mineria',
+                message=(
+                    f"Estimado/a {usuario.username},\n\n"
+                    f"Desde la Secretaría de Minería y Energía de la Provincia de Salta le informamos que se ha generado una nueva contraseña temporal para su acceso al Sistema.\n\n"
+                    f"🔑 Nueva contraseña temporal: {nueva_password}\n\n"
+                    f"Por razones de seguridad, le recomendamos ingresar al sistema lo antes posible y modificar su contraseña desde su perfil.\n\n"
+                    f"Si usted no solicitó esta recuperación o tiene alguna dificultad para acceder, por favor comuníquese con nuestra Mesa de Ayuda escribiendo a: secretariademineriadesalta@gmail.com\n\n"
+                    f"Atentamente,\n"
+                    f"Secretaría de Minería y Energía\n"
+                    f"Gobierno de la Provincia de Salta"
+                ),
+                from_email=None,  # Usa DEFAULT_FROM_EMAIL si está configurado en settings.py
+                recipient_list=[usuario.email],
+                fail_silently=False,
+            )
+
+    try:
+        perfil = usuario.perfilusuario
+        perfil.debe_cambiar_password = True
+        perfil.save()
+    except PerfilUsuario.DoesNotExist:
+        pass  # Si no tiene perfil, no pasa nada
+
+    messages.success(request, f"🔐 Contraseña de {usuario.username} blanqueada. Se pedirá cambio en el próximo acceso.")
+    return redirect('administration')
+
+@login_required
+def editar_usuario(request, user_id):
+    # Implementá esto si querés un formulario de edición
+    messages.info(request, f"🛠️ Funcionalidad de edición aún no implementada.")
+    return redirect('administration')
+
+def generar_password_seguro(longitud=10):
+    chars = string.ascii_letters + string.digits + "!@#$%^&*"
+    return ''.join(secrets.choice(chars) for _ in range(longitud))
+
+def crear_usuario_view(request):
+    organismos = Organismo.objects.all()
+    context = {
+        'organismos':organismos
+    }
+    return render(request, 'administracion/crear_usuario.html',context)
+
+
+
+
+
+
+
+

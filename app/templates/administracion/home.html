@@ -1,12 +1,10 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
   <meta charset="UTF-8">
   <title>Sidebar Profesional</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
-
   <style>
     h1 {
       text-align: center;
@@ -326,8 +324,9 @@
       color: white;
     }
   </style>
+  {% block head %}
+  {% endblock %}
 </head>
-
 <body>
 
   <aside class="sidebar" id="sidebar">
@@ -344,18 +343,18 @@
         <i data-lucide="home"></i> <span>Inicio</span>
       </a>
       {% if request.user.groups.first.name == "Administrador" or request.user.groups.first.name == "Publicador" %}
-      {% endif %}
-      <a href="{% url 'exportacion' %}"
-          class="{% if request.resolver_match.url_name == 'exportacion' %}active{% endif %}" title="Exportaciones">
+        {% endif %}
+        <a href="{% url 'exportacion' %}"
+          class="{% if request.resolver_match.url_name == 'exportaciones' %}active{% endif %}" title="Exportaciones">
           <i data-lucide="truck"></i> <span>Exportaciones</span>
         </a>
         
-        <a href="{% url 'contratos' %}" class="{% if request.resolver_match.url_name == 'profile' %}active{% endif %}"
         
+        <a href="{% url 'contratos' %}" class="{% if request.resolver_match.url_name == 'profile' %}active{% endif %}"
         title="Minerales">
         <i data-lucide="handshake"></i> <span>Contratos</span>
       </a>
-      {% if request.user.groups.first.name == "Administrador" or request.user.groups.first.name == "Publicador" %}
+        {% if request.user.groups.first.name == "Administrador" or request.user.groups.first.name == "Publicador" %}
         {% endif %}
         <!-- Nueva sección Administración -->
         <a href="{% url 'administration' %}"
@@ -379,107 +378,18 @@
     </div>
   </aside>
 
-  <div style="flex: 1; ">
-    <div class="card-container" id="cards">
-      <!--
-  <div class="card">
-    <div class="card-icon">👨‍💻 </div>
-    <div class="card-title">Informatica</div>
-    <div class="card-desc">
-      Area de informatica de la Secretaria de Mineria y Energia
-    </div>
-    <a href="" class="card-btn">INGRESAR</a>
+  <div style="flex: 1;">
+    
+    
+    
+  {% block content %}
+  {% endblock %}
+
+
   </div>
   
-      <div class="card">
-    <div class="card-icon">💼</div>
-    <div class="card-title">Catastro Minero</div>
-    <div class="card-desc">
-      Registro de la información relacionada con las concesiones y derechos mineros en un determinado territorio.
-    </div>
-    <a href="#" class="card-btn">INGRESAR</a>
-  </div>
-  
-  <div class="card">
-    <div class="card-icon">🌐</div>
-    <div class="card-title">SIMSa</div>
-    <div class="card-desc">
-      Información relacionada con plataforma del SIMSa.
-    </div>
-    <a href="" class="card-btn">INGRESAR</a>
-  </div>
-  
-  <div class="card">
-    <div class="card-icon">💵</div>
-    <div class="card-title">Canon</div>
-    <div class="card-desc">
-       Retribución que el Estado percibe por el uso del suelo y subsuelo con fines mineros.
-    </div>
-    <a href="" class="card-btn">INGRESAR</a>
-  </div>
-
-  <div class="card">
-    <div class="card-icon">💻</div>
-    <div class="card-title">SIRGEN</div>
-    <div class="card-desc">
-      Plataforma integral de la administración pública, promoviendo una gestión más ágil, transparente y segura en el manejo de los expedientes.
-    </div>
-    <a href="" class="card-btn">INGRESAR</a>
-  </div>
-  <div class="card">
-    <div class="card-icon"><i class="fa fa-truck" aria-hidden="true"></i>
-  </div>
-    <div class="card-title">Registro de Proveedores</div>
-    <div class="card-desc">
-      Registro de Proveedores Mineros
-    </div>
-    <a href="" class="card-btn">INGRESAR</a>
-  </div>
-  <div class="card">
-    <div class="card-icon"><i class="fa fa-leaf" aria-hidden="true"></i></div>
-    <div class="card-title">Gestion Ambiente</div>
-    <div class="card-desc">
-      Gestion de informes de impacto Ambiental
-    </div>
-    <a href="#" class="card-btn">INGRESAR</a>
-  </div>
-  -->
-
-
-
-
-      <div class="card">
-        <div class="card-icon">📊</div>
-        <div class="card-title">Exportacion de Minerales</div>
-        <div class="card-desc">
-          Sistema para supervisar y controlar el envío de recursos minerales desde el territorio Salteño hacia el
-          mercado internacional.
-        </div>
-        <a href="{% url 'exportacion' %}" class="card-btn">INGRESAR</a>
-      </div>
-      <div class="card">
-        <div class="card-icon">🤝</div>
-        <div class="card-title">Contratos</div>
-        <div class="card-desc">
-          Registro de Contratos
-        </div>
-        <a href="{% url 'contratos' %}" class="card-btn">INGRESAR</a>
-      </div>
-      <div class="card">
-        <div class="card-icon">🔒</div>
-        <div class="card-title">Administración</div>
-        <div class="card-desc">
-          Acceso a solo personal de aministracion del Sistema
-        </div>
-        <a href="{% url 'administration'%}" class="card-btn">INGRESAR</a>
-      </div>
-
-    </div>
-
-  </div>
-
-  <script>
-    function toggleSidebar() {
+<script>
+  function toggleSidebar() {
       document.getElementById('sidebar').classList.toggle('open');
     }
 
@@ -504,22 +414,11 @@
       lucide.createIcons();
     }
 
-    // Aplicar el estado guardado al cargar la página
-    window.addEventListener('DOMContentLoaded', () => {
-      const sidebar = document.getElementById('sidebar');
-      const collapseBtnIcon = document.querySelector('.collapse-btn i');
-      const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+</script>
+<!-- SweetAlert2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-      if (isCollapsed) {
-        sidebar.classList.add('collapsed');
-        collapseBtnIcon.setAttribute('data-lucide', 'chevrons-right');
-      } else {
-        collapseBtnIcon.setAttribute('data-lucide', 'chevrons-left');
-      }
-
-      lucide.createIcons(); // Aplicar íconos al inicio
-    });
-  </script>
+  {% block script %}
+  {% endblock %}
 </body>
-
 </html>

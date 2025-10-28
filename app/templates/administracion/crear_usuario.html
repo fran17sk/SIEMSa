@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Crear Usuario</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+      padding: 2rem;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: auto;
+      background: #fff;
+      padding: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .form-group {
+      margin-bottom: 1rem;
+    }
+
+    label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 0.5rem;
+    }
+
+    input[type="text"],
+    input[type="email"],
+    input[type="tel"] {
+      width: 100%;
+      padding: 0.5rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+
+    .checkbox-group {
+      margin-top: 0.5rem;
+      padding-left: 1rem;
+    }
+
+    .checkbox-group label {
+      display: block;
+      font-weight: normal;
+      margin-bottom: 0.3rem;
+    }
+
+    .error-message {
+      color: red;
+      font-size: 0.9rem;
+      display: none;
+    }
+
+    .btn {
+      background-color: #28a745;
+      color: white;
+      padding: 0.6rem 1.2rem;
+      border: none;
+      border-radius: 4px;
+      font-size: 1rem;
+      float: right;
+      cursor: pointer;
+    }
+
+    .btn:hover {
+      background-color: #218838;
+    }
+
+    .clearfix::after {
+      content: "";
+      display: table;
+      clear: both;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h2>Crear Usuario</h2>
+  <form method="post" id="crearUsuarioForm">
+    {% csrf_token %}
+
+    <div class="form-group">
+      <label for="username">Nombre de Usuario *</label>
+      <input type="text" name="username" id="username" required>
+    </div>
+
+    <div class="form-group">
+      <label for="nombre_completo">Nombre Completo *</label>
+      <input type="text" name="nombre_completo" id="nombre_completo" required>
+    </div>
+
+    <div class="form-group">
+      <label for="email">Correo Electrónico *</label>
+      <input type="email" name="email" id="email" required>
+    </div>
+
+    <div class="form-group">
+      <label for="celular">Celular *</label>
+      <input type="tel" name="celular" id="celular" required pattern="[0-9\s\-\+()]{8,}">
+    </div>
+
+    <div class="form-group">
+      <label>Organismos *</label>
+      <div class="checkbox-group" id="checkboxGroup">
+        {% for organismo in organismos %}
+          <label>
+            <input type="checkbox" name="organismos" value="{{ organismo.organismoid }}">
+            {{ organismo.organismonombre }}
+          </label>
+        {% empty %}
+          <p>No hay organismos disponibles.</p>
+        {% endfor %}
+      </div>
+      <div class="error-message" id="error-organismos">Debe seleccionar al menos un organismo.</div>
+    </div>
+
+    <div class="form-group clearfix">
+      <button type="submit" class="btn">Crear Usuario</button>
+    </div>
+  </form>
+</div>
+
+<script>
+  const form = document.getElementById("crearUsuarioForm");
+  const checkboxes = document.querySelectorAll('input[name="organismos"]');
+  const errorOrganismos = document.getElementById("error-organismos");
+
+  form.addEventListener("submit", function(e) {
+    let oneChecked = false;
+    checkboxes.forEach(cb => {
+      if (cb.checked) oneChecked = true;
+    });
+
+    if (!oneChecked) {
+      e.preventDefault();
+      errorOrganismos.style.display = "block";
+    } else {
+      errorOrganismos.style.display = "none";
+    }
+  });
+</script>
+
+</body>
+</html>
