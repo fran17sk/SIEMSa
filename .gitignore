@@ -42,9 +42,9 @@ ENV/
 env/
 .venv/
 
-# Migrations (opcional: si no querés subir las migrations inicialmente)
-# **/migrations/
-# !**/migrations/__init__.py
+Migrations (opcional: si no querés subir las migrations inicialmente)
+**/migrations/
+!**/migrations/__init__.py
 
 # MyPy
 .mypy_cache/

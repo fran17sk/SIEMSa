@@ -247,13 +247,7 @@
   <a href="{% url 'vista_graficos_general' %}" class="{% if request.resolver_match.url_name == 'graficos' %}active{% endif %}" title="Gráficos">
     <i data-lucide="bar-chart-2"></i> <span>Gráficos</span>
   </a>
-  {% if request.user.groups.first.name == "Administrador" %}
-  <!-- Nueva sección Administración -->
-  <a href="{% url 'admin_users' %}" class="{% if request.resolver_match.url_name == 'admin_users' %}active{% endif %}" title="Administración">
-    <i data-lucide="settings"></i> <span>Administración</span>
-  </a>
-
-  {% endif %}
+  
 
 
   <a href="{% url 'logout' %}" title="Cerrar sesión">
