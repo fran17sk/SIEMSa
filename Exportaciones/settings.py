@@ -75,7 +75,7 @@ DATABASES = {
     },
     'catastro':{
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'catastro_test',
+        'NAME': 'CatastroMineroSalta',
         'USER': 'postgres',
         'PASSWORD': 'veldspar',
         'HOST': '192.168.0.4',  # o IP de tu servidor PostgreSQL

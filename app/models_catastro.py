@@ -2223,3 +2223,26 @@ class GrupoMinero(models.Model):
 
 
 ########################################################################################
+class Contratos(models.Model):
+    id_concesionario = models.CharField(max_length=255)
+    paga_canon = models.BooleanField()
+    ##explotacion = models.CharField(max_length=255)
+    mineral_explotacion = models.CharField(max_length=255)
+    ##exploracion = models.CharField(max_length=255)
+    ##iia = models.CharField(max_length=255)
+    activo = models.BooleanField()
+    fecha_ini = models.DateField(blank=True, null=True)
+    fecha_fin = models.DateField(blank=True, null=True)
+    #pago_regalias = models.BooleanField()
+    opcion_compra = models.BooleanField(default=False)
+    expediente = models.IntegerField(blank=True, null=True)
+    createby = models.TextField()
+    createdate = models.DateField()
+    updateby = models.TextField(blank=True, null=True)
+    updatedate = models.DateField(blank=True, null=True)
+    deleteby = models.TextField(blank=True, null=True)
+    deletedate = models.DateField(blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'contratos'

@@ -2,7 +2,8 @@
 from django.contrib.auth.forms import AuthenticationForm
 from django import forms
 
-from .models import Mineral, Contratos
+from .models import Mineral
+from .models_catastro import Contratos
 
 
 class MineralForm(forms.ModelForm):

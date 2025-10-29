@@ -19,7 +19,7 @@ import json
 import uuid
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from .models import Contratos
+from .models_catastro import Contratos
 from datetime import datetime
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
@@ -1951,7 +1951,7 @@ def crear_contrato(request):
             # Manejo de booleano 'activo'
             activo = str(data.get('activo', '')).lower() == 'si'
 
-            contrato = Contratos.objects.create(
+            contrato = Contratos.objects.using('catastro').create(
                 expediente=data.get('nro_expediente'),
                 id_concesionario=data.get('relacion_id_concesionario'),
                 paga_canon=data.get('pago_cano', False),

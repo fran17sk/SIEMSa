@@ -4,26 +4,6 @@ from django.contrib.auth.models import User
 from django.db.models import JSONField
 from django.utils.timezone import now
 
-class Contratos(models.Model):
-    id_concesionario = models.CharField(max_length=255)
-    paga_canon = models.BooleanField(default=False)
-    mineral_explotacion = models.CharField(max_length=255)
-    activo = models.BooleanField(default=True)
-    fecha_ini = models.DateField(blank=True, null=True)
-    fecha_fin = models.DateField(blank=True, null=True)
-    opcion_compra = models.BooleanField(default=False)
-    expediente = models.IntegerField(blank=True, null=True)
-    createby = models.CharField(max_length=255)
-    createdate = models.DateField(auto_now_add=True)
-    updateby = models.CharField(max_length=255, blank=True, null=True)
-    updatedate = models.DateField(auto_now=True)
-    deleteby = models.CharField(max_length=255, blank=True, null=True)
-    deletedate = models.DateField(blank=True, null=True)
-
-
-
-
-
 
 class Mineral(models.Model):
     id_min = models.AutoField(primary_key=True,unique=True)

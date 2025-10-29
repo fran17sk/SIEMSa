@@ -15,13 +15,13 @@
 </div>
 
 {% if request.resolver_match.url_name == 'vista_graficos_general' %}
-  {% include 'graficos_general.html' %}
+  {% include 'exportaciones/graficos_general.html' %}
 {% elif request.resolver_match.url_name == 'vista_graficos_toneladas' %}
-  {% include 'graficos_toneladas.html' %}
+  {% include 'exportaciones/graficos_toneladas.html' %}
 {% elif request.resolver_match.url_name == 'vista_graficos_fob' %}
-  {% include 'graficos_valor_fob.html' %}
+  {% include 'exportaciones/graficos_valor_fob.html' %}
 {% elif request.resolver_match.url_name == 'mapa_exportaciones' %}
-  {% include 'mapa_exportaciones.html' %}
+  {% include 'exportaciones/mapa_exportaciones.html' %}
 {% endif %}
 
 
