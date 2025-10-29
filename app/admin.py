@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Exportacion, MinExport, ProdMinero, Pais, Mineral
+from .models import Exportacion, MinExport, ProdMinero, Pais, Mineral,Organismo,OrganismoUsuario
 
 
 admin.site.register(Exportacion)
@@ -7,3 +7,5 @@ admin.site.register(MinExport)
 admin.site.register(ProdMinero)
 admin.site.register(Pais)
 admin.site.register(Mineral)
+admin.site.register(Organismo)
+admin.site.register(OrganismoUsuario)
