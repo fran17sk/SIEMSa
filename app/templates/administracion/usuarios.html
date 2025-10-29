@@ -503,7 +503,7 @@ input[type="text"], input[type="email"] {
           <input type="text" id="username" name="username" required>
         </div>
 
-        <div class="form-group password-group">
+        <div class="form-group password-group" id="password-group">
           <div class="form-section">
             <label for="usuariopass">Contraseña</label>
             <button type="button" class="btn-generate" id="generatePass">Generar</button>
@@ -513,7 +513,7 @@ input[type="text"], input[type="email"] {
           </div>
         </div>
 
-        <div class="form-group">
+        <div class="form-group" id="password-group-repeat">
           <label for="usuariopass_repeat">Repetir Contraseña</label>
           <input type="password" id="usuariopass_repeat" name="usuariopass_repeat">
         </div>
@@ -680,12 +680,16 @@ document.addEventListener("DOMContentLoaded", function () {
     btn.addEventListener("click", async () => {
       const userId = btn.dataset.userid;
       try {
+        userForm.reset();
         const res = await fetch(`/usuarios/${userId}/data/`);
         const data = await res.json();
         if (data.success) {
           modalTitle.textContent = "Editar Usuario";
           userForm.dataset.userid = userId;
-
+          if(data.user){
+            document.getElementById("password-group").style.display = 'none';
+            document.getElementById("password-group-repeat").style.display = 'none';
+          }
           document.getElementById("userId").value = data.user.id;
           document.getElementById("username").value = data.user.username;
           document.getElementById("usuarionom").value = data.user.nombre;
@@ -744,8 +748,7 @@ document.addEventListener("DOMContentLoaded", function () {
         Swal.fire({
           icon: 'success',
           title: userForm.dataset.userid ? 'Usuario actualizado correctamente' : 'Usuario creado correctamente',
-          timer: 2000,
-          showConfirmButton: false
+          showConfirmButton: True
         });
         userForm.reset();
         modalOverlay.style.display = "none";

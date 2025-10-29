@@ -2,7 +2,7 @@
 from django.contrib.auth.forms import AuthenticationForm
 from django import forms
 
-from .models import Mineral
+from .models import Mineral,User,Organismo
 from .models_catastro import Contratos
 
 
@@ -47,3 +47,20 @@ class ContratosForm(forms.ModelForm):
             ##'pago_regalias': forms.TextInput(attrs={'class': 'form-control'}),
         }
 
+class UserForm(forms.ModelForm):
+    class Meta:
+        model = User
+        fields = ['username', 'email', 'is_active', 'is_staff']
+
+class UserCreateForm(forms.ModelForm):
+    organismos = forms.ModelMultipleChoiceField(
+        queryset=Organismo.objects.all(),
+        widget=forms.CheckboxSelectMultiple,
+        required=False
+    )
+
+    password = forms.CharField(widget=forms.PasswordInput)
+
+    class Meta:
+        model = User
+        fields = ['username', 'email', 'is_active', 'is_staff', 'password']

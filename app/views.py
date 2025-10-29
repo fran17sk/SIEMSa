@@ -136,24 +136,52 @@ def formatear_fob(valor):
     return f"{valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
 
+class CambioPasswordObligatorioView(PasswordChangeView):
+    template_name = 'auth/obligatorio_password_change.html'
+    success_url = reverse_lazy('home')  # o donde desees redirigir
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        perfil = self.request.user.perfilusuario
+        perfil.debe_cambiar_password = False
+        perfil.save()
+        return response
+    
 @never_cache
 def custom_login(request):
     if request.user.is_authenticated:
         logout(request)
+
     if request.method == "POST":
         username = request.POST.get("username")
         password = request.POST.get("password")
         user = authenticate(request, username=username, password=password)
+
         if user:
             login(request, user)
-            return JsonResponse({"success": True, "redirect_url": settings.LOGIN_REDIRECT_URL})
+
+            try:
+                perfil = user.perfilusuario
+                if perfil.debe_cambiar_password:
+                    return JsonResponse({
+                        "success": True,
+                        "redirect_url": "/cambiar-password/"
+                    })
+            except PerfilUsuario.DoesNotExist:
+                pass  # O manejar el caso si el perfil no existe
+
+            return JsonResponse({
+                "success": True,
+                "redirect_url": settings.LOGIN_REDIRECT_URL
+            })
+
         else:
-            return JsonResponse({"success": False, "error": "Usuario o contraseña incorrectos"}, status=401)
+            return JsonResponse({
+                "success": False,
+                "error": "Usuario o contraseña incorrectos"
+            }, status=401)
 
-    
-    
-    return render(request, 'login.html')
-
+    return render(request, 'auth/login.html')
 
 def custom_logout(request):
     logout(request)
@@ -2228,10 +2256,11 @@ def editar_usuario_view(request, user_id):
 
     if request.method == "POST":
         try:
+            
             # Actualizar datos User
-            usuario.first_name = request.POST.get('first_name', usuario.first_name)
+            usuario.first_name = request.POST.get('usuarionom', usuario.first_name)
             usuario.last_name = request.POST.get('last_name', usuario.last_name)
-            usuario.email = request.POST.get('email', usuario.email)
+            usuario.email = request.POST.get('usuarioemail', usuario.email)
             usuario.save()
 
             # Actualizar datos PerfilUsuario

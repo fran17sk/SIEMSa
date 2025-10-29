@@ -1,0 +1,256 @@
+
+
+
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Iniciar Sesión - SIMSa</title>
+<style>
+  /* Reset básico */
+  * {
+    margin: 0; padding: 0; box-sizing: border-box;
+  }
+  html, body {
+    height: 100%;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  }
+  body {
+    display: flex;
+    height: 100vh;
+    color: #222;
+  }
+  html, body {
+    height: 100%;
+    overflow: hidden;
+    position: relative;
+}
+
+  /* Izquierda con fondo y logo */
+  .left-panel {
+    position: relative;
+    width: 70%;
+    background: url("{% static 'app/img/bg.jpg' %}") no-repeat center center;
+    background-size: cover;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  /* Logo encima, centrado y sin filtro */
+  .left-panel img {
+    position: absolute;
+    max-width: 60%;
+    z-index: 2;
+    user-select: none;
+}
+
+  /* Contenedor para centrar el logo sin que se vea oscuro */
+  .left-panel::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: transparent;
+    z-index: 1;
+  }
+
+  /* Derecha con formulario, sin fondo, centrado vertical y con padding */
+  .right-panel {
+    width: 35%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 4rem;
+  }
+.overlay-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  color: #ffffff;
+  padding: 20px 40px;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 12px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.5);
+}
+
+.overlay-text h1 {
+  font-size: 3em;
+  margin: 0;
+  letter-spacing: 3px;
+  font-weight: 700;
+}
+
+.overlay-text p {
+  font-size: 1.2em;
+  margin-top: 10px;
+  font-weight: 400;
+}
+
+  form {
+    width: 100%;
+    max-width: 380px;
+  }
+
+  .login-title {
+    font-size: 2.8rem;
+    font-weight: 700;
+    color: #000000;
+    margin-bottom: 0.4rem;
+    user-select: none;
+  }
+
+  .login-label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.4rem;
+    color: #333;
+  }
+
+  .login-input {
+    width: 100%;
+    padding: 0.7rem 1rem;
+    font-size: 1rem;
+    border: 1.5px solid #bbb;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    transition: border-color 0.3s ease;
+  }
+
+  .login-input:focus {
+    border-color: #1f2225;
+    outline: none;
+    box-shadow: 0 0 6px rgba(0, 64, 128, 0.4);
+  }
+
+  .login-button {
+    width: 100%;
+    padding: 0.9rem;
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: #fff;
+    background-color: #272b30;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+
+  .login-button:hover,
+  .login-button:focus {
+    background-color: #002a55;
+    outline: none;
+  }
+
+  .alert {
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.9rem;
+  }
+
+  .alert-error {
+    background-color: #f8d7da;
+    color: #842029;
+    border: 1px solid #f5c2c7;
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    body {
+      flex-direction: column;
+    }
+    .left-panel, .right-panel {
+      width: 100%;
+      height: 50vh;
+    }
+    .left-panel img {
+      max-width: 40%;
+    }
+    .right-panel {
+      padding: 2rem 1.5rem;
+      height: auto;
+    }
+  }
+
+</style>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body>
+  <div class="left-panel" aria-label="Logo SIMSa y fondo">
+    <div class="overlay-text">
+        <h1>SMDS</h1>
+        <p>SECRETARÍA DE MINERÍA Y ENERGÍA DE LA PROVINCIA DE SALTA</p>
+    </div>
+   
+  </div>
+  <div class="right-panel" role="main" aria-label="Formulario de inicio de sesión">
+    
+    <form id="login-form" method="post" novalidate>
+        {% csrf_token %}
+        
+        <h1 class="login-title">Iniciar Sesión</h1>
+        <label for="id_username" class="login-label">Usuario</label>
+        <input type="text" name="username" class="login-input" placeholder="Usuario" required>
+        
+        <label for="id_password" class="login-label">Contraseña</label>
+        <input type="password" name="password" class="login-input" placeholder="Contraseña" required>
+        
+        <button type="submit" class="login-button">Iniciar Sesión</button>
+    </form>
+
+
+
+  </div>
+
+  <script>
+document.getElementById('login-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    const formData = new FormData(this);
+
+    fetch("", {
+        method: "POST",
+        headers: {
+            "X-CSRFToken": document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: formData
+    })
+    .then(response => {
+        if (!response.ok) {
+            // Si status no es 200-299, leer json para mensaje de error
+            return response.json().then(data => {
+                throw new Error(data.error || 'Error del servidor');
+            });
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            window.location.href = data.redirect_url;
+        } else {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: data.error || 'Error al iniciar sesión',
+                scrollbarPadding: false,
+                heightAuto: false
+            });
+        }
+    })
+    .catch(error => {
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: error.message || 'Error del servidor',
+            scrollbarPadding: false,
+            heightAuto: false
+        });
+    });
+});
+</script>
+</body>
+</html>
