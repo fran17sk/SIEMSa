@@ -268,6 +268,13 @@
   {% endblock %}
 </main>
 
+
+
+{% block script %}
+  
+  {% endblock %}
+  <!-- SweetAlert2 CDN -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script> 
 <script>
   function toggleSidebar() {
     document.getElementById('sidebar').classList.toggle('open');
@@ -310,11 +317,5 @@ window.addEventListener('DOMContentLoaded', () => {
   lucide.createIcons(); // Aplicar íconos al inicio
 });
 </script>
-{% block script %}
-  
-  {% endblock %}
-  <!-- SweetAlert2 CDN -->
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script> 
-
 </body>
 </html>

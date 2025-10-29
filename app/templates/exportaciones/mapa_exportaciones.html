@@ -1,8 +1,4 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>Mapa de Exportaciones</title>
+{% load static %}
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <style>
         #map {
@@ -192,11 +188,11 @@
 
         function loadData(year = '', mineral = '') {
             axios.get(`/api/exportaciones/?year=${year}&mineral=${mineral}`).then(response => {
-                fetch('https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json')
+                fetch("{% static 'app/data/countries.geo.json' %}")
                     .then(res => res.json())
                     .then(worldData => {
                         const exportData = response.data;
-
+                        console.log(exportData);
                         const exportMap = {};
                         exportData.forEach(e => {
                             exportMap[e.pais.toLowerCase()] = {
@@ -206,6 +202,8 @@
                         });
 
                         worldData.features.forEach(f => {
+                            console.log(f.properties.name);
+
                             const name = f.properties.name.toLowerCase();
                             if (exportMap[name]) {
                                 f.properties.toneladas = exportMap[name].toneladas;
@@ -272,5 +270,3 @@ document.getElementById("btn-excel").addEventListener("click", function () {
     document.body.removeChild(link);
 });
 </script>
-</body>
-</html>
