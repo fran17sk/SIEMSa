@@ -1,0 +1,149 @@
+{% extends "simsa/home.html" %}
+
+{% block head %}
+<style>
+    .report-container {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 20px;
+        margin: 30px 60px;
+    }
+
+    .report-card {
+        background-color: #f8f9fa;
+        border-radius: 12px;
+        width: 300px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: 20px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .report-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 12px rgba(0,0,0,0.2);
+    }
+
+    .report-card h3 {
+        margin-bottom: 15px;
+        font-size: 1.2em;
+        text-align: center;
+    }
+
+    .report-buttons {
+        display: flex;
+        justify-content: center;
+        gap: 15px;
+    }
+
+    .report-buttons a {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        background-color: #158824;
+        color: white;
+        padding: 8px 12px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-size: 0.9em;
+        transition: background-color 0.2s;
+    }
+
+    .report-buttons a.pdf-btn {
+        background-color: #d9534f;
+    }
+
+    .report-buttons a:hover {
+        background-color: #10472d;
+    }
+
+    .report-buttons a.pdf-btn:hover {
+        background-color: #b52b27;
+    }
+
+    .report-buttons i {
+        font-size: 1.1em;
+    }
+
+    h1 {
+        text-align: center;
+        margin-top: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<h1>Generación de Reportes</h1>
+
+<div class="report-container">
+    <!-- Card de Usuarios -->
+    <div class="report-card">
+        <h3>Usuarios Admin de Empresas</h3>
+        <p style="text-align:center;">Genera un PDF o Excel con los usuarios administradores empresas</p>
+        <div class="report-buttons">
+            <a href="{% url 'usuarios_pdf' %}" target="_blank" class="pdf-btn">
+                <i class="fa fa-file-pdf-o"></i> <img src="https://upload.wikimedia.org/wikipedia/commons/8/87/PDF_file_icon.svg" style="width: 40px; height: 40px;" alt="">
+            </a>
+            <a href="{% url 'usuarios_excel' %}" target="_blank">
+                <i class="fa fa-file-excel-o"></i> <img src="https://upload.wikimedia.org/wikipedia/commons/7/73/Microsoft_Excel_2013-2019_logo.svg" style="width: 40px; height: 40px;" alt="">
+            </a>
+        </div>
+    </div>
+
+    <!-- Card de Empresas sin Usuario -->
+    <div class="report-card">
+        <h3>Empresas sin Usuario</h3>
+        <p style="text-align:center;">Genera un PDF o Excel con las empresas que no tienen usuario</p>
+        <div class="report-buttons">
+            <a href="{% url 'empresas_sin_usuario_pdf' %}" target="_blank" class="pdf-btn">
+                <i class="fa fa-file-pdf-o"></i> <img src="https://upload.wikimedia.org/wikipedia/commons/8/87/PDF_file_icon.svg" style="width: 40px; height: 40px;" alt="">
+            </a>
+            <a href="{% url 'empresas_sin_usuario_excel' %}" target="_blank">
+                <i class="fa fa-file-excel-o"></i> <img src="https://upload.wikimedia.org/wikipedia/commons/7/73/Microsoft_Excel_2013-2019_logo.svg" style="width: 40px; height: 40px;" alt="">
+            </a>
+        </div>
+    </div>
+
+
+    <!-- Card de Empresas sin proyecto -->
+    <div class="report-card">
+        <h3>Empresas sin Proyecto</h3>
+        <p style="text-align:center;">Genera un PDF o Excel con las empresas que aun no tienen creado un proyecto</p>
+        <div class="report-buttons">
+            <a href="{% url 'reporte_empresas_sin_proyecto_pdf' %}" target="_blank" class="pdf-btn">
+                <i class="fa fa-file-pdf-o"></i> <img src="https://upload.wikimedia.org/wikipedia/commons/8/87/PDF_file_icon.svg" style="width: 40px; height: 40px;" alt="">
+            </a>
+            <a href="{% url 'reporte_empresas_sin_proyecto_excel' %}" target="_blank">
+                <i class="fa fa-file-excel-o"></i> <img src="https://upload.wikimedia.org/wikipedia/commons/7/73/Microsoft_Excel_2013-2019_logo.svg" style="width: 40px; height: 40px;" alt="">
+            </a>
+        </div>
+    </div>
+
+    <!-- Card de Empresas sin Presentations -->
+    <div class="report-card">
+        <h3>Empresas sin DDJJ</h3>
+        <p style="text-align:center;">Genera un PDF o Excel con las empresas que tienen usuario, tienen por lo menos un proyecto pero no realizaron la Presentacion de por lo menos una DDJJ</p>
+        <div class="report-buttons">
+            <a href="{% url 'reporte_empresas_sin_presentacion_pdf' %}" target="_blank" class="pdf-btn">
+                <i class="fa fa-file-pdf-o"></i> <img src="https://upload.wikimedia.org/wikipedia/commons/8/87/PDF_file_icon.svg" style="width: 40px; height: 40px;" alt="">
+            </a>
+            <a href="{% url 'reporte_empresas_sin_presentacion_excel' %}" target="_blank">
+                <i class="fa fa-file-excel-o"></i> <img src="https://upload.wikimedia.org/wikipedia/commons/7/73/Microsoft_Excel_2013-2019_logo.svg" style="width: 40px; height: 40px;" alt="">
+            </a>
+        </div>
+    </div>
+
+    <div class="report-card">
+        <h3>Reporte de Deudas</h3>
+        <p style="text-align:center;">Listado de Empresas que poseen muchas deudas de canon</p>
+        <div class="report-buttons">
+            <a href="{% url 'deudas_expedientes' %}">INGRESAR
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

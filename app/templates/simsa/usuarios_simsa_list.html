@@ -1,0 +1,234 @@
+{% extends "simsa/home.html" %}
+{% load static %}
+
+{% block head %}
+<style>
+    body {
+        font-family: 'Arial', sans-serif;
+        background-color: #f8f9fa;
+    }
+
+    .container {
+        margin: 30px 60px;
+        background-color: #fff;
+        padding: 25px;
+        border-radius: 8px;
+        box-shadow: 0px 2px 10px rgba(0,0,0,0.1);
+    }
+
+    h1 {
+        text-align: center;
+        color: #343a40;
+        margin-bottom: 20px;
+    }
+
+    #searchInput {
+        width: 90%;
+        padding: 10px 15px;
+        margin-bottom: 20px;
+        border-radius: 5px;
+        border: 1px solid #ccc;
+        font-size: 16px;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    th, td {
+        padding: 12px 15px;
+        border-bottom: 1px solid #dee2e6;
+        text-align: left;
+    }
+
+    th {
+        background-color: #343a40;
+        color: #fff;
+        font-weight: bold;
+    }
+
+    tr:hover {
+        background-color: #f1f3f5;
+    }
+
+    .no-data {
+        text-align: center;
+        color: #6c757d;
+        font-style: italic;
+    }
+    .btn-export {
+    display: inline-block;
+    padding: 5px 5px;
+    margin: 5px;
+    border-radius: 5px;
+    background-color: #343a40;
+    color: white;
+    text-decoration: none;
+    font-weight: bold;
+    transition: background-color 0.3s;
+}
+.btn-export:hover {
+    background-color: #495057;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Listado de Usuarios del SIMSa</h1>
+
+    <div style="display:flex; align-content: center; margin-bottom: 10px;">
+    <input type="text" id="searchInput" placeholder="Buscar usuario, rol, correo o compañía...">
+    <button id="downloadExcel" class="btn-export"><img src="https://upload.wikimedia.org/wikipedia/commons/7/73/Microsoft_Excel_2013-2019_logo.svg" style="width: 40px; height: 40px;" alt=""></button>
+    <button id="downloadPDF" class="btn-export"><img src="https://upload.wikimedia.org/wikipedia/commons/8/87/PDF_file_icon.svg" style="width: 40px; height: 40px;" alt=""></button>
+    <div style="text-align: center; margin-bottom: 15px;">
+</div>
+</div>
+
+    <table id="usuariosTable">
+        <thead>
+            <tr>
+                <th></th>
+                <th>Usuario</th>
+                <th>Rol</th>
+                <th>Correo Electrónico</th>
+                <th>Compañía</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for u in usuarios %}
+            <tr>
+                <td>{{ forloop.counter }}</td>
+                <td>{{ u.username }}</td>
+                <td>{{ u.roleid__name }}</td>
+                <td>{{ u.email }}</td>
+                <td>{{ u.company_name|default:"-" }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="4" class="no-data">No se encontraron usuarios.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<script>
+    // Buscador dinámico
+    const searchInput = document.getElementById("searchInput");
+    const table = document.getElementById("usuariosTable").getElementsByTagName("tbody")[0];
+
+    searchInput.addEventListener("keyup", function() {
+        const filter = searchInput.value.toLowerCase();
+        const rows = table.getElementsByTagName("tr");
+
+        for (let i = 0; i < rows.length; i++) {
+            const cells = rows[i].getElementsByTagName("td");
+            let match = false;
+            for (let j = 0; j < cells.length; j++) {
+                if (cells[j].textContent.toLowerCase().includes(filter)) {
+                    match = true;
+                    break;
+                }
+            }
+            rows[i].style.display = match ? "" : "none";
+        }
+    });
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<script>
+// Función para obtener filas visibles
+function getVisibleRows() {
+    const table = document.getElementById("usuariosTable").getElementsByTagName("tbody")[0];
+    const rows = table.getElementsByTagName("tr");
+    let data = [];
+
+    for (let i = 0; i < rows.length; i++) {
+        if (rows[i].style.display !== "none") {
+            const cells = rows[i].getElementsByTagName("td");
+            let rowData = [];
+            for (let j = 0; j < cells.length; j++) {
+                rowData.push(cells[j].innerText);
+            }
+            data.push(rowData);
+        }
+    }
+    return data;
+}
+
+// Exportar a Excel
+document.getElementById("downloadExcel").addEventListener("click", function() {
+    const data = getVisibleRows();
+    const wb = XLSX.utils.book_new();
+    const ws_data = [["Usuario","Rol","Correo Electrónico","Compañía"], ...data];
+    const ws = XLSX.utils.aoa_to_sheet(ws_data);
+    XLSX.utils.book_append_sheet(wb, ws, "Usuarios");
+    XLSX.writeFile(wb, "usuarios_simsa.xlsx");
+});
+
+// Exportar a PDF
+document.getElementById("downloadPDF").addEventListener("click", async function() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    doc.setFontSize(10);
+
+    // Cargar imagen desde static como base64
+    const img = new Image();
+    img.src = "{% static 'img/Logo_MPS.png' %}";
+    await new Promise((resolve) => {
+        img.onload = resolve;
+    });
+
+    const pageWidth = doc.internal.pageSize.getWidth();
+
+// Dimensiones de la imagen
+const imgWidth = 80;
+const imgHeight = 15;
+
+// Colocar imagen arriba a la derecha
+doc.addImage(img, 'PNG', pageWidth - imgWidth - 5, 5, imgWidth, imgHeight); // 5px de margen derecho y top
+
+// Título debajo de la imagen (alineado a la derecha también)
+doc.setFontSize(14);
+doc.text("Listado de Usuarios del SIMSa", 10, 30, { align: "left" });
+
+    // Obtener datos de la tabla filtrada
+    function getVisibleRows() {
+        const table = document.getElementById("usuariosTable").getElementsByTagName("tbody")[0];
+        const rows = table.getElementsByTagName("tr");
+        let data = [];
+        for (let i = 0; i < rows.length; i++) {
+            if (rows[i].style.display !== "none") {
+                const cells = rows[i].getElementsByTagName("td");
+                let rowData = [];
+                for (let j = 0; j < cells.length; j++) {
+                    rowData.push(cells[j].innerText);
+                }
+                data.push(rowData);
+            }
+        }
+        return data;
+    }
+
+    const headers = [["N°","Usuario","Rol","Correo Electrónico","Compañía"]];
+    const data = getVisibleRows();
+
+    // Crear tabla con jsPDF AutoTable
+    doc.autoTable({
+        head: headers,
+        body: data,
+        startY: 40, // debajo del logo
+        styles: { fontSize: 9 },
+        headStyles: { fillColor: [52, 58, 64], textColor: 255 },
+    });
+
+    doc.save("usuarios_simsa.pdf");
+});
+</script>
+
+<!-- Librería para tabla PDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+{% endblock %}

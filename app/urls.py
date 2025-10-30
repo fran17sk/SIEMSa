@@ -80,5 +80,25 @@ urlpatterns = [
     path('inspecciones/<int:inspeccion_id>/', views.detalle_inspeccion, name='detalle_inspeccion'),
     path('proveedores/actualizar_proveedores',views.actualizar_proveedores,name='actualizar_proveedores'),
     
+    path('users_simsa',views.usuarios_simsa , name='simsa_users'),
+    path('reportes/', views.reportes_home, name='reportes_home'),
+    path('tableros/', views.tablero_home, name='tablero_home'),
+    path("deudas-expedientes/", views.deudas_expedientes, name="deudas_expedientes"),
+    path("consulta-deudas-expedientes/", views.consulta_deuda_expediente, name="consulta_deudas_expedientes"),
+    path('expediente/deuda/', views.consulta_deuda_datos, name='consulta_deuda_datos'),
+    path('expediente/otros/',views.expedientes_concesionario, name='exp_conc'),
+
+    # Usuarios Admin
+    path('reportes/usuarios/pdf/', views.usuarios_pdf, name='usuarios_pdf'),
+    path('reportes/usuarios/excel/', views.usuarios_excel, name='usuarios_excel'),
+
+    # Empresas sin Usuario
+    path('reportes/empresas-sin-usuario/pdf/', views.empresas_sin_usuario_pdf, name='empresas_sin_usuario_pdf'),
+    path('reportes/empresas-sin-usuario/excel/', views.empresas_sin_usuario_excel, name='empresas_sin_usuario_excel'),
+    
+    path("reportes/empresas-sin-proyecto/pdf/", views.reporte_empresas_sin_proyecto_pdf, name="reporte_empresas_sin_proyecto_pdf"),
+    path("reportes/empresas-sin-proyecto/excel/", views.reporte_empresas_sin_proyecto_excel, name="reporte_empresas_sin_proyecto_excel"),
+    path('reportes/empresas-sin-presentacion-excel/',views.reporte_empresas_sin_presentacion_excel,name='reporte_empresas_sin_presentacion_excel'),
+    path('reportes/empresas-sin-presentacion-pdf/',views.reporte_empresas_sin_presentacion_pdf ,name='reporte_empresas_sin_presentacion_pdf')
 
 ]

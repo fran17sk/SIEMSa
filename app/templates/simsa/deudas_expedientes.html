@@ -1,0 +1,301 @@
+{% extends "simsa/home.html" %}
+
+{% block content %}
+<div class="deudas-container">
+
+    <h2>💰 Expedientes con Deuda</h2>
+
+    <!-- Filtro y botones -->
+    <div class="acciones">
+        <input type="text" id="searchInput" placeholder="🔍 Buscar expediente o empresa..." onkeyup="filterTable()">
+        <div class="botones">
+            <button class="btn-excel" onclick="exportExcel()">📊 Exportar Excel</button>
+            <button class="btn-pdf" onclick="exportPDF()">📄 Exportar PDF</button>
+        </div>
+    </div>
+
+    <!-- Tabla de resultados -->
+    <div class="tabla-wrapper">
+        <table id="deudasTable">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Expediente</th>
+                    <th>Nombre</th>
+                    <th>Empresa</th>
+                    <th>Semestres Adeudados</th>
+                    <th>Total Deuda</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for fila in resultados %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ fila.Expediente }}</td>
+                    <td>{{ fila.ExpedienteNombre }}</td>
+                    <td>{{ fila.Name }}</td>
+                    <td>{{ fila.semestres_adeudados }}</td>
+                    <td>${{ fila.total_deuda|floatformat:2 }}</td>
+                    <td class="acciones-cell">
+                        <span class="delete-btn" title="Eliminar fila" onclick="deleteRow(this)">🗑️</span>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" style="text-align:center; color:#ccc;">No se encontraron expedientes con deudas.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Librerías -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+
+<script>
+function filterTable() {
+    let input = document.getElementById("searchInput").value.toLowerCase();
+    document.querySelectorAll("#deudasTable tbody tr").forEach(row => {
+        row.style.display = row.innerText.toLowerCase().includes(input) ? "" : "none";
+    });
+}
+
+function actualizarNumerosFila() {
+    document.querySelectorAll("#deudasTable tbody tr").forEach((row, index) => {
+        if (row.cells.length > 1) row.cells[0].innerText = index + 1;
+    });
+}
+
+function deleteRow(btn) {
+    btn.closest("tr").remove();
+    actualizarNumerosFila();
+}
+
+function exportExcel() {
+    const table = document.getElementById("deudasTable");
+    const wb = XLSX.utils.book_new();
+    const rows = [];
+
+    const header = Array.from(table.rows[0].cells).slice(0, -1).map(c => c.innerText);
+    rows.push(header);
+
+    for (let i = 1; i < table.rows.length; i++) {
+        const row = Array.from(table.rows[i].cells).slice(0, -1).map(c => c.innerText);
+        rows.push(row);
+    }
+
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    XLSX.utils.book_append_sheet(wb, ws, "Deudas");
+    XLSX.writeFile(wb, "deudas.xlsx");
+}
+
+function exportPDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF('p', 'pt', 'a4');
+
+    let table = document.getElementById("deudasTable");
+    let headers = Array.from(table.rows[0].cells).slice(0, -1).map(c => c.innerText);
+    let body = Array.from(table.rows).slice(1).map(r => Array.from(r.cells).slice(0, -1).map(c => c.innerText));
+
+    const logo = new Image();
+    logo.src = "/static/img/logo.png";
+    logo.onload = function() {
+        doc.addImage(logo, 'PNG', 420, 10, 150, 40);
+        doc.setFontSize(14);
+        doc.setFont("helvetica", "bold");
+        doc.text("Informe de Expedientes con Deuda", 14, 35);
+        doc.setFontSize(10);
+        doc.text("Fecha: " + new Date().toLocaleDateString(), 14, 50);
+
+        doc.autoTable({
+            startY: 70,
+            head: [headers],
+            body: body,
+            margin: { top: 10, left: 15, right: 15 },
+            styles: { fontSize: 8, cellPadding: 3 },
+            headStyles: { fillColor: [33, 37, 41], textColor: 255, fontStyle: 'bold' },
+            alternateRowStyles: { fillColor: [245, 245, 245] }
+        });
+        doc.save("expedientes.pdf");
+    };
+}
+</script>
+
+<style>
+.deudas-container {
+    margin: 50px auto;
+    max-width: 1100px;
+    padding: 30px;
+    border-radius: 16px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+}
+.deudas-container h2 {
+    text-align: center;
+    margin-bottom: 25px;
+    color: #000000;
+    letter-spacing: 0.5px;
+}
+.acciones {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+}
+.acciones input {
+    flex: 1;
+    min-width: 250px;
+    padding: 10px;
+    border-radius: 6px;
+    border: 1px solid #444;
+    background: #2b2b2b;
+    font-size: 14px;
+    transition: 0.3s;
+}
+.acciones input:focus {
+    border-color: #ffcc00;
+    outline: none;
+}
+.botones {
+    display: flex;
+    gap: 10px;
+}
+body {
+  font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  background-color: #f9fafb;
+  color: #333;
+  margin: 0;
+  padding: 0;
+}
+
+h1, h2, h3 {
+  color: #222;
+  font-weight: 600;
+  margin-bottom: 15px;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+label {
+  font-weight: 500;
+  color: #444;
+  margin-bottom: 6px;
+}
+
+input[type="text"],
+input[type="number"],
+input[type="date"],
+input[type="email"],
+select,
+textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d0d7de;
+  border-radius: 8px;
+  font-size: 15px;
+  background-color: #fff;
+  transition: all 0.2s ease;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+  outline: none;
+}
+
+button {
+  background-color: #2563eb;
+  color: #fff;
+  border: none;
+  padding: 12px 18px;
+  font-size: 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.25s ease;
+}
+
+button:hover {
+  background-color: #1d4ed8;
+}
+
+.table-container {
+  overflow-x: auto;
+  margin-top: 25px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+th, td {
+  padding: 12px 15px;
+  text-align: left;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+th {
+  background-color: #f3f4f6;
+  color: #333;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+tr:hover {
+  background-color: #f9fafb;
+}
+
+/* Mensajes o alertas */
+.alert {
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  margin-bottom: 20px;
+}
+
+.alert-success {
+  background-color: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+
+.alert-error {
+  background-color: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+/* Inputs deshabilitados */
+
+select:disabled {
+  background-color: #f3f4f6;
+  color: #999;
+}
+
+/* Responsividad */
+@media (max-width: 600px) {
+  .container {
+    padding: 20px;
+  }
+
+  button {
+    width: 100%;
+  }
+}
+</style>
+{% endblock %}

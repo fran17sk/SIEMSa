@@ -1,0 +1,364 @@
+{% extends "simsa/home.html" %}
+{% load static %}
+
+{% block content %}
+<div class="consulta-container">
+  <h2>Consulta de Deuda por Expediente</h2>
+
+  <form id="consulta-form" class="consulta-form" onsubmit="return false;">
+    <div class="form-group">
+      <label for="expediente-numero">Ingresar N° o Nombre del expediente: </label>
+      <input type="text" id="expediente-numero" placeholder="Ej: 12345" />
+    </div>
+    <button id="buscar-btn" type="button">Buscar</button>
+    <button id="descargar-btn" type="button" style="margin-top: 20px;">Descargar tabla completa</button>
+  </form>
+
+  <div id="resultado" class="resultado-section">
+    <p>Ingrese un número de expediente y presione <strong>Buscar</strong>.</p>
+
+  </div>
+</div>
+
+<script>
+const buscarBtn = document.getElementById('buscar-btn');
+const numeroInput = document.getElementById('expediente-numero');
+const resultadoDiv = document.getElementById('resultado');
+
+async function buscarExpediente() {
+  const numero = numeroInput.value.trim();
+
+  if (!numero) {
+    resultadoDiv.innerHTML = '<div class="alert alert-error">Debe ingresar un número de expediente.</div>';
+    return;
+  }
+
+  resultadoDiv.innerHTML = '<div class="loader"></div><p class="loading-text">Consultando expediente...</p>';
+
+  try {
+    const response = await fetch(`/expediente/deuda/?numero=${encodeURIComponent(numero)}`, {
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    });
+
+    if (!response.ok) throw new Error('No se pudo consultar el expediente.');
+
+    const html = await response.text();
+    resultadoDiv.innerHTML = html;
+    numeroInput.value=""
+  } catch (error) {
+    resultadoDiv.innerHTML = `<div class="alert alert-error">${error.message}</div>`;
+    numeroInput.value=""
+  }
+}
+
+buscarBtn.addEventListener('click', buscarExpediente);
+numeroInput.addEventListener('keydown', (event) => {
+  if (event.key === 'Enter') {
+    event.preventDefault();
+    buscarExpediente();
+  }
+});
+
+document.addEventListener("click", async function(e) {
+  if (e.target && e.target.id === "ver-mas-btn") {
+    const btn = e.target;
+    const id = btn.dataset.id;
+    const contenedor = document.getElementById("otros-expedientes");
+
+    btn.disabled = true;
+    btn.textContent = "Cargando...";
+
+    try {
+      const resp = await fetch(`/expediente/otros/?id=${id}`);
+      const html = await resp.text();
+      contenedor.innerHTML = html;
+      btn.style.display = "none";
+    } catch (err) {
+      contenedor.innerHTML = `<p style='color:red;'>Error al cargar los expedientes.</p>`;
+      btn.disabled = false;
+    }
+  }
+});
+
+
+</script>
+<script>
+  const descargarBtn = document.getElementById('descargar-btn');
+
+descargarBtn.addEventListener('click', () => {
+  let filas = [];
+
+  const tarjetas = document.querySelectorAll('.expediente-card');
+
+  tarjetas.forEach(tarjeta => {
+    const h3 = tarjeta.querySelector('h3')?.textContent.trim() || "";
+    // Suponiendo que h3 tiene formato "12345 | Mina X | Tipo Y"
+    const partes = h3.split('|').map(p => p.trim());
+    const nroExpediente = partes[0] || "";
+    const nombreMina = partes[1] || "";
+    const tipo = partes[2] || "";
+
+    // Buscamos la tabla de pagos
+    const tabla = tarjeta.querySelector('table');
+    if (!tabla) {
+      filas.push([nroExpediente, nombreMina, tipo, "Sin pagos", "-", "Pendiente"]);
+      return;
+    }
+
+    const trs = tabla.querySelectorAll('tbody tr');
+    if (trs.length === 0) {
+      filas.push([nroExpediente, nombreMina, tipo, "Sin pagos", "-", "Pendiente"]);
+    } else {
+      // Buscamos el último pago (suponiendo que la tabla tiene los pagos en orden cronológico)
+      let ultimoPagoFila = null;
+      for (let i = trs.length - 1; i >= 0; i--) {
+        const tr = trs[i];
+        if (!tr.querySelector('td')?.textContent.includes("No hay registros")) {
+          ultimoPagoFila = tr;
+          break;
+        }
+      }
+
+      if (ultimoPagoFila) {
+        const periodo = ultimoPagoFila.querySelector('td:nth-child(1)')?.textContent.trim() || "Sin pagos";
+        const fechaPago = ultimoPagoFila.querySelector('td:nth-child(5)')?.textContent.trim() || "-";
+        const estado = ultimoPagoFila.querySelector('td:nth-child(8)')?.textContent.includes("Pagado") ? "Pagado" : "Pendiente";
+
+        filas.push([nroExpediente, nombreMina, tipo, periodo, fechaPago, estado]);
+      } else {
+        filas.push([nroExpediente, nombreMina, tipo, "Sin pagos", "-", "Pendiente"]);
+      }
+    }
+  });
+
+  if (filas.length === 0) {
+    alert("No hay datos para descargar.");
+    return;
+  }
+
+  // Armamos CSV
+  let csvContent = "data:text/csv;charset=utf-8,";
+  csvContent += "Nro de expediente,Nombre Mina,Tipo,Periodo,Fecha del último pago,Estado\n";
+  filas.forEach(fila => {
+    csvContent += fila.map(c => `"${c}"`).join(",") + "\n";
+  });
+
+  // Descargar
+  const encodedUri = encodeURI(csvContent);
+  const link = document.createElement("a");
+  link.setAttribute("href", encodedUri);
+  link.setAttribute("download", `minas_completo.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+});
+
+
+</script>
+<style>
+body {
+  margin: 0;
+  background-color: #f5f7fb;
+  font-family: 'Inter', 'Segoe UI', Roboto, Arial, sans-serif;
+  color: #2d2d2d;
+  line-height: 1.6;
+}
+
+/* CONTENEDOR PRINCIPAL */
+.consulta-container {
+  background: #ffffff;
+  padding: 45px 55px;
+  max-width: 920px;
+  margin: 60px auto;
+  border-radius: 14px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.06);
+  border: 1px solid #e5e9f0;
+}
+
+/* TÍTULO PRINCIPAL */
+h2 {
+  text-align: center;
+  color: #1f2937;
+  font-weight: 700;
+  margin-bottom: 35px;
+  font-size: 1.8em;
+  letter-spacing: 0.4px;
+}
+
+/* FORMULARIO */
+.consulta-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  justify-content: center;
+  align-items: flex-end;
+  margin-bottom: 30px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+label {
+  font-size: 0.92em;
+  color: #4b5563;
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+input {
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  width: 260px;
+  font-size: 1em;
+  background-color: #fff;
+  transition: all 0.25s ease;
+}
+
+input:focus {
+  outline: none;
+  border-color: #1f2937;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+/* BOTONES */
+button {
+  background: #1f2937;
+  color: #fff;
+  border: none;
+  padding: 11px 22px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.95em;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.1s ease;
+}
+
+button:hover {
+  background-color: #1f2937;
+  transform: translateY(-1px);
+}
+
+button:active {
+  transform: translateY(0);
+}
+
+/* SECCIÓN DE RESULTADOS */
+.resultado-section {
+  margin-top: 25px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 25px;
+  min-height: 120px;
+  font-size: 0.96em;
+  transition: all 0.3s ease;
+}
+
+/* LOADER */
+.loader {
+  border: 4px solid #e5e7eb;
+  border-top: 4px solid #1f2937;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  animation: spin 1s linear infinite;
+  margin: 15px auto;
+}
+
+.loading-text {
+  text-align: center;
+  color: #555;
+  font-size: 0.95em;
+  margin-top: 10px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ALERTAS */
+.alert {
+  padding: 14px 16px;
+  border-radius: 8px;
+  margin: 12px 0;
+  font-size: 0.92em;
+}
+
+.alert-error {
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+}
+
+.alert-success {
+  background-color: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #065f46;
+}
+
+/* TABLAS */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1.5em;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+th, td {
+  padding: 12px 14px;
+  text-align: left;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 0.94em;
+}
+
+th {
+  background-color: #1f2937;
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.9em;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+tr:nth-child(even) {
+  background-color: #f9fafb;
+}
+
+tr.pagado {
+  background-color: #ecfdf5;
+}
+
+tr.pendiente {
+  background-color: #fef2f2;
+}
+
+/* EFECTO AL PASAR */
+tr:hover {
+  background-color: #f1f5f9;
+  transition: background-color 0.2s ease;
+}
+
+/* RESPONSIVIDAD */
+@media (max-width: 700px) {
+  .consulta-container {
+    padding: 30px 25px;
+  }
+
+  input {
+    width: 100%;
+  }
+
+  button {
+    width: 100%;
+  }
+
+  th, td {
+    font-size: 0.85em;
+  }
+}
+</style>
+{% endblock %}

@@ -1,0 +1,52 @@
+<div class="expediente-card">
+  <h3>{{ expediente.expediente }} | {{ expediente.nombre }} | {{ expediente.tipo }}</h3>
+  <p><strong>{{expediente.estado}}</strong></p>
+  <p><strong>Yacencia:</strong> {{ expediente.yacencia }}</p> 
+  <p><strong>Concesionarios:</strong>
+    {% for c in concesionarios %}
+      {{ c }}{% if not forloop.last %}, {% endif %}
+    {% empty %}
+      <em>No hay concesionarios registrados.</em>
+    {% endfor %}
+  </p>
+
+  <h4>Pagos del Canon</h4>
+  <table>
+    <thead>
+      <tr>
+        <th>Periodo</th>
+        <th>Pertenencias</th>
+        <th>Total</th>
+        <th>Pagado</th>
+        <th>Fecha Pago</th>
+        <th>Saldo</th>
+        <th>Estado</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in pagos %}
+        <tr class="{% if p.paid > 0 %}pagado{% else %}pendiente{% endif %}">
+          <td>{{ p.canonperiodid.name }}</td>
+          <td>{{ p.pertenencias }}</td>
+          <td>${{ p.total|floatformat:2 }}</td>
+          <td>{% if p.paid > 0 %}${{ p.paid|floatformat:2 }}{% else %}-{% endif %}</td>
+          <td>{% if p.paiddate %}{{ p.paiddate|date:"d/m/Y" }}{% else %}-{% endif %}</td>
+          <td>${{ p.balance|floatformat:2 }}</td>
+          <td>{% if p.paid > 0 %}✅ Pagado{% else %}❌ Pendiente{% endif %}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="7" style="text-align:center;">No hay registros de canon. Consultar en OBSERVER</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div style="margin-top: 20px; text-align: center;">
+    <button id="ver-mas-btn" class="btn-ver-otros" data-id="{{ expediente.id }}">
+      🔽 Ver más expedientes del mismo concesionario
+    </button>
+  </div>
+
+  <div id="otros-expedientes"></div>
+</div>
+
+

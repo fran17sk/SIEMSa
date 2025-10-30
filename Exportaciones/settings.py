@@ -80,6 +80,14 @@ DATABASES = {
         'PASSWORD': 'veldspar',
         'HOST': '192.168.0.4',  # o IP de tu servidor PostgreSQL
         'PORT': '5432',  
+    },
+    'simsa':{
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'simsadb',
+        'USER': 'postgres',
+        'PASSWORD': '14Gp4sLKZyTL8KG',
+        'HOST': '172.17.1.239',
+        'PORT': '5432',
     }
     #DB_NAME=CatastroMineroSalta
 #DB_USER=postgres

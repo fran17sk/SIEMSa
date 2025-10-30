@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Sidebar Profesional</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  
+  <style>
+    :root {
+      --sidebar-bg: #1f2937;
+      --sidebar-accent: #3b82f6;
+      --text-light: #f9fafb;
+      --text-muted: #9ca3af;
+      --hover-bg: rgba(59, 130, 246, 0.1);
+    }
+    a{
+      text-decoration: none;
+    }
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: #f4f6f8;
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .sidebar {
+      width: 250px;
+      background-color: var(--sidebar-bg);
+      color: var(--text-light);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: all 0.3s ease-in-out;
+      box-shadow: 2px 0 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .sidebar .menu {
+      padding: 2rem 1rem;
+    }
+
+    .sidebar .menu .logo {
+      font-size: 1.5rem;
+      font-weight: bold;
+      margin-bottom: 2.5rem;
+      text-align: center;
+      letter-spacing: 1px;
+      color: white;
+    }
+
+    .sidebar nav a {
+      display: flex;
+      align-items: center;
+      text-decoration: none;
+      color: var(--text-light);
+      padding: 0.75rem 1rem;
+      margin-bottom: 0.5rem;
+      border-radius: 8px;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    .sidebar nav a:hover,
+    .sidebar nav a.active {
+      background-color: var(--hover-bg);
+      color: var(--sidebar-accent);
+    }
+
+    .sidebar nav a svg {
+      margin-right: 12px;
+      stroke-width: 1.8;
+    }
+
+    .user-footer {
+      padding: 1.2rem;
+      text-align: center;
+      border-top: 1px solid rgba(255,255,255,0.1);
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      background-color: #111827;
+    }
+
+    .main {
+      flex: 1;
+      padding: 2rem;
+      overflow-y: auto;
+      animation: fadeIn 0.4s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 768px) {
+      .sidebar {
+        position: relative;
+        left: -100%;
+        height: 100vh;
+        z-index: 999;
+      }
+
+      .sidebar.open {
+        left: 0;
+      }
+
+      .toggle-btn {
+        position: fixed;
+        top: 1rem;
+        left: 1rem;
+        z-index: 1000;
+        background: var(--sidebar-accent);
+        color: white;
+        border: none;
+        padding: 0.6rem 1rem;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 1.2rem;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      }
+    }
+    .collapse-btn {
+      position: absolute;
+      top: 1rem;
+      left: 230px; /* fuera del sidebar pero pegado al borde derecho */
+      background: var(--sidebar-bg);
+      color: var(--text-light);
+      border: none;
+      padding: 0.5rem;
+      border-radius: 6px;
+      cursor: pointer;
+      z-index: 1000;
+      transition: left 0.3s ease;
+    }
+    .sidebar.collapsed .collapse-btn {
+  left:60px; /* se mueve más a la derecha cuando está colapsado */
+}
+    .sidebar.collapsed {
+      width: 70px;
+    }
+
+    .sidebar.collapsed .logo {
+      font-size: 0;
+      height: 40px;
+      overflow: hidden;
+      margin-bottom: 2rem;
+    }
+
+    .sidebar.collapsed nav a {
+      justify-content: center;
+      padding: 0.75rem 0;
+    }
+
+    .sidebar.collapsed nav a span {
+      display: none;
+    }
+
+    .sidebar.collapsed .user-footer {
+      display: none;
+    }
+
+    .sidebar.collapsed + .collapse-btn {
+      left: 80px;
+    }
+    .actions button {
+      background: none;
+      border: none;
+      cursor: pointer;
+      margin: 0px 0px 0px 0px;
+      font-size: 1.1rem;
+      color: #555;
+      transition: color 0.2s ease;
+    }
+    .chart-nav {
+  display: flex;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  background-color: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  flex-wrap: wrap;
+}
+
+.chart-nav a {
+  color: #1f2937;
+  font-weight: 500;
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  transition: background-color 0.2s ease;
+}
+
+.chart-nav a:hover {
+  background-color: #e0e7ff;
+  color: #1d4ed8;
+}
+
+.chart-nav a.active {
+  background-color: #3b82f6;
+  color: white;
+}
+</style>
+  {% block head %}
+  {% endblock %}
+</head>
+<body>
+
+  <aside class="sidebar" id="sidebar">
+  
+  <button class="collapse-btn" onclick="toggleCollapse()">
+    <i data-lucide="chevrons-left"></i>
+  </button>
+  <div class="menu">
+    <div class="logo">SIEMSa</div>
+    <nav>
+      
+      <a href="{% url 'home' %}" class="{% if request.resolver_match.url_name == 'home' %}active{% endif %}" title="Inicio">
+        <i data-lucide="home"></i> <span>Inicio</span>
+      </a>
+      {% if request.user.groups.first.name == "Administrador" or request.user.groups.first.name == "Publicador"   %}
+  {% endif %}
+  <a href="{% url 'simsa_users' %}" class="{% if request.resolver_match.url_name == 'simsa_users' %}active{% endif %}" title="Exportacion">
+    <i data-lucide="plus"></i> <span>Usuarios SIMSa</span>
+  </a>
+  <a href="{% url 'reportes_home' %}" class="{% if request.resolver_match.url_name == 'reportes_home' or request.resolver_match.url_name == 'deudas_expedientes' %}active{% endif %}" title="Exportaciones">
+    <i data-lucide="truck"></i> <span>Reportes</span>
+  </a>
+  
+  
+  <a href="{% url 'consulta_deudas_expedientes' %}" class="{% if request.resolver_match.url_name == 'consulta_deudas_expedientes' %}active{% endif %}" title="Países">
+    <i data-lucide="earth"></i> <span>Consulta Expediente</span>
+  </a>
+
+  {% if request.user.groups.first.name == "Administrador" or request.user.groups.first.name == "Publicador"   %}
+  {% endif %}
+  <!-- Nueva sección Gráficos -->
+
+
+  <a href="{% url 'logout' %}" title="Cerrar sesión">
+    <i data-lucide="log-out"></i> <span>Cerrar sesión</span>
+  </a>
+</nav>
+
+  </div>
+  <div class="user-footer">
+    <div><i style="margin: 10px;" class="fa fa-user-circle" aria-hidden="true"></i>{{ user.get_full_name|default:user.username }}</div>
+  </div>
+</aside>
+  
+    
+  <div style="flex: 1;overflow-y: auto;">
+    
+    
+    
+  {% block content %}
+  {% endblock %}
+
+
+<!-- SweetAlert2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  
+<script>
+  function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('open');
+  }
+
+  // Cargar íconos Lucide
+  lucide.createIcons();
+  function toggleCollapse() {
+  const sidebar = document.getElementById('sidebar');
+  const collapseBtnIcon = document.querySelector('.collapse-btn i');
+
+  sidebar.classList.toggle('collapsed');
+
+  // Guardar el estado en localStorage
+  if (sidebar.classList.contains('collapsed')) {
+    localStorage.setItem('sidebarCollapsed', 'true');
+    collapseBtnIcon.setAttribute('data-lucide', 'chevrons-right');
+  } else {
+    localStorage.setItem('sidebarCollapsed', 'false');
+    collapseBtnIcon.setAttribute('data-lucide', 'chevrons-left');
+  }
+
+  // Re-renderizar íconos
+  lucide.createIcons();
+}
+
+// Aplicar el estado guardado al cargar la página
+window.addEventListener('DOMContentLoaded', () => {
+  const sidebar = document.getElementById('sidebar');
+  const collapseBtnIcon = document.querySelector('.collapse-btn i');
+  const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+
+  if (isCollapsed) {
+    sidebar.classList.add('collapsed');
+    collapseBtnIcon.setAttribute('data-lucide', 'chevrons-right');
+  } else {
+    collapseBtnIcon.setAttribute('data-lucide', 'chevrons-left');
+  }
+
+  lucide.createIcons(); // Aplicar íconos al inicio
+});
+</script>
+
+
+
+  {% block script %}
+  {% endblock %}
+</body>
+</html>

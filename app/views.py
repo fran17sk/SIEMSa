@@ -8,6 +8,7 @@ from .forms import ContratosForm
 from django.http import JsonResponse
 from .models import *
 from .models_catastro import *
+from .models_simsa import *
 from django.utils.crypto import get_random_string
 from email.mime.image import MIMEImage
 from django.core.mail import EmailMultiAlternatives
@@ -3202,3 +3203,1186 @@ def proveedores_view(request):
       "usuario_logueado": user
     }
     return render(request,'proveedores/serch.html',context)
+
+def usuarios_simsa(request):
+    # Subconsulta para obtener el nombre de la compañía
+    companies = Companies.objects.using("simsa").filter(
+        id=Cast(OuterRef("objectid"), output_field=UUIDField())
+    ).values("name")[:1]
+
+    # Consultar usuarios admin de empresas
+    usuarios = (
+        Users.objects.using("simsa")
+        .filter(isdeleted=False)
+        .select_related("roleid")
+        .annotate(company_name=Subquery(companies))
+        .values("username", "roleid__name","email", "company_name")
+    )
+
+    # Renderizamos el template pasando los usuarios al contexto
+    return render(request, "simsa/usuarios_simsa_list.html", {"usuarios": usuarios})
+
+# ---------------------------
+# Usuarios Admin de Empresas
+# ---------------------------
+def usuarios_pdf(request):
+    companies = Companies.objects.using("simsa").filter(isdeleted=False,
+        id=Cast(OuterRef("objectid"), output_field=UUIDField())
+    ).values("name")[:1]
+
+    usuarios = Users.objects.using("simsa").filter(isdeleted=False,roleid__name='Admin Empresa').select_related("roleid") \
+        .annotate(company_name=Subquery(companies)) \
+        .values("username", "roleid__name", "email", "company_name")
+
+    # Crear PDF
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4)
+    elements = []
+
+    styles = getSampleStyleSheet()
+    elements.append(Paragraph("Usuarios Admin de Empresas", styles['Title']))
+
+    data = [["#", "Usuario", "Rol", "Email", "Compañía"]] + [
+        [i+1, u["username"], u["roleid__name"], u["email"], u.get("company_name", "-")]
+        for i, u in enumerate(usuarios)
+    ]
+
+    t = Table(data, colWidths=[30, 100, 100, 150, 100])
+    t.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,0), colors.darkgrey),
+        ('TEXTCOLOR', (0,0), (-1,0), colors.white),
+        ('ALIGN', (0,0), (-1,-1), 'LEFT'),
+        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0,0), (-1,-1), 8),
+        ('BOTTOMPADDING', (0,0), (-1,0), 6),
+        ('GRID', (0,0), (-1,-1), 0.5, colors.grey)
+    ]))
+    elements.append(t)
+    doc.build(elements)
+
+    buffer.seek(0)
+    response = HttpResponse(buffer, content_type='application/pdf')
+    response['Content-Disposition'] = 'attachment; filename="usuarios_admin_empresa.pdf"'
+    return response
+
+
+def usuarios_excel(request):
+    companies = Companies.objects.using("simsa").filter(isdeleted=False,
+        id=Cast(OuterRef("objectid"), output_field=UUIDField())
+    ).values("name")[:1]
+
+    usuarios = Users.objects.using("simsa").filter(isdeleted=False,roleid__name='Admin Empresa').select_related("roleid") \
+        .annotate(company_name=Subquery(companies)) \
+        .values("username", "roleid__name", "email", "company_name")
+
+    df = pd.DataFrame(list(usuarios))
+    df.rename(columns={
+        "username": "Usuario",
+        "roleid__name": "Rol",
+        "email": "Email",
+        "company_name": "Compañía"
+    }, inplace=True)
+
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        df.to_excel(writer, index=False, sheet_name="Usuarios Admin Empresa")
+
+    output.seek(0)
+    response = HttpResponse(output, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = 'attachment; filename="usuarios_admin_empresa.xlsx"'
+    return response
+
+
+# ---------------------------
+# Empresas sin Usuario
+# ---------------------------
+def empresas_sin_usuario_excel(request):
+    todas_empresas = [
+        'ADVANTAGE LITHIUM ARGENTINA S.A.',
+'AFRANLLIE JORGE DAVID',
+'AGUILAR DE GUAIMAS MABEL ALICIA',
+'AGUILAR JOSE ARMANDO',
+'AGUILAR JUAN ANGEL',
+'ALDEBARAN ARGENTINA S.A.',
+'ALEXANDER GOLD GROUP LIMITED',
+'ALPHA LITHIUM ARGENTINA S.A.',
+'ALPHA MINERALS S.A.U.',
+'ALQA LITHIUM S.A.',
+'ALTO GRANDE LITHIUM S.A.',
+'ALVAREZ CLAUDIA ANAHI',
+'ALVAREZ HNOS S.R.L.',
+'ANDES MINERAL EXPLORATION S.A.',
+'ANGLOGOLD ARGENTINA EXPLORACIONES S.A.',
+'ARAYA ALFONSO LUIS',
+'ARENAS ALEXIS ADRIEL',
+'ARGAÑARAZ OLIVERO FACUNDO PEDRO',
+'ARGAÑARAZ OLIVERO RAFAEL',
+'ARGENTINA LITIO Y ENERGIA S.A.',
+'ARLI S.A.',
+'ASTRALI S.A.',
+'AVANTI S.R.L.',
+'BARR NICOLAS ANDRES',
+'BAVIO MIGUEL ALEJANDRO',
+'BHP BILLITON WORLD EXPLORATION INC.',
+'BOLERA MINERA S.A.',
+'BONIFACIO DALMIRO ERNESTO',
+'BORAX ARGENTINA S.A.',
+'BRINE LITHIUM RESOURCES S.A.',
+'BUGANEM CARLOS CRISTIAN',
+'BURGOS MIGUEL MARTIN',
+'CAIMI FERNANDO ENRIQUE',
+'CAMPOS CARLOS ALBERTO',
+'CARAPARI S.A.',
+'CARDERO ARGENTINA S.A.',
+'CARDOZO LUIS EDUARDO',
+'CARLOS ALBERTO REPETTO',
+'CARRANQUE JORGE DANIEL',
+'CASCADERO MINERALS S.A.',
+'CASTALIA MINING S.A.',
+'CASTILLO HUGO HECTOR',
+'CASTILLO ROBERTO JULIO',
+'CENTENARIO LITHIUM S.A.',
+'CERAMICA ALBERDI S.A.',
+'CHILIGUAY FACUNDO ROBERTO',
+'COLORADO S.A.',
+'COLQUE EXPLORACIONES S.A.',
+'COLQUE GERARDO MARTIN',
+'COMISION NACIONAL DE ENERGIA ATOMICA',
+'CONDORYACU S.R.L.',
+'COOPERATIVA DE TRABAJO LA MESA REDONDA LTDA.',
+'COOPERATIVA DE TRABAJO MINACLAR LTDA.',
+'CORNEJO DIEZ ADOLFO',
+'CORNEJO ULADISLAO',
+'CORRIENTE ARGENTINA S.A.',
+'COSMOS MINERALS S.A.',
+'COZZI ELISA ADELA',
+'CRITICAL REAGENTS ARGENTINA S.A.S.',
+'CRUZ HIPOLITO GUMERCINDO',
+'CRUZ JOSE ROBERTO',
+'CRUZ LEA ELIANA',
+'CRUZ NICOLAS',
+'DAGUN ANDREA LORENA',
+'DAL BORGO CESAR DOMINGO',
+'DAROCA MAURICIO EMILIANO',
+'DEFENSA Y ENCAUZAMIENTO S.A.',
+'DELGADO PATRICIA NOEMI',
+'DEMISA CONSTRUCCIONES S.A.',
+'DI GIORGIO OSVALDO',
+'DIAZ SERGIO RICARDO',
+'DIEGO RUBEN OMAR',
+'DINARCO S.A.',
+'DOMECQ TRISTAN ALFONSO',
+'EGEO S.A.',
+'EKEKO S.A.',
+'EL PACHAR S.R.L.',
+'EL TERRAPLEN S.R.L.',
+'ELECTROQUIMICA EL CARMEN S.A.',
+'EMISA S.A.',
+'ERAMINE SUDAMERICA S.A.',
+'ESCALANTE ALBERTO',
+'ESCALANTE CARLOS ROBERTO',
+'ESPINOSA ALBA ANDREA',
+'FERNANDEZ MERCEDES ROSALIA',
+'FERNANDEZ PEREZ CARLOS EDUARDO',
+'FIGUEROA PATRON VICTOR',
+'GALAN LITIO S.A.',
+'GANAM MAURELL CARLOS ENRIQUE',
+'GAVINOR S.R.L.',
+'GEOMIX S.R.L.',
+'GEOTERRA S.R.L.',
+'GUERRERO JUAN CARLOS',
+'GUITIAN RICARDA SALOME',
+'GUSTAVO CESAR ANTONIO ASTUDILLO ROSA',
+'HANACOLLA S.A.',
+'HANAQ ARGENTINA S.A.',
+'HANCHA S.A.',
+'HANTARA S.A.',
+'HASTANA S.A.',
+'HERRERA JUAN MANUEL',
+'HIJOS DE SALVADOR MUÑOZ S.R.L.',
+'HOYOS SIMON AGUSTIN',
+'IACUZZI FRANCISCO',
+'IGLESIAS LUCAS PEDRO',
+'IMERYS MINERALES ARGENTINA S.A.',
+'INCOVI S.R.L.',
+'INFANTE MARÍA DEL VALLE',
+'INGENIERO MEDINA S.A.',
+'INTEGRA RECURSOS NATURALES S.A.',
+'JUAREZ LEONARDO NICOLAS',
+'JUPITER S.R.L.',
+'LA CASUALIDAD S.A.',
+'LAGOS CLAUDIO ANTONIO',
+'LALIN HECTOR DANIEL',
+'LAMARCA CARLOS ALBERTO',
+'LAS GRAMAS S.A.',
+'LIENDRO MARIA ELSA',
+'LILAC SOLUTIONS ARIZARO S.A.U.',
+'LITHEA INC SUCURSAL ARGENTINA',
+'LITHIUM ARGENTINA RESOURCES S.A.',
+'LITHIUM S CORPORATION S.A.',
+'LITIO ARGENTINO S.A.',
+'LITIO MINERA ARGENTINA S.A.',
+'LOMA NEGRA COMPAÑIA INDUSTRIAL ARGENTINA S.A.',
+'LONDERO JUAN LUIS',
+'LOPEZ SABRINA VANESA DEL HUERTO',
+'LOPEZ SANCHEZ ROQUE',
+'LOZA CALIXTO',
+'LOZANO ENRIQUE ADOLFO',
+'LOZANO JUAN DOMINGO',
+'MAITA SANDRA SUSANA',
+'MANSFIELD MINERA S.A.',
+'MANUFACTURAS LOS ANDES S.A.',
+'MARTINEZ ANGEL GASTON',
+'MARTINEZ EDUARDO PATRICIO',
+'MARTINEZ OSCAR DAVID',
+'MASIE HECTOR',
+'MATERIAS PRIMAS ARGENTINA',
+'MEDINA HECTOR ENRIQUE',
+'M.E.I. OBRAS Y SERVICIOS S.R.L.',
+'MELLADO SLEIVE DANIEL EDUARDO',
+'MINERA ANSOTANA S.A.',
+'MINERA AUSTRAL S.A.',
+'MINERA CERRO JUNCAL S.A.',
+'MINERA DEL ALTIPLANO S.A.',
+'MINERA EL TORO S.A.',
+'MINERA INDUSTRIAL ARGENTINA S.R.L.',
+'MINERA SANTA RITA S.R.L.',
+'MOCOVI S.R.L.',
+'MONCHOLI MARIO ANGEL BLAS',
+'MONTERRUBIO PEDRO DANIEL',
+'MORALES ALEJANDRINA',
+'MORALES CAMILO ALBERTO',
+'MORALES FELIX HUMBERTO',
+'MORALES JUAN',
+'MORENO JORGE ENRIQUE',
+'MULTIQUIM S.R.L.',
+'MUNIAGURRIA CARLOS JORGE',
+'MUNICIPALIDAD DE LAS LAJITAS',
+'NEVADO MINERALS S.A.',
+'NOA ARIZARO S.A.U.',
+'NOA LITHIUM BRINES S.A.',
+'NOVOA NORMA INES',
+'NRG METALS ARGENTINA S.A.',
+'NUÑEZ FEDERICO RAMON',
+'NUÑEZ RAMON',
+'OLIVA GUSTAVO WALTER',
+'PACHA MINERALS S.A.',
+'PACIFIC RIM MINING CORPORATION ARGENTINA S.A.',
+'PADILLA LILIA AURORA',
+'PAN AMERICAN ENERGY',
+'PESTAÑA DIEGO MARTIN',
+'PILCO LEAL PATRICIA OLIVIA',
+'PONCE DE LEON ANTONIO ARGENTINO',
+'POSCO ARGENTINA S.A.U.',
+'POTASIO Y LITIO DE ARGENTINA S.A.',
+'POWER MINERALS S.A.',
+'PRODUCTORA V-D S.R.L.',
+'PROYECTO PASTOS GRANDES S.A.',
+'PUCA DE VIVERO SALOME',
+'PUNA ARGENTINA S.A.S.',
+'PUNA MINING S.A.',
+'QUIPILDOR HUGO VICTOR',
+'QUIQUINTO ELIZABET AMERICA',
+'QUIROZ RENE OSVALDO',
+'RAV S.R.L.',
+'RECHARGE RESOURCES ARGENTINA S.A.U.',
+'RECURSOS ENERGETICOS Y MINEROS SALTA S.A.',
+'RENE ELADIO VALDEZ S.R.L.',
+'RINCON MINING LIMITED',
+'RIODEORO S.A.',
+'RIZZOTTI DANIEL ANTONIO',
+'RODRIGUEZ ELADIO',
+'RODRIGUEZ SILVIA RENE',
+'ROJO NATALIA',
+'SALTA AMBIENTAL S.R.L.',
+'SALTA EXPLORACIONES S.A.',
+'SALTA GEOTHERMAL S.A.',
+'SANTA INES COPPER S.A.',
+'SARAVIA NAVAMUEL HECTOR',
+'SCHUBERT JULIO ADOLFO',
+'SERVICIOS MINEROS ATACAMA S.R.L.',
+'SERVICIOS Y EXPLOTACIONES MINERAS CRUZ S.R.L.',
+'SERVICIOS Y PROYECTOS MINEROS S.R.L.',
+'SIERRA OSVALDO',
+'SILEX ARGENTINA S.A.',
+'SOSA ALBERTO RAYMUNDO',
+'SOSA QUINTANA RAYMUNDO',
+'SOUTHERN EAGLE MINING ARGENTINA S.A.',
+'SRUR ANTONIO',
+'STUDER SIMON DAVID',
+'SULCA SANCHEZ JAVIER FRANCISCO',
+'TAMER OSCAR ADOLFO',
+'TAPIA JUAN MARCELINO',
+'TARITOLAY CESAR ARMANDO',
+'TEJERINA ELISA DE SORIANO',
+'TOLABA ESCOLASTICO',
+'TORTUGA DE ORO S.A.',
+'ULEX S.A.',
+'ULTRA ARGENTINA S.R.L.',
+'VACAREZZA JUAN ESTEBAN ROBUSTIANO',
+'VALDEZ JUAN CARLOS',
+'VALDEZ NORMA SEBASTIANA',
+'VALDEZ RUBEN ELADIO',
+'VARGAS ORLANDO SERGIO',
+'VENTICOLA GONZALO FEDERICO',
+'VIAL ZENTA S.R.L.',
+'VIALMANI S.A.',
+'VICCO AMALIA MARGARITA',
+'VIDAL ENRIQUE JOSE',
+'VIENTO BLANCO S.R.L.',
+'VIRGILI SAN MILLAN SEBASTIAN',
+'VITTONE HECTOR FELIX',
+'VITTORI RAUL EDUARDO',
+'VIVEROS MARTIN',
+'WOMBAT MINERALS S.A.',
+'YACONES S.R.L',
+'YAMANA ARGENTINA SERVICIOS S.A.',
+'YDIARTE ELEUDORO',
+'AGUILAR SERGIO IGNACIO',
+'TEMPERLEY DIEGO GUILLERMO',
+'VIRGILI SAN MILLAN FERNANDO',
+'ALVAREZ RODRIGO HORACIO',
+'CELORRIO IGNACIO HERNAN',
+'MONCHOLI PABLO',
+'VARELA JACINTO OSCAR',
+'FROMM CARLOS EDUARDO',
+'NIOI CLEMENT MILAGROS',
+'GOYTIA FERNANDO JOSE',
+'PONESSA MARCOS ANTONIO',
+'GOMEZ NAAR MARIA',
+'NEREO NESTOR MARTIN',
+'MASIE WALTER',
+'MORALES RICARDO',
+'SALAS ALBA SILVIA',
+'PADILLA SILVIA DEL ROSARIO',
+'SOUTH AMERICAN SALARS S.A.',
+'TARITOLAY RESTITUTO',
+'BANDI ALBERTO',
+'MAURICIO EMILIANO DAROCA S.A.',
+'GUERRERO ALVARADO DAVID',
+'NIOI CLEMENT FACUNDO',
+'PATRON COSTAS FRANCISCO JOSE'
+    ]
+    companies = Companies.objects.using("simsa").filter(isdeleted=False,
+        id=Cast(OuterRef("objectid"), output_field=UUIDField())
+    ).values("name")[:1]
+
+    empresas_con_usuario = Users.objects.using("simsa").filter(isdeleted=False) \
+        .select_related("roleid") \
+        .annotate(company_name=Subquery(companies)) \
+        .values_list("company_name", flat=True)
+
+    empresas_sin_usuario = [e for e in todas_empresas if e not in empresas_con_usuario]
+
+    df = pd.DataFrame({"Empresa": empresas_sin_usuario})
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        df.to_excel(writer, index=False, sheet_name="Empresas sin Usuario")
+
+    output.seek(0)
+    response = HttpResponse(output, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = 'attachment; filename="empresas_sin_usuario.xlsx"'
+    return response
+
+def empresas_sin_usuario_pdf(request):
+    # Lista completa de empresas que deberían tener usuario
+    todas_empresas = [
+        'ADVANTAGE LITHIUM ARGENTINA S.A.',
+'AFRANLLIE JORGE DAVID',
+'AGUILAR DE GUAIMAS MABEL ALICIA',
+'AGUILAR JOSE ARMANDO',
+'AGUILAR JUAN ANGEL',
+'ALDEBARAN ARGENTINA S.A.',
+'ALEXANDER GOLD GROUP LIMITED',
+'ALPHA LITHIUM ARGENTINA S.A.',
+'ALPHA MINERALS S.A.U.',
+'ALQA LITHIUM S.A.',
+'ALTO GRANDE LITHIUM S.A.',
+'ALVAREZ CLAUDIA ANAHI',
+'ALVAREZ HNOS S.R.L.',
+'ANDES MINERAL EXPLORATION S.A.',
+'ANGLOGOLD ARGENTINA EXPLORACIONES S.A.',
+'ARAYA ALFONSO LUIS',
+'ARENAS ALEXIS ADRIEL',
+'ARGAÑARAZ OLIVERO FACUNDO PEDRO',
+'ARGAÑARAZ OLIVERO RAFAEL',
+'ARGENTINA LITIO Y ENERGIA S.A.',
+'ARLI S.A.',
+'ASTRALI S.A.',
+'AVANTI S.R.L.',
+'BARR NICOLAS ANDRES',
+'BAVIO MIGUEL ALEJANDRO',
+'BHP BILLITON WORLD EXPLORATION INC.',
+'BOLERA MINERA S.A.',
+'BONIFACIO DALMIRO ERNESTO',
+'BORAX ARGENTINA S.A.',
+'BRINE LITHIUM RESOURCES S.A.',
+'BUGANEM CARLOS CRISTIAN',
+'BURGOS MIGUEL MARTIN',
+'CAIMI FERNANDO ENRIQUE',
+'CAMPOS CARLOS ALBERTO',
+'CARAPARI S.A.',
+'CARDERO ARGENTINA S.A.',
+'CARDOZO LUIS EDUARDO',
+'CARLOS ALBERTO REPETTO',
+'CARRANQUE JORGE DANIEL',
+'CASCADERO MINERALS S.A.',
+'CASTALIA MINING S.A.',
+'CASTILLO HUGO HECTOR',
+'CASTILLO ROBERTO JULIO',
+'CENTENARIO LITHIUM S.A.',
+'CERAMICA ALBERDI S.A.',
+'CHILIGUAY FACUNDO ROBERTO',
+'COLORADO S.A.',
+'COLQUE EXPLORACIONES S.A.',
+'COLQUE GERARDO MARTIN',
+'COMISION NACIONAL DE ENERGIA ATOMICA',
+'CONDORYACU S.R.L.',
+'COOPERATIVA DE TRABAJO LA MESA REDONDA LTDA.',
+'COOPERATIVA DE TRABAJO MINACLAR LTDA.',
+'CORNEJO DIEZ ADOLFO',
+'CORNEJO ULADISLAO',
+'CORRIENTE ARGENTINA S.A.',
+'COSMOS MINERALS S.A.',
+'COZZI ELISA ADELA',
+'CRITICAL REAGENTS ARGENTINA S.A.S.',
+'CRUZ HIPOLITO GUMERCINDO',
+'CRUZ JOSE ROBERTO',
+'CRUZ LEA ELIANA',
+'CRUZ NICOLAS',
+'DAGUN ANDREA LORENA',
+'DAL BORGO CESAR DOMINGO',
+'DAROCA MAURICIO EMILIANO',
+'DEFENSA Y ENCAUZAMIENTO S.A.',
+'DELGADO PATRICIA NOEMI',
+'DEMISA CONSTRUCCIONES S.A.',
+'DI GIORGIO OSVALDO',
+'DIAZ SERGIO RICARDO',
+'DIEGO RUBEN OMAR',
+'DINARCO S.A.',
+'DOMECQ TRISTAN ALFONSO',
+'EGEO S.A.',
+'EKEKO S.A.',
+'EL PACHAR S.R.L.',
+'EL TERRAPLEN S.R.L.',
+'ELECTROQUIMICA EL CARMEN S.A.',
+'EMISA S.A.',
+'ERAMINE SUDAMERICA S.A.',
+'ESCALANTE ALBERTO',
+'ESCALANTE CARLOS ROBERTO',
+'ESPINOSA ALBA ANDREA',
+'FERNANDEZ MERCEDES ROSALIA',
+'FERNANDEZ PEREZ CARLOS EDUARDO',
+'FIGUEROA PATRON VICTOR',
+'GALAN LITIO S.A.',
+'GANAM MAURELL CARLOS ENRIQUE',
+'GAVINOR S.R.L.',
+'GEOMIX S.R.L.',
+'GEOTERRA S.R.L.',
+'GUERRERO JUAN CARLOS',
+'GUITIAN RICARDA SALOME',
+'GUSTAVO CESAR ANTONIO ASTUDILLO ROSA',
+'HANACOLLA S.A.',
+'HANAQ ARGENTINA S.A.',
+'HANCHA S.A.',
+'HANTARA S.A.',
+'HASTANA S.A.',
+'HERRERA JUAN MANUEL',
+'HIJOS DE SALVADOR MUÑOZ S.R.L.',
+'HOYOS SIMON AGUSTIN',
+'IACUZZI FRANCISCO',
+'IGLESIAS LUCAS PEDRO',
+'IMERYS MINERALES ARGENTINA S.A.',
+'INCOVI S.R.L.',
+'INFANTE MARÍA DEL VALLE',
+'INGENIERO MEDINA S.A.',
+'INTEGRA RECURSOS NATURALES S.A.',
+'JUAREZ LEONARDO NICOLAS',
+'JUPITER S.R.L.',
+'LA CASUALIDAD S.A.',
+'LAGOS CLAUDIO ANTONIO',
+'LALIN HECTOR DANIEL',
+'LAMARCA CARLOS ALBERTO',
+'LAS GRAMAS S.A.',
+'LIENDRO MARIA ELSA',
+'LILAC SOLUTIONS ARIZARO S.A.U.',
+'LITHEA INC SUCURSAL ARGENTINA',
+'LITHIUM ARGENTINA RESOURCES S.A.',
+'LITHIUM S CORPORATION S.A.',
+'LITIO ARGENTINO S.A.',
+'LITIO MINERA ARGENTINA S.A.',
+'LOMA NEGRA COMPAÑIA INDUSTRIAL ARGENTINA S.A.',
+'LONDERO JUAN LUIS',
+'LOPEZ SABRINA VANESA DEL HUERTO',
+'LOPEZ SANCHEZ ROQUE',
+'LOZA CALIXTO',
+'LOZANO ENRIQUE ADOLFO',
+'LOZANO JUAN DOMINGO',
+'MAITA SANDRA SUSANA',
+'MANSFIELD MINERA S.A.',
+'MANUFACTURAS LOS ANDES S.A.',
+'MARTINEZ ANGEL GASTON',
+'MARTINEZ EDUARDO PATRICIO',
+'MARTINEZ OSCAR DAVID',
+'MASIE HECTOR',
+'MATERIAS PRIMAS ARGENTINA',
+'MEDINA HECTOR ENRIQUE',
+'M.E.I. OBRAS Y SERVICIOS S.R.L.',
+'MELLADO SLEIVE DANIEL EDUARDO',
+'MINERA ANSOTANA S.A.',
+'MINERA AUSTRAL S.A.',
+'MINERA CERRO JUNCAL S.A.',
+'MINERA DEL ALTIPLANO S.A.',
+'MINERA EL TORO S.A.',
+'MINERA INDUSTRIAL ARGENTINA S.R.L.',
+'MINERA SANTA RITA S.R.L.',
+'MOCOVI S.R.L.',
+'MONCHOLI MARIO ANGEL BLAS',
+'MONTERRUBIO PEDRO DANIEL',
+'MORALES ALEJANDRINA',
+'MORALES CAMILO ALBERTO',
+'MORALES FELIX HUMBERTO',
+'MORALES JUAN',
+'MORENO JORGE ENRIQUE',
+'MULTIQUIM S.R.L.',
+'MUNIAGURRIA CARLOS JORGE',
+'MUNICIPALIDAD DE LAS LAJITAS',
+'NEVADO MINERALS S.A.',
+'NOA ARIZARO S.A.U.',
+'NOA LITHIUM BRINES S.A.',
+'NOVOA NORMA INES',
+'NRG METALS ARGENTINA S.A.',
+'NUÑEZ FEDERICO RAMON',
+'NUÑEZ RAMON',
+'OLIVA GUSTAVO WALTER',
+'PACHA MINERALS S.A.',
+'PACIFIC RIM MINING CORPORATION ARGENTINA S.A.',
+'PADILLA LILIA AURORA',
+'PAN AMERICAN ENERGY',
+'PESTAÑA DIEGO MARTIN',
+'PILCO LEAL PATRICIA OLIVIA',
+'PONCE DE LEON ANTONIO ARGENTINO',
+'POSCO ARGENTINA S.A.U.',
+'POTASIO Y LITIO DE ARGENTINA S.A.',
+'POWER MINERALS S.A.',
+'PRODUCTORA V-D S.R.L.',
+'PROYECTO PASTOS GRANDES S.A.',
+'PUCA DE VIVERO SALOME',
+'PUNA ARGENTINA S.A.S.',
+'PUNA MINING S.A.',
+'QUIPILDOR HUGO VICTOR',
+'QUIQUINTO ELIZABET AMERICA',
+'QUIROZ RENE OSVALDO',
+'RAV S.R.L.',
+'RECHARGE RESOURCES ARGENTINA S.A.U.',
+'RECURSOS ENERGETICOS Y MINEROS SALTA S.A.',
+'RENE ELADIO VALDEZ S.R.L.',
+'RINCON MINING LIMITED',
+'RIODEORO S.A.',
+'RIZZOTTI DANIEL ANTONIO',
+'RODRIGUEZ ELADIO',
+'RODRIGUEZ SILVIA RENE',
+'ROJO NATALIA',
+'SALTA AMBIENTAL S.R.L.',
+'SALTA EXPLORACIONES S.A.',
+'SALTA GEOTHERMAL S.A.',
+'SANTA INES COPPER S.A.',
+'SARAVIA NAVAMUEL HECTOR',
+'SCHUBERT JULIO ADOLFO',
+'SERVICIOS MINEROS ATACAMA S.R.L.',
+'SERVICIOS Y EXPLOTACIONES MINERAS CRUZ S.R.L.',
+'SERVICIOS Y PROYECTOS MINEROS S.R.L.',
+'SIERRA OSVALDO',
+'SILEX ARGENTINA S.A.',
+'SOSA ALBERTO RAYMUNDO',
+'SOSA QUINTANA RAYMUNDO',
+'SOUTHERN EAGLE MINING ARGENTINA S.A.',
+'SRUR ANTONIO',
+'STUDER SIMON DAVID',
+'SULCA SANCHEZ JAVIER FRANCISCO',
+'TAMER OSCAR ADOLFO',
+'TAPIA JUAN MARCELINO',
+'TARITOLAY CESAR ARMANDO',
+'TEJERINA ELISA DE SORIANO',
+'TOLABA ESCOLASTICO',
+'TORTUGA DE ORO S.A.',
+'ULEX S.A.',
+'ULTRA ARGENTINA S.R.L.',
+'VACAREZZA JUAN ESTEBAN ROBUSTIANO',
+'VALDEZ JUAN CARLOS',
+'VALDEZ NORMA SEBASTIANA',
+'VALDEZ RUBEN ELADIO',
+'VARGAS ORLANDO SERGIO',
+'VENTICOLA GONZALO FEDERICO',
+'VIAL ZENTA S.R.L.',
+'VIALMANI S.A.',
+'VICCO AMALIA MARGARITA',
+'VIDAL ENRIQUE JOSE',
+'VIENTO BLANCO S.R.L.',
+'VIRGILI SAN MILLAN SEBASTIAN',
+'VITTONE HECTOR FELIX',
+'VITTORI RAUL EDUARDO',
+'VIVEROS MARTIN',
+'WOMBAT MINERALS S.A.',
+'YACONES S.R.L',
+'YAMANA ARGENTINA SERVICIOS S.A.',
+'YDIARTE ELEUDORO',
+'AGUILAR SERGIO IGNACIO',
+'TEMPERLEY DIEGO GUILLERMO',
+'VIRGILI SAN MILLAN FERNANDO',
+'ALVAREZ RODRIGO HORACIO',
+'CELORRIO IGNACIO HERNAN',
+'MONCHOLI PABLO',
+'VARELA JACINTO OSCAR',
+'FROMM CARLOS EDUARDO',
+'NIOI CLEMENT MILAGROS',
+'GOYTIA FERNANDO JOSE',
+'PONESSA MARCOS ANTONIO',
+'GOMEZ NAAR MARIA',
+'NEREO NESTOR MARTIN',
+'MASIE WALTER',
+'MORALES RICARDO',
+'SALAS ALBA SILVIA',
+'PADILLA SILVIA DEL ROSARIO',
+'SOUTH AMERICAN SALARS S.A.',
+'TARITOLAY RESTITUTO',
+'BANDI ALBERTO',
+'MAURICIO EMILIANO DAROCA S.A.',
+'GUERRERO ALVARADO DAVID',
+'NIOI CLEMENT FACUNDO',
+'PATRON COSTAS FRANCISCO JOSE'
+    ]
+    companies = Companies.objects.using("simsa").filter(isdeleted=False,
+        id=Cast(OuterRef("objectid"), output_field=UUIDField())
+    ).values("name")[:1]
+
+    # Consultar usuarios admin de empresas
+    empresas_con_usuario = list(
+        Users.objects.using("simsa")
+        .filter(isdeleted=False)
+        .select_related("roleid")
+        .annotate(company_name=Subquery(companies))
+        .values_list("company_name", flat=True)
+    )
+
+    # Filtrar empresas que no tienen usuario
+    empresas_sin_usuario = [e for e in todas_empresas if e not in empresas_con_usuario]
+
+    # Crear PDF en memoria
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=40, leftMargin=40, rightMargin=40)
+    elements = []
+    styles = getSampleStyleSheet()
+
+    # === Logo arriba a la derecha ===
+    logo_path = os.path.join(settings.BASE_DIR, "app/static/img/logo.png")
+    if os.path.exists(logo_path):
+        img = Image(logo_path, width=200, height=50)  # ajustá tamaño si hace falta
+        img.hAlign = "RIGHT"
+        elements.append(img)
+
+    elements.append(Spacer(1, 12))
+
+    # === Título ===
+    elements.append(Paragraph("Empresas sin Usuario", styles['Heading1']))
+    elements.append(Spacer(1, 20))
+
+    # === Tabla ===
+    data = [["#", "Empresa"]] + [[i+1, e] for i, e in enumerate(empresas_sin_usuario)]
+    t = Table(data, colWidths=[30, 450])
+    t.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.darkgrey),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, -1), 9),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 6),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.whitesmoke, colors.lightgrey])
+    ]))
+    elements.append(t)
+
+    doc.build(elements)
+
+    buffer.seek(0)
+    response = HttpResponse(buffer, content_type="application/pdf")
+    response["Content-Disposition"] = 'attachment; filename="empresas_sin_usuario.pdf"'
+    return response
+
+def reporte_empresas_sin_proyecto_pdf(request):
+    # Obtener los usuarios Admin Empresa
+    users = Users.objects.using("simsa").filter(isdeleted=False,
+        roleid__name='Admin Empresa'
+    ).values("objectid", "username", "email")
+
+    # Convertir los objectid a UUID
+    users_map = {}
+    for u in users:
+        if u["objectid"]:
+            try:
+                users_map[uuid.UUID(u["objectid"])] = {
+                    "username": u["username"],
+                    "email": u["email"]
+                }
+            except ValueError:
+                continue
+
+    users_uuid = list(users_map.keys())
+
+    # Subquery para proyectos activos
+    proyectos_activos = Companyprojects.objects.filter(
+        companyid=OuterRef('pk'),
+        isdeleted=False,
+        projectid__isdeleted=False
+    )
+
+    # Empresas sin proyecto pero con usuario
+    empresas_sin_proyecto = Companies.objects.using("simsa").filter(isdeleted=False,
+        id__in=users_uuid
+    ).annotate(
+        tiene_proyecto=Exists(proyectos_activos)
+    ).filter(tiene_proyecto=False)
+
+    # Generar el PDF
+    response = HttpResponse(content_type="application/pdf")
+    response["Content-Disposition"] = 'attachment; filename="empresas_sin_proyecto.pdf"'
+
+    p = canvas.Canvas(response, pagesize=A4)
+    width, height = A4
+
+    # === Logo arriba a la derecha ===
+    logo_path = os.path.join(settings.BASE_DIR, "app/static/img/logo.png")
+    if os.path.exists(logo_path):
+        logo_width = 200
+        logo_height = 50
+        p.drawImage(
+            logo_path,
+            width - logo_width - 40,  # 40 px de margen derecho
+            height - logo_height - 30,  # 30 px de margen superior
+            width=logo_width,
+            height=logo_height,
+            preserveAspectRatio=True,
+            mask="auto"
+        )
+
+    # === Título ===
+    p.setFont("Helvetica-Bold", 16)
+    p.drawString(50, height - 60, "Empresas con Usuario sin Proyecto")
+
+    # === Encabezados de la tabla ===
+    y = height - 100
+    p.setFont("Helvetica-Bold", 12)
+    p.drawString(50, y, "Empresa")
+    p.drawString(250, y, "Usuario")
+    p.drawString(400, y, "Email")
+    y -= 20
+
+    # === Contenido ===
+    p.setFont("Helvetica", 10)
+    for empresa in empresas_sin_proyecto:
+        user_info = users_map.get(empresa.id, {"username": "-", "email": "-"})
+        p.drawString(50, y, empresa.name[:30])  # truncar por seguridad
+        p.drawString(250, y, user_info["username"] or "-")
+        p.drawString(400, y, user_info["email"] or "-")
+        y -= 15
+
+        # Salto de página
+        if y < 50:
+            p.showPage()
+            y = height - 60
+
+            # Redibujar logo en páginas nuevas
+            if os.path.exists(logo_path):
+                p.drawImage(
+                    logo_path,
+                    width - logo_width - 40,
+                    height - logo_height - 30,
+                    width=logo_width,
+                    height=logo_height,
+                    preserveAspectRatio=True,
+                    mask="auto"
+                )
+
+            p.setFont("Helvetica", 10)
+
+    p.save()
+    return response
+
+def reporte_empresas_sin_presentacion_pdf(request):
+    # Obtener los usuarios Admin Empresa
+    users = Users.objects.using("simsa").filter(isdeleted=False,
+        roleid__name='Admin Empresa'
+    ).values("objectid", "username", "email")
+
+    # Convertir los objectid a UUID y mapear usuario/email
+    users_map = {}
+    for u in users:
+        if u["objectid"]:
+            try:
+                users_map[uuid.UUID(u["objectid"])] = {
+                    "username": u["username"],
+                    "email": u["email"]
+                }
+            except ValueError:
+                continue
+
+    users_uuid = list(users_map.keys())
+
+    # Subquery de proyectos activos
+    proyectos_activos = Companyprojects.objects.filter(
+        companyid=OuterRef('pk'),
+        isdeleted=False,
+        projectid__isdeleted=False
+    )
+
+    # Subquery de presentaciones
+    presentaciones = Presentations.objects.filter(
+        projectid__companyprojects__companyid=OuterRef('pk'),
+        isdeleted=False
+    )
+
+    # Empresas que tienen proyecto pero no tienen presentaciones
+    empresas_sin_presentacion = Companies.objects.using("simsa").filter(isdeleted=False,
+        id__in=users_uuid
+    ).annotate(
+        tiene_proyecto=Exists(proyectos_activos),
+        tiene_presentacion=Exists(presentaciones)
+    ).filter(
+        tiene_proyecto=True,
+        tiene_presentacion=False
+    )
+
+    # Generar PDF
+    response = HttpResponse(content_type="application/pdf")
+    response["Content-Disposition"] = 'attachment; filename="empresas_sin_presentacion.pdf"'
+
+    doc = SimpleDocTemplate(response, pagesize=A4,topMargin=30)
+    elements = []
+    styles = getSampleStyleSheet()
+
+    # Agregar logo arriba a la derecha
+    logo_path = os.path.join(settings.BASE_DIR, "app/static/img/logo.png")  # ajustá el nombre del archivo
+    if os.path.exists(logo_path):
+        img = Image(logo_path, width=200, height=50)  # tamaño ajustable
+        img.hAlign = "RIGHT"
+        elements.append(img)
+
+    elements.append(Spacer(1, 12))
+
+    # Título
+    elements.append(Paragraph("Empresas con Proyecto sin DDJJ", styles["Heading1"]))
+    elements.append(Spacer(1, 20))
+
+    # Tabla
+    data = [["Empresa", "Usuario", "Email"]]
+    for empresa in empresas_sin_presentacion:
+        user_info = users_map.get(empresa.id, {"username": "-", "email": "-"})
+        data.append([
+            empresa.name,
+            user_info["username"] or "-",
+            user_info["email"] or "-"
+        ])
+
+    table = Table(data, colWidths=[200, 120, 200])
+    table.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#003366")),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("ALIGN", (0, 0), (-1, -1), "LEFT"),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("FONTSIZE", (0, 0), (-1, 0), 12),
+        ("BOTTOMPADDING", (0, 0), (-1, 0), 8),
+        ("GRID", (0, 0), (-1, -1), 0.25, colors.grey),
+        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.whitesmoke, colors.lightgrey]),
+    ]))
+
+    elements.append(table)
+    doc.build(elements)
+
+    return response
+
+
+def reporte_empresas_sin_proyecto_excel(request):
+    # Obtener los usuarios Admin Empresa
+    users = Users.objects.using("simsa").filter(isdeleted=False,
+        roleid__name='Admin Empresa'
+    ).values("objectid", "username", "email")
+
+    # Convertir los objectid a UUID y mapear usuario/email
+    users_map = {}
+    for u in users:
+        if u["objectid"]:
+            try:
+                users_map[uuid.UUID(u["objectid"])] = {
+                    "username": u["username"],
+                    "email": u["email"]
+                }
+            except ValueError:
+                continue
+
+    users_uuid = list(users_map.keys())
+
+    # Subquery para proyectos activos
+    proyectos_activos = Companyprojects.objects.filter(
+        companyid=OuterRef('pk'),
+        isdeleted=False,
+        projectid__isdeleted=False
+    )
+
+    # Empresas sin proyecto pero con usuario
+    empresas_sin_proyecto = Companies.objects.using("simsa").filter(isdeleted=False,
+        id__in=users_uuid
+    ).annotate(
+        tiene_proyecto=Exists(proyectos_activos)
+    ).filter(tiene_proyecto=False)
+
+    # Crear archivo Excel
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Empresas sin Proyecto"
+
+    # Escribir encabezados
+    headers = ["Nombre de Empresa", "Usuario", "Email"]
+    ws.append(headers)
+
+    # Escribir datos
+    for empresa in empresas_sin_proyecto:
+        user_data = users_map.get(empresa.id, {"username": "", "email": ""})
+        ws.append([
+            empresa.name,
+            user_data["username"],
+            user_data["email"]
+        ])
+
+    # Ajustar ancho de columnas
+    for i, col in enumerate(headers, 1):
+        ws.column_dimensions[get_column_letter(i)].width = 30
+
+    # Preparar respuesta HTTP
+    response = HttpResponse(
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+    response["Content-Disposition"] = 'attachment; filename="empresas_sin_proyecto.xlsx"'
+    wb.save(response)
+
+    return response
+
+def reporte_empresas_sin_presentacion_excel(request):
+    # Obtener los usuarios Admin Empresa
+    users = Users.objects.using("simsa").filter(isdeleted=False,
+        roleid__name='Admin Empresa'
+    ).values("objectid", "username", "email")
+
+    # Convertir los objectid a UUID y mapear usuario/email
+    users_map = {}
+    for u in users:
+        if u["objectid"]:
+            try:
+                users_map[uuid.UUID(u["objectid"])] = {
+                    "username": u["username"],
+                    "email": u["email"]
+                }
+            except ValueError:
+                continue
+
+    users_uuid = list(users_map.keys())
+
+    # Subquery de proyectos activos
+    proyectos_activos = Companyprojects.objects.filter(
+        companyid=OuterRef('pk'),
+        isdeleted=False,
+        projectid__isdeleted=False
+    )
+
+    # Subquery de presentaciones
+    presentaciones = Presentations.objects.filter(
+        projectid__companyprojects__companyid=OuterRef('pk'),
+        isdeleted=False
+    )
+
+    # Empresas que TIENEN proyecto pero NO tienen presentaciones
+    empresas_sin_presentacion = Companies.objects.using("simsa").filter(
+        id__in=users_uuid
+    ).annotate(
+        tiene_proyecto=Exists(proyectos_activos),
+        tiene_presentacion=Exists(presentaciones)
+    ).filter(
+        tiene_proyecto=True,
+        tiene_presentacion=False
+    )
+
+    # Crear archivo Excel
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Empresas sin Presentación"
+
+    # Escribir encabezados
+    headers = ["Nombre de Empresa", "Usuario", "Email"]
+    ws.append(headers)
+
+    # Escribir datos
+    for empresa in empresas_sin_presentacion:
+        user_data = users_map.get(empresa.id, {"username": "", "email": ""})
+        ws.append([
+            empresa.name,
+            user_data["username"],
+            user_data["email"]
+        ])
+
+    # Ajustar ancho de columnas
+    for i, col in enumerate(headers, 1):
+        ws.column_dimensions[get_column_letter(i)].width = 30
+
+    # Preparar respuesta HTTP
+    response = HttpResponse(
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+    response["Content-Disposition"] = 'attachment; filename="empresas_sin_presentacion.xlsx"'
+    wb.save(response)
+
+    return response
+
+def deudas_expedientes(request):
+    query = """
+    select 
+        e."Expediente",
+        e."Nombre" as "ExpedienteNombre",
+        c2."Name" ,
+        case 
+            when count(distinct cp."Id") = 3 then '2024 | 2do Semestre'
+            when count(distinct cp."Id") = 4 then '2024 | 1er Semestre'
+            when count(distinct cp."Id") = 5 then '2023 | 2do Semestre'
+            when count(distinct cp."Id") = 6 then '2023 | 1er Semestre'
+            else count(distinct cp."Id")::text
+        end as semestres_adeudados,
+        sum(c."Total") as total_deuda
+    from "Canons" c
+    inner join "Expedients" e on e."Id" = c."ExpedientId"
+    inner join "CanonPeriods" cp on cp."Id" = c."CanonPeriodId"
+    inner join "CompanyExpedients" ce on ce."ExpedientId" = e."Id" 
+    inner join "Companies" c2 on c2."Id" = ce."CompanyId"
+    where c."Paid" = 0
+        and e."Tipo" = 'Mina'
+        and cp."StartDate" <= CURRENT_DATE
+        and ce."IsDeleted" = False
+    group by e."Expediente", e."Nombre",c2."Name"
+    having count(distinct cp."Id") >= 3
+    order by semestres_adeudados desc, total_deuda desc;
+    """
+
+    with connections['simsa'].cursor() as cursor:
+        cursor.execute(query)
+        cols = [col[0] for col in cursor.description]
+        results = [dict(zip(cols, row)) for row in cursor.fetchall()]
+
+    return render(request, "simsa/deudas_expedientes.html", {"resultados": results})
+
+def reportes_home(request):
+    """
+    Página principal para la generación de reportes.
+    Muestra botones tipo card para cada reporte.
+    """
+    return render(request, "simsa/reports.html")
+
+def tablero_home(request):
+    """
+    Página principal para la generación de reportes.
+    Muestra botones tipo card para cada reporte.
+    """
+    return render(request, "simsa/tablero.html")
+
+
+
+
+def consulta_deuda_expediente(request):
+    
+    return render(request, 'simsa/consulta_expedietes.html')
+
+
+
+def consulta_deuda_datos(request):
+    """Devuelve solo el expediente buscado."""
+    termino = request.GET.get('numero')
+    print("Búsqueda:", termino)
+
+    if not termino:
+        return HttpResponse("<p style='color:red;'>Debe ingresar un número o nombre de expediente.</p>")
+
+    # Buscar por número o nombre
+    expediente = None
+    if termino.isdigit():
+        expediente = Expedients.objects.using("simsa").filter(expediente=termino, isdeleted=False).first()
+    else:
+        expediente = Expedients.objects.using("simsa").filter(nombre__icontains=termino, isdeleted=False).first()
+
+    if not expediente:
+        return HttpResponse("<p style='color:red;'>No se encontró un expediente con ese número o nombre.</p>")
+
+    concesionarios = (
+        expediente.companyexpedients_set
+        .filter(isdeleted=False)
+        .select_related('companyid')
+        .values_list('companyid__name', flat=True)
+    )
+
+    pagos = (
+        Canons.objects.using("simsa")
+        .filter(expedientid=expediente, isdeleted=False)
+        .select_related('canonperiodid', 'canonstateid')
+        .order_by('-canonperiodid__startdate')
+    )
+
+    context = {
+        'expediente': expediente,
+        'concesionarios': concesionarios,
+        'pagos': pagos,
+    }
+
+    return render(request, 'simsa/consulta_resultado.html', context)
+
+
+def expedientes_concesionario(request):
+    """Devuelve los demás expedientes del mismo concesionario (con pagos)."""
+    expediente_id = request.GET.get('id')
+
+    if not expediente_id:
+        return HttpResponse("<p style='color:red;'>Falta el ID del expediente principal.</p>")
+
+    try:
+        expediente_principal = Expedients.objects.using("simsa").get(id=expediente_id, isdeleted=False)
+    except Expedients.DoesNotExist:
+        return HttpResponse("<p style='color:red;'>Expediente no encontrado.</p>")
+
+    # Concesionarios del principal
+    concesionarios_ids = expediente_principal.companyexpedients_set.filter(isdeleted=False).values_list("companyid", flat=True)
+
+    # Otros expedientes del mismo concesionario (tipo Mina o Cantera)
+    otros_expedientes_qs = (
+        Expedients.objects.using("simsa")
+        .filter(
+            Q(tipo='Mina') | Q(tipo='Cantera'),
+            companyexpedients__companyid__in=concesionarios_ids,
+            isdeleted=False
+        )
+        .exclude(pk=expediente_principal.pk)
+        .distinct()
+    )
+
+    # Construir lista de datos con pagos y concesionarios
+    data_expedientes = []
+    for exp in otros_expedientes_qs:
+        concesionarios = exp.companyexpedients_set.filter(isdeleted=False).select_related('companyid').values_list('companyid__name', flat=True)
+        pagos = (
+            Canons.objects.using("simsa")
+            .filter(expedientid=exp, isdeleted=False)
+            .select_related('canonperiodid', 'canonstateid')
+            .order_by('-canonperiodid__startdate')
+        )
+        data_expedientes.append({
+            'expediente': exp,
+            'concesionarios': concesionarios,
+            'pagos': pagos
+        })
+
+    context = {"data_expedientes": data_expedientes}
+    return render(request, "simsa/otros_expedientes.html", context)
+
