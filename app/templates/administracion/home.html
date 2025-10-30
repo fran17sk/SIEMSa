@@ -354,6 +354,11 @@
         title="Minerales">
         <i data-lucide="handshake"></i> <span>Contratos</span>
       </a>
+      <a href="{% url 'proveedores' %}" class="{% if request.resolver_match.url_name == 'proveedores' %}active{% endif %}"
+        
+        title="Minerales">
+        <i data-lucide="truck"></i> <span>Proveedores</span>
+      </a>
         {% if request.user.groups.first.name == "Administrador" or request.user.groups.first.name == "Publicador" %}
         {% endif %}
         <!-- Nueva sección Administración -->

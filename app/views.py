@@ -118,6 +118,7 @@ import uuid
 from openpyxl.utils import get_column_letter
 import csv
 from django.db import connection
+from unidecode import unidecode
 
 def group_required(group_names):
     def in_groups(u):
@@ -2357,3 +2358,847 @@ def crear_usuario_view(request):
 
 
 
+#####################################################PROVEEDORES#######################################################
+
+RAZONES_SOCIALES_REQUERIDAS = [
+    "ANDINA PERFORACIONES SRL", "CATERING DE ALTURA S.A.S", "EFE-BUS SRL", "FERRIL CARLOS JAVIER",
+    "HG COMUNICACIONES SRL", "LUMI PUNA SRL", "MORON ARANSAY OSCAR ALFREDO", "MVA SRL",
+    "NOA GENERACION SRL", "PLANETA PUNA SRL", "SERMINCA SRL", "SERVICIOS Y EXPLOTACIONES MINERAS CRUZ",
+    "SMART WASTE SAS", "SOSA GUEVARA NESTOR ABEL", "HIDROTEC SRL", "JSC MINNING S.A.S", "BIOTEC SRL",
+    "MANUFACTURA DE LOS ANDES SA", "SARAPURA WALTER SERGIO", "Salud Integrada S.R.L.", "Lumi People SRL",
+    "Pacha Consultora Ambiental SRL", "Arqueoambiental SA", "HYUNDAI HEAVY INDUSTRIES ARGENTINA SRL",
+    "TEPSI S.A.", "ANDDES ARGENTINA S.A", "BSD Ingeniería y Servicios SA", "AGGREKO ARGENTINA S.R.L.",
+    "Posco Eco & Challenge CO. LTD. S.E.E.", "MINERA MARIMARI S.A.", "SANATORIO PASTEUR SA",
+    "SAMJIN-FORTIS UTE", "MILICIC -AGV UTE", "BMI S.A.", "Todo obras SRL - Samjin Electric SA U.T.",
+    "BBC UTE", "GEOTEC SRL"
+]
+
+# Normalizador
+@login_required
+def normalizar(texto):
+    texto = texto.upper().strip()
+    texto = unicodedata.normalize('NFD', texto)
+    texto = ''.join(c for c in texto if unicodedata.category(c) != 'Mn')  # eliminar tildes
+    texto = texto.replace('.', '').replace('-', ' ')
+    texto = ' '.join(texto.split())
+    return texto
+
+@login_required
+def verificar_proveedores(request):
+    
+    # Validar y obtener datos del formulario
+    anio_param = request.POST.get("anio")
+    empresa = request.POST.get("empresa", "").strip()
+    inspector = request.POST.get("controlador", "").strip()
+    codigo = request.POST.get("codigo_inspeccion", "").strip()
+    columna = request.POST.get("columna_proveedores", "").strip()
+    observaciones = request.POST.get("observaciones", "").strip()
+    archivo_excel = request.FILES.get("archivo_excel")
+
+    # Validación estricta
+    errores = []
+    if not empresa:
+        errores.append("Debe ingresar el nombre de la empresa.")
+    if not inspector:
+        errores.append("Debe ingresar el nombre del inspector.")
+    if not columna or not columna.isdigit():
+        errores.append("Debe ingresar un número de columna válido.")
+    if not archivo_excel:
+        errores.append("Debe subir un archivo Excel válido.")
+
+    if errores:
+        return JsonResponse({"error": "Faltan datos obligatorios.", "detalle": errores}, status=400)
+
+    columna_proveedores = int(columna)
+
+    try:
+        columna_proveedores = int(columna)
+    except ValueError:
+        return JsonResponse({"error": "La columna de proveedores debe ser un número entero."}, status=400)
+
+    # Registrar inspección
+    inspeccion = InspeccionProveedores.objects.create(
+        empresa=empresa,
+        anio=anio_param or None,
+        inspector=inspector,
+        codigo_inspeccion=codigo or None,
+        columna_proveedores=columna_proveedores,
+        archivo_excel=archivo_excel,
+        observaciones=observaciones or None,
+        usuario_registro=request.user
+    )
+
+    # Filtro de base legal
+    registros = RegistroProveedores.objects.all().order_by(id)
+    if anio_param:
+        try:
+            anio = int(anio_param)
+            registros = registros.filter(anio=anio)
+        except ValueError:
+            return JsonResponse({"error": "El parámetro 'anio' debe ser un número entero."}, status=400)
+
+    # Armar base normalizada
+    base = {
+        normalizar(r.nombre_razon_social): {
+            "id": r.id,
+            "nombre_db": r.nombre_razon_social
+        }
+        for r in registros
+    }
+
+    # Comparar con los nombres requeridos (de tu lógica previa)
+    nombres_referencia = [normalizar(n) for n in RAZONES_SOCIALES_REQUERIDAS]
+    encontrados = []
+    no_encontrados = []
+
+    for nombre in nombres_referencia:
+        coincidencias = get_close_matches(nombre, base.keys(), n=1, cutoff=0.85)
+        if coincidencias:
+            match = coincidencias[0]
+            encontrados.append({
+                "referencia": nombre,
+                "coincidencia": base[match]["nombre_db"],
+                "id": base[match]["id"]
+            })
+        else:
+            no_encontrados.append(nombre)
+
+    total = len(nombres_referencia)
+    porcentaje = round(len(encontrados) * 100 / total, 2) if total > 0 else 0
+
+    return JsonResponse({
+        "mensaje": "Inspección registrada y comparación realizada con éxito.",
+        "inspeccion": {
+            "id": inspeccion.id,
+            "empresa": inspeccion.empresa,
+            "inspector": inspeccion.inspector,
+            "codigo": inspeccion.codigo_inspeccion,
+            "columna": inspeccion.columna_proveedores,
+            "usuario": request.user.username,
+            "fecha": inspeccion.fecha_registro.strftime("%d/%m/%Y %H:%M")
+        },
+        "anio": anio_param or "TODOS",
+        "total_referencia": total,
+        "coincidencias": len(encontrados),
+        "faltantes": len(no_encontrados),
+        "porcentaje_encontrados": f"{porcentaje}%",
+        "encontrados": encontrados,
+        "no_encontrados": no_encontrados
+    }, json_dumps_params={"ensure_ascii": False, "indent": 2})
+
+def normalizar_nombres(texto):
+    texto = texto.upper().strip()
+    texto = unidecode(texto)
+    texto = texto.replace('.', '').replace('-', ' ')
+    return ' '.join(texto.split())
+
+@login_required
+def proveedores_list(request):
+    registros = RegistroProveedores.objects.all()
+
+    # Filtros GET
+    anio = request.GET.get("anio")
+    estado = request.GET.get("estado")
+    tipo = request.GET.get("tipo_registro")
+    nombre = request.GET.get("nombre")
+    estado_segun_fecha = request.GET.get("estado_fecha")
+
+    print(estado_segun_fecha)
+
+    hoy = datetime.now()
+
+    if estado_segun_fecha == "1":
+        registros = registros.filter(fecha_alta__lte=hoy, fecha_vto__gte=hoy)
+    elif estado_segun_fecha == "0":
+        registros = registros.exclude(fecha_alta__lte=hoy, fecha_vto__gte=hoy)
+    if anio:
+        registros = registros.filter(anio=anio)
+    if estado:
+        registros = registros.filter(estado__icontains=estado)
+    if tipo:
+        registros = registros.filter(tipo_registro__icontains=tipo)
+    if nombre:
+        registros = registros.filter(nombre_razon_social__icontains=nombre)
+
+    # Para los select
+    anios_disponibles = RegistroProveedores.objects.order_by().values_list('anio', flat=True).distinct()
+    tipos_disponibles = RegistroProveedores.objects.order_by().values_list('tipo_registro', flat=True).distinct()
+    estados_disponibles = RegistroProveedores.objects.order_by().values_list('estado', flat=True).distinct()
+
+    return render(request, "proveedores/list.html", {
+        "registros": registros,
+        "anios": sorted(filter(None, set(anios_disponibles))),
+        "tipos": sorted(filter(None, set(tipos_disponibles))),
+        "estados": sorted(filter(None, set(estados_disponibles))),
+        "estado_fecha":estado_segun_fecha
+    })
+
+def actualizar_proveedores(request):
+    if request.method == "POST" and request.FILES.get("excel_file"):
+        excel_file = request.FILES["excel_file"]
+
+        try:
+            # Leer Excel
+            df = pd.read_excel(excel_file)
+
+            # Funciones auxiliares
+            def parse_fecha(val):
+                if pd.isna(val):
+                    return None
+                if isinstance(val, datetime):
+                    return val.date()
+                try:
+                    return pd.to_datetime(val).date()
+                except Exception:
+                    return None
+
+            def parse_datetime(val):
+                if pd.isna(val):
+                    return None
+                if isinstance(val, datetime):
+                    return val
+                try:
+                    return pd.to_datetime(val)
+                except Exception:
+                    return None
+
+            def parse_bool(val):
+                if pd.isna(val):
+                    return None
+                v = str(val).strip().lower()
+                if v in ["sí", "si", "x", "true", "1"]:
+                    return True
+                if v in ["no", "false", "0"]:
+                    return False
+                return None
+
+            with transaction.atomic():
+                # 🔥 Borrar datos actuales
+                RegistroProveedores.objects.all().delete()
+
+                proveedores = []
+                for _, row in df.iterrows():
+                    proveedor = RegistroProveedores(
+                        creado=parse_datetime(row.get("Creado")),
+                        numero_tramite=row.get("N° TRÁMITE"),
+                        mes=row.get("Mes"),
+                        anio=row.get("Año") if not pd.isna(row.get("Año")) else None,
+                        numero_certificado=row.get("N° de Certificado"),
+                        tipo_registro=row.get("TIPO DE REGISTRO"),
+                        tramite=row.get("TRÁMITE"),
+                        fecha_alta=parse_fecha(row.get("FECHA ALTA")),
+                        fecha_vto=parse_fecha(row.get("Fecha de VTO")),
+                        estado=row.get("ESTADO"),
+                        numero_expediente=row.get("N° de expediente"),
+                        nombre_razon_social=row.get("APELLIDO Y NOMBRE O RAZÓN SOCIAL"),
+                        cuit_cuil=row.get("CUIT – CUIL"),
+                        domicilio_real=row.get("DOMICILIO REAL"),
+                        domicilio_social=row.get("DOMICILIO SOCIAL"),
+                        localidad=row.get("LOCALIDAD"),
+                        domicilio_fiscal=row.get("DOMICILIO FISCAL"),
+                        telefono=row.get("TELÉFONO"),
+                        representante_legal=row.get("DATOS DEL REPRESENTANTE LEGAL"),
+                        documento_identidad=row.get("DOCUMENTO DE IDENTIDAD"),
+                        correo_electronico=row.get("CORREO ELECTRÓNICO") or None,
+                        actividad=row.get("ACTIVIDAD"),
+                        camara=row.get("CAMARA QUE INTEGRA"),
+                        declaracion_jurada=parse_bool(row.get("DECLARACIÓN JURADA")),
+                        persona_asignada=row.get("PERSONA ASIGNADA"),
+                        nomina_trabajadores=parse_bool(row.get("¿NOMINA TRABAJADORES?")),
+                        fotocopia_dni=parse_bool(row.get("¿FOTOCOPIA DNI?")),
+                        certificado_residencia=parse_bool(row.get("¿CERTIFICADO DE RESIDENCIA?")),
+                        inscripcion_afip_dgr=parse_bool(row.get("¿INSCRIPCION AFIP / DGR?")),
+                        regularizacion_fiscal=parse_bool(row.get("¿REGULARIZACIÓN FISCAL (F500)?")),
+                        contrato_social=parse_bool(row.get("¿CONTRATO SOCIAL?")),
+                        acta_designacion_autoridades=parse_bool(row.get("¿ACTA DESIGNACIÓN AUTORIDADES?")),
+                        dni_autoridades=parse_bool(row.get("¿DNI DE AUTORIDADES?")),
+                        certificado_residencia_autoridades=parse_bool(row.get("¿CERTIFICADO RESIDENCIA DE AUTORIDADES?")),
+                        dni_representante=parse_bool(row.get("¿DNI REPRESENTANTE?")),
+                        certificado_residencia_representante=parse_bool(row.get("¿CERTIFICADO DE RESIDENCIA REPRESENTANTE?")),
+                        poder_otorgado_representante=parse_bool(row.get("¿PODER OTORGADO AL REPRESENTANTE?")),
+                        f931_seguridad_social=parse_bool(row.get("¿F931 - SEGURIDAD SOCIAL?")),
+                        constancia_matriculacion_trabajadores=parse_bool(row.get("¿CONSTANCIA DE MATRICULACIÓN TRABAJADORES?")),
+                        constancia_cuil=parse_bool(row.get("¿CONSTANCIA DE CUIL?")),
+                    )
+                    proveedores.append(proveedor)
+
+                RegistroProveedores.objects.bulk_create(proveedores)
+
+            messages.success(request, f"✅ Se cargaron {len(proveedores)} proveedores correctamente")
+
+        except Exception as e:
+            messages.error(request, f"❌ Error al actualizar proveedores: {str(e)}")
+    return render(request,'proveedores/actualizar_proveedores.html')
+
+@login_required
+def detalle_proveedor(request, pk):
+    proveedor = get_object_or_404(RegistroProveedores, pk=pk)
+    documentos_presentados = [
+        ('Declaración Jurada', proveedor.declaracion_jurada),
+        ('Nómina de Trabajadores', proveedor.nomina_trabajadores),
+        ('Fotocopia DNI', proveedor.fotocopia_dni),
+        ('Cert. Residencia', proveedor.certificado_residencia),
+        ('Inscripción AFIP/DGR', proveedor.inscripcion_afip_dgr),
+        ('Regularización Fiscal', proveedor.regularizacion_fiscal),
+        ('Contrato Social', proveedor.contrato_social),
+        ('Acta Designación Autoridades', proveedor.acta_designacion_autoridades),
+        ('DNI Autoridades', proveedor.dni_autoridades),
+        ('Cert. Residencia Autoridades', proveedor.certificado_residencia_autoridades),
+        ('DNI Representante', proveedor.dni_representante),
+        ('Cert. Residencia Representante', proveedor.certificado_residencia_representante),
+        ('Poder Representante', proveedor.poder_otorgado_representante),
+        ('F931 Seguridad Social', proveedor.f931_seguridad_social),
+        ('Constancia Matriculación', proveedor.constancia_matriculacion_trabajadores),
+        ('Constancia CUIL', proveedor.constancia_cuil),
+    ]
+
+    return render(request, 'proveedores/detalle.html', {
+        'proveedor': proveedor,
+        'documentos_presentados': documentos_presentados
+    })
+
+@login_required
+def editar_proveedor(request, pk):
+    proveedor = get_object_or_404(RegistroProveedores, pk=pk)
+
+    if request.method == "POST":
+        # Text/char/date inputs
+        proveedor.creado = request.POST.get("creado") or proveedor.creado
+        proveedor.numero_tramite = request.POST.get("numero_tramite")
+        proveedor.mes = request.POST.get("mes")
+        proveedor.anio = request.POST.get("anio") or None
+        proveedor.numero_certificado = request.POST.get("numero_certificado")
+        proveedor.tipo_registro = request.POST.get("tipo_registro")
+        proveedor.tramite = request.POST.get("tramite")
+        proveedor.fecha_alta = request.POST.get("fecha_alta") or None
+        proveedor.fecha_vto = request.POST.get("fecha_vto") or None
+        proveedor.estado = request.POST.get("estado")
+        proveedor.numero_expediente = request.POST.get("numero_expediente")
+        proveedor.nombre_razon_social = request.POST.get("nombre_razon_social")
+        proveedor.cuit_cuil = request.POST.get("cuit_cuil")
+        proveedor.domicilio_real = request.POST.get("domicilio_real")
+        proveedor.domicilio_social = request.POST.get("domicilio_social")
+        proveedor.localidad = request.POST.get("localidad")
+        proveedor.domicilio_fiscal = request.POST.get("domicilio_fiscal")
+        proveedor.telefono = request.POST.get("telefono")
+        proveedor.representante_legal = request.POST.get("representante_legal")
+        proveedor.documento_identidad = request.POST.get("documento_identidad")
+        proveedor.correo_electronico = request.POST.get("correo_electronico")
+        proveedor.actividad = request.POST.get("actividad")
+        proveedor.camara = request.POST.get("camara")
+        proveedor.persona_asignada = request.POST.get("persona_asignada")
+
+        # Boolean fields (checked if present)
+        proveedor.declaracion_jurada = 'declaracion_jurada' in request.POST
+        proveedor.nomina_trabajadores = 'nomina_trabajadores' in request.POST
+        proveedor.fotocopia_dni = 'fotocopia_dni' in request.POST
+        proveedor.certificado_residencia = 'certificado_residencia' in request.POST
+        proveedor.inscripcion_afip_dgr = 'inscripcion_afip_dgr' in request.POST
+        proveedor.regularizacion_fiscal = 'regularizacion_fiscal' in request.POST
+        proveedor.contrato_social = 'contrato_social' in request.POST
+        proveedor.acta_designacion_autoridades = 'acta_designacion_autoridades' in request.POST
+        proveedor.dni_autoridades = 'dni_autoridades' in request.POST
+        proveedor.certificado_residencia_autoridades = 'certificado_residencia_autoridades' in request.POST
+        proveedor.dni_representante = 'dni_representante' in request.POST
+        proveedor.certificado_residencia_representante = 'certificado_residencia_representante' in request.POST
+        proveedor.poder_otorgado_representante = 'poder_otorgado_representante' in request.POST
+        proveedor.f931_seguridad_social = 'f931_seguridad_social' in request.POST
+        proveedor.constancia_matriculacion_trabajadores = 'constancia_matriculacion_trabajadores' in request.POST
+        proveedor.constancia_cuil = 'constancia_cuil' in request.POST
+
+        proveedor.save()
+
+        # Si la petición vino por fetch (AJAX), devolver HTML parcial del detalle
+        if request.headers.get("x-requested-with") == "XMLHttpRequest":
+            html = render_to_string("proveedores/detalle.html", {"proveedor": proveedor}, request=request)
+            return HttpResponse(html)
+
+        return redirect("detalle_proveedor", pk=proveedor.pk)
+
+    return render(request, "proveedores/detalle.html", {"proveedor": proveedor})
+# Función para normalizar y tokenizar nombres
+SUFIJOS_LEGALES = ["srl", "sa", "sas", "spa", "sc", "s.a.", "s.a.s."]
+def tokenize_nombre(nombre):
+    nombre = str(nombre).lower().strip()
+    nombre = ''.join(
+        c for c in unicodedata.normalize('NFKD', nombre)
+        if not unicodedata.combining(c) and (c.isalnum() or c.isspace())
+    )
+    tokens = nombre.split()
+    # Eliminar sufijos legales del final
+    while tokens and tokens[-1] in SUFIJOS_LEGALES:
+        tokens.pop()
+    return tokens
+
+def nombres_coinciden(nombre_excel, nombre_base, cutoff=0.8):
+    tokens_excel = tokenize_nombre(nombre_excel)
+    tokens_base = tokenize_nombre(nombre_base)
+
+    coincidencias = 0
+    for te in tokens_excel:
+        for tb in tokens_base:
+            if te == tb or (len(te) == 1 and tb.startswith(te)) or (len(tb) == 1 and te.startswith(tb)):
+                coincidencias += 1
+                break
+
+    total = max(len(tokens_excel), len(tokens_base))
+    similitud = coincidencias / total if total else 0
+    return similitud >= cutoff
+
+
+def generar_codigo_unico():
+    while True:
+        random_str = ''.join(random.choices(string.ascii_uppercase + string.digits, k=4))
+        codigo = f"INS-{datetime.now().strftime('%Y%m%d')}-{random_str}"
+        if not InspeccionProveedores.objects.filter(codigo_inspeccion=codigo).exists():
+            return codigo
+
+@login_required
+def comparar_proveedores_excel(request):
+    '''if request.method != "POST":
+        return JsonResponse({"error": "Método no permitido. Debe ser POST."}, status=405)
+
+    archivo = request.FILES.get("archivo_excel")
+    fecha_inspeccion = request.POST.get("fecha_inspeccion")
+    empresa = request.POST.get("empresa", "").strip()
+    inspector = request.POST.get("controlador", "").strip()
+    columna_proveedores = request.POST.get("columna_proveedores", "").strip()
+    columna_dni = request.POST.get("columna_dni", "").strip()
+    observaciones = request.POST.get("observaciones", "").strip()
+
+    errores = []
+
+    if fecha_inspeccion:
+        try:
+            fecha_obj = datetime.strptime(fecha_inspeccion, "%Y-%m-%d").date()
+        except ValueError:
+            errores.append("Formato de fecha_inspeccion inválido, debe ser YYYY-MM-DD.")
+            fecha_obj = None
+    else:
+        fecha_obj = None
+
+    if not archivo:
+        errores.append("Debe adjuntar un archivo Excel.")
+    if not empresa:
+        errores.append("Debe ingresar el nombre de la empresa.")
+    if not inspector:
+        errores.append("Debe ingresar el nombre del inspector.")
+    if not columna_proveedores.isdigit():
+        errores.append("Debe ingresar un número de columna válido para proveedores.")
+    if not columna_dni.isdigit():
+        errores.append("Debe ingresar un número de columna válido para DNI.")
+
+    if errores:
+        return JsonResponse({"error": "Faltan datos obligatorios.", "detalle": errores}, status=400)
+
+    columna_proveedores = int(columna_proveedores)
+    columna_dni = int(columna_dni)
+
+    try:
+        hojas = pd.read_excel(archivo, engine='openpyxl', sheet_name=None, skiprows=1)
+    except Exception as e:
+        return JsonResponse({"error": f"Error al leer el Excel: {str(e)}"}, status=400)
+
+    registros = RegistroProveedores.objects.exclude(
+        nombre_razon_social__isnull=True
+    ).exclude(
+        nombre_razon_social__exact=""
+    )
+
+    vigentes, vencidos, no_encontrados = [], [], []
+    vigentes_set, vencidos_set, no_encontrados_set = set(), set(), set()
+    empleados_por_proveedor = {}
+    proveedor_dni_set = {}
+    total_set = set()
+
+    for nombre_hoja, df in hojas.items():
+        if columna_proveedores >= len(df.columns) or columna_dni >= len(df.columns):
+            continue
+
+        mask_valid = df.iloc[:, columna_proveedores].notna() & df.iloc[:, columna_dni].notna()
+        proveedores_raw = df.loc[mask_valid, df.columns[columna_proveedores]].astype(str).tolist()
+        dnis_raw = df.loc[mask_valid, df.columns[columna_dni]].astype(str).tolist()
+
+        coincidencias_confirmadas = []
+        sin_coincidencia = []
+
+        for i, proveedor_raw in enumerate(proveedores_raw):
+            nombre_excel = proveedor_raw.strip()
+            if "empresa" in nombre_excel.lower():
+                continue
+
+            total_set.add(nombre_excel)
+
+            # Buscar todos los registros que coincidan
+            registros_match = [r for r in registros if nombres_coinciden(nombre_excel, r.nombre_razon_social, cutoff=0.8)]
+
+            if registros_match:
+                # Tomar el registro más reciente según fecha_vto
+                proveedor = max(registros_match, key=lambda x: x.fecha_vto or datetime.min.date())
+                proveedor_nombre = proveedor.nombre_razon_social
+
+                if proveedor_nombre not in vigentes_set and proveedor_nombre not in vencidos_set:
+                    empleados = proveedor_dni_set.get(proveedor_nombre, set())
+                    entry = {
+                        "referencia": proveedores_raw[i],
+                        "coincidencia": proveedor_nombre,
+                        "id": proveedor.id,
+                        "fecha_alta": proveedor.fecha_alta.strftime("%d/%m/%Y") if proveedor.fecha_alta else None,
+                        "fecha_vto": proveedor.fecha_vto.strftime("%d/%m/%Y") if proveedor.fecha_vto else None,
+                        "hoja": nombre_hoja,
+                        "empleados": len(empleados)
+                    }
+
+                    if fecha_obj and proveedor.fecha_alta and proveedor.fecha_vto and proveedor.fecha_alta <= fecha_obj <= proveedor.fecha_vto:
+                        vigentes.append(entry)
+                        vigentes_set.add(proveedor_nombre)
+                    else:
+                        vencidos.append(entry)
+                        vencidos_set.add(proveedor_nombre)
+
+                coincidencias_confirmadas.append((proveedor_nombre, dnis_raw[i]))
+            else:
+                sin_coincidencia.append((nombre_excel, dnis_raw[i]))
+
+        # Agrupar no encontrados por similitud
+        grupos = {}
+        for nombre, dni in sin_coincidencia:
+            clave = get_close_matches(nombre, grupos.keys(), n=1, cutoff=0.8)
+            if clave:
+                grupos[clave[0]].add(dni)
+            else:
+                grupos[nombre] = set([dni])
+
+        for grupo, dnis in grupos.items():
+            empleados_por_proveedor[grupo] = len(dnis)
+            if grupo not in no_encontrados_set:
+                no_encontrados.append({
+                    "referencia": grupo,
+                    "hoja": "-",
+                    "empleados": len(dnis)
+                })
+                no_encontrados_set.add(grupo)
+
+        for proveedor_match, dni in coincidencias_confirmadas:
+            if proveedor_match not in empleados_por_proveedor:
+                empleados_por_proveedor[proveedor_match] = 0
+                proveedor_dni_set[proveedor_match] = set()
+            if dni not in proveedor_dni_set[proveedor_match]:
+                proveedor_dni_set[proveedor_match].add(dni)
+                empleados_por_proveedor[proveedor_match] += 1
+
+    total = len(total_set)
+
+    for item in vigentes:
+        item["empleados"] = empleados_por_proveedor.get(item["coincidencia"], 0)
+    for item in vencidos:
+        item["empleados"] = empleados_por_proveedor.get(item["coincidencia"], 0)
+
+    inspeccion = InspeccionProveedores.objects.create(
+        empresa=empresa,
+        fecha_inspeccion=fecha_inspeccion or None,
+        anio=fecha_obj.year if fecha_obj else None,
+        inspector=inspector,
+        codigo_inspeccion=generar_codigo_unico(),
+        columna_proveedores=columna_proveedores,
+        columna_dni=columna_dni,
+        archivo_excel=archivo,
+        observaciones=observaciones or None,
+        usuario_registro=request.user,
+        resultados_vigentes=vigentes,
+        resultados_vencidos=vencidos,
+        resultados_no_encontrados=no_encontrados,
+        total_referencias=total
+    )
+
+    return JsonResponse({
+        "mensaje": "Inspección registrada y comparación realizada con éxito.",
+        "inspeccion": {
+            "id": inspeccion.id,
+            "empresa": inspeccion.empresa,
+            "inspector": inspeccion.inspector,
+            "codigo": inspeccion.codigo_inspeccion,
+            "columna": inspeccion.columna_proveedores,
+            "observaciones": inspeccion.observaciones,
+            "usuario": request.user.username,
+            "fecha": inspeccion.fecha_registro.strftime("%d/%m/%Y"),
+            "fecha_inspeccion": fecha_inspeccion,
+        },
+        "vigentes": vigentes,
+        "vencidos": vencidos,
+        "no_encontrados": no_encontrados,
+        "total_referencia": total,
+        "porcentaje_vigentes": f"{round(len(vigentes) * 100 / total, 2)}%" if total else "0%",
+        "porcentaje_vencidos": f"{round(len(vencidos) * 100 / total, 2)}%" if total else "0%",
+        "porcentaje_no_encontrados": f"{round(len(no_encontrados) * 100 / total, 2)}%" if total else "0%",
+        "empleados_por_proveedor": empleados_por_proveedor,
+    }, json_dumps_params={"ensure_ascii": False, "indent": 2})'''
+
+
+    if request.method != "POST":
+        return JsonResponse({"error": "Método no permitido. Debe ser POST."}, status=405)
+
+    archivo = request.FILES.get("archivo_excel")
+    fecha_inspeccion = request.POST.get("fecha_inspeccion")
+    empresa = request.POST.get("empresa", "").strip()
+    inspector = request.POST.get("controlador", "").strip()
+    codigo = request.POST.get("codigo_inspeccion", "").strip()
+    columna_proveedores = request.POST.get("columna_proveedores", "").strip()
+    columna_dni = request.POST.get("columna_dni", "").strip()
+    observaciones = request.POST.get("observaciones", "").strip()
+
+    errores = []
+
+    # Validación de fecha
+    if fecha_inspeccion:
+        try:
+            fecha_obj = datetime.strptime(fecha_inspeccion, "%Y-%m-%d").date()
+        except ValueError:
+            errores.append("Formato de fecha_inspeccion inválido, debe ser YYYY-MM-DD.")
+            fecha_obj = None
+    else:
+        fecha_obj = None
+
+    # Validaciones básicas
+    if not archivo:
+        errores.append("Debe adjuntar un archivo Excel.")
+    if not empresa:
+        errores.append("Debe ingresar el nombre de la empresa.")
+    if not inspector:
+        errores.append("Debe ingresar el nombre del inspector.")
+    if not columna_proveedores.isdigit():
+        errores.append("Debe ingresar un número de columna válido para proveedores.")
+    if not columna_dni.isdigit():
+        errores.append("Debe ingresar un número de columna válido para DNI.")
+
+    if errores:
+        return JsonResponse({"error": "Faltan datos obligatorios.", "detalle": errores}, status=400)
+
+    columna_proveedores = int(columna_proveedores)
+    columna_dni = int(columna_dni)
+
+    # Lectura del Excel
+    try:
+        hojas = pd.read_excel(archivo, engine='openpyxl', sheet_name=None, skiprows=1)
+    except Exception as e:
+        return JsonResponse({"error": f"Error al leer el Excel: {str(e)}"}, status=400)
+
+    registros = RegistroProveedores.objects.all()
+    base = {
+        normalizar_nombres(r.nombre_razon_social): {
+            "id": r.id,
+            "nombre_db": r.nombre_razon_social,
+            "fecha_alta": r.fecha_alta,
+            "fecha_vto": r.fecha_vto
+        }
+        for r in registros
+    }
+
+    vigentes, vencidos, no_encontrados = [], [], []
+    vigentes_set, vencidos_set, no_encontrados_set = set(), set(), set()
+    empleados_por_proveedor = {}
+    proveedor_dni_set = {}
+    total_set = set()
+
+    # Recorremos las hojas del Excel
+    for nombre_hoja, df in hojas.items():
+        if columna_proveedores >= len(df.columns) or columna_dni >= len(df.columns):
+            continue
+
+        mask_valid = df.iloc[:, columna_proveedores].notna() & df.iloc[:, columna_dni].notna()
+        proveedores_raw = df.loc[mask_valid, df.columns[columna_proveedores]].astype(str).tolist()
+        dnis_raw = df.loc[mask_valid, df.columns[columna_dni]].astype(str).tolist()
+
+        nombres_normalizados = [normalizar_nombres(p) for p in proveedores_raw]
+        coincidencias_confirmadas = []
+        sin_coincidencia = []
+
+        for i, nombre in enumerate(nombres_normalizados):
+            if "empresa" in nombre.lower():
+                continue
+            total_set.add(nombre)
+
+            match = None
+            for base_nombre in base:
+                if base_nombre in nombre or nombre in base_nombre:
+                    match = base_nombre
+                    break
+
+            if match:
+                proveedor = base[match]
+                proveedor_nombre = proveedor["nombre_db"]
+
+                if proveedor_nombre not in vigentes_set and proveedor_nombre not in vencidos_set:
+                    empleados = proveedor_dni_set.get(proveedor_nombre, set())
+                    entry = {
+                        "referencia": proveedores_raw[i],
+                        "coincidencia": proveedor_nombre,
+                        "id": proveedor["id"],
+                        "fecha_alta": proveedor["fecha_alta"].strftime("%d/%m/%Y") if proveedor["fecha_alta"] else None,
+                        "fecha_vto": proveedor["fecha_vto"].strftime("%d/%m/%Y") if proveedor["fecha_vto"] else None,
+                        "hoja": nombre_hoja,
+                        "empleados": len(empleados)
+                    }
+                    if (
+                        fecha_obj
+                        and proveedor["fecha_alta"] is not None
+                        and proveedor["fecha_vto"] is not None
+                        and proveedor["fecha_alta"] <= fecha_obj <= proveedor["fecha_vto"]
+                    ):
+                        vigentes.append(entry)
+                        vigentes_set.add(proveedor_nombre)
+                    else:
+                        vencidos.append(entry)
+                        vencidos_set.add(proveedor_nombre)
+
+                coincidencias_confirmadas.append((proveedor_nombre, dnis_raw[i]))
+            else:
+                clave = normalizar_nombres(proveedores_raw[i])
+                dni_actual = dnis_raw[i]
+
+                # Si ya existe el proveedor no encontrado, solo agregamos el nuevo DNI si no estaba
+                if clave in empleados_por_proveedor:
+                    proveedor_dni_set.setdefault(clave, set()).add(dni_actual)
+                    empleados_por_proveedor[clave] = len(proveedor_dni_set[clave])
+                else:
+                    proveedor_dni_set[clave] = {dni_actual}
+                    empleados_por_proveedor[clave] = 1
+
+                    # Agregar solo una vez a la lista visible
+                    no_encontrados.append({
+                        "referencia": proveedores_raw[i],
+                        "hoja": nombre_hoja,
+                        "empleados": empleados_por_proveedor[clave]
+                    })
+                    no_encontrados_set.add(clave)
+
+                sin_coincidencia.append((normalizar_nombres(proveedores_raw[i]), dnis_raw[i]))
+
+        # Contar empleados de coincidencias reales
+        for proveedor_match, dni in coincidencias_confirmadas:
+            if proveedor_match not in empleados_por_proveedor:
+                empleados_por_proveedor[proveedor_match] = 0
+                proveedor_dni_set[proveedor_match] = set()
+            if dni not in proveedor_dni_set[proveedor_match]:
+                proveedor_dni_set[proveedor_match].add(dni)
+                empleados_por_proveedor[proveedor_match] += 1
+
+    total = len(total_set)
+
+    # Actualizar conteo de empleados en cada item de vigentes y vencidos
+    for item in vigentes:
+        item["empleados"] = empleados_por_proveedor.get(item["coincidencia"], 0)
+    for item in vencidos:
+        item["empleados"] = empleados_por_proveedor.get(item["coincidencia"], 0)
+
+    # Crear registro de inspección
+    inspeccion = InspeccionProveedores.objects.create(
+        empresa=empresa,
+        fecha_inspeccion=fecha_inspeccion or None,
+        anio=fecha_obj.year if fecha_obj else None,
+        inspector=inspector,
+        codigo_inspeccion=generar_codigo_unico(),
+        columna_proveedores=columna_proveedores,
+        columna_dni=columna_dni,
+        archivo_excel=archivo,
+        observaciones=observaciones or None,
+        usuario_registro=request.user,
+        resultados_vigentes=vigentes,
+        resultados_vencidos=vencidos,
+        resultados_no_encontrados=no_encontrados,
+        total_referencias=total
+    )
+
+    # Ordenar los no encontrados por cantidad de empleados (descendente)
+    no_encontrados.sort(key=lambda x: x["empleados"], reverse=True)
+
+    return JsonResponse({
+        "mensaje": "Inspección registrada y comparación realizada con éxito.",
+        "inspeccion": {
+            "id": inspeccion.id,
+            "empresa": inspeccion.empresa,
+            "inspector": inspeccion.inspector,
+            "codigo": inspeccion.codigo_inspeccion,
+            "columna": inspeccion.columna_proveedores,
+            "observaciones": inspeccion.observaciones,
+            "usuario": request.user.username,
+            "fecha": inspeccion.fecha_registro.strftime("%d/%m/%Y"),
+            "fecha_inspeccion": fecha_inspeccion,
+        },
+        "vigentes": vigentes,
+        "vencidos": vencidos,
+        "no_encontrados": no_encontrados,
+        "total_referencia": total,
+        "porcentaje_vigentes": f"{round(len(vigentes) * 100 / total, 2)}%" if total else "0%",
+        "porcentaje_vencidos": f"{round(len(vencidos) * 100 / total, 2)}%" if total else "0%",
+        "porcentaje_no_encontrados": f"{round(len(no_encontrados) * 100 / total, 2)}%" if total else "0%",
+        "empleados_por_proveedor": empleados_por_proveedor,
+    }, json_dumps_params={"ensure_ascii": False, "indent": 2})
+
+def notificar_secretaria(request):
+    pdf_file = request.FILES.get('pdf')
+    if not pdf_file:
+        return JsonResponse({'error': 'No se recibió el archivo PDF.'}, status=400)
+
+    email = EmailMessage(
+        subject="Informe de Inspección",
+        body="Se adjunta el informe de inspección generado desde el sistema.",
+        from_email="notificaciones@sistema.com",
+        to=["secretaria@sistema.com"]
+    )
+    email.attach("Informe_Inspeccion.pdf", pdf_file.read(), "application/pdf")
+    email.send()
+
+    return JsonResponse({'success': True})
+
+def listado_inspecciones_view(request):
+    inspecciones = InspeccionProveedores.objects.select_related('usuario_registro').order_by('-fecha_registro')
+    
+    paginator = Paginator(inspecciones, 20)  # 20 por página
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        'inspecciones': page_obj,
+        'page_obj': page_obj,
+        'is_paginated': page_obj.has_other_pages(),
+    }
+
+    return render(request, 'proveedores/listado_inspecciones.html', context)
+
+def detalle_inspeccion(request, inspeccion_id):
+    inspeccion = get_object_or_404(InspeccionProveedores, id=inspeccion_id)
+
+    
+    porc_vigentes = (len(inspeccion.resultados_vigentes)/inspeccion.total_referencias)*100
+    porc_vencidos = (len(inspeccion.resultados_vencidos)/inspeccion.total_referencias)*100
+    porc_no_encontrados = (len(inspeccion.resultados_no_encontrados)/inspeccion.total_referencias)*100
+    context = {
+        'inspeccion': inspeccion,
+        'vigentes': inspeccion.resultados_vigentes,  
+        'vencidos': inspeccion.resultados_vencidos,
+        'no_encontrados': inspeccion.resultados_no_encontrados,
+        'total_referencias': inspeccion.total_referencias,
+        'porc_vigentes' : porc_vigentes ,
+        'porc_vencidos' : porc_vencidos ,
+        'porc_no_encontrados' : porc_no_encontrados 
+        
+    }
+    return render(request, 'proveedores/detalle_inspeccion.html', context)
+
+@login_required
+def proveedores_activos_view(request):
+    return render(request,'proveedores/activos.html')
+
+@login_required
+def proveedores_view(request):
+    concesionarios = Concesionarios.objects.using('catastro').all()
+    user = request.user.first_name+' '+request.user.last_name
+    if user == ' ':
+        user = request.user.username 
+    context = {
+      'concesionarios' : concesionarios,
+      "fecha_actual": datetime.today(),
+      "usuario_logueado": user
+    }
+    return render(request,'proveedores/serch.html',context)

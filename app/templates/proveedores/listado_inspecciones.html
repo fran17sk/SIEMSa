@@ -1,0 +1,168 @@
+{% extends 'proveedores/home.html' %}
+
+{% block head %}
+<style>
+  body {
+    font-family: "Segoe UI", sans-serif;
+    background-color: #f5f7fa;
+    margin: 0;
+    padding: 0;
+  }
+
+  .card-container {
+    background: #fff;
+    margin: 40px auto;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.07);
+  }
+
+  .card-container h2 {
+    margin-bottom: 25px;
+    font-size: 1.8rem;
+    color: #333;
+    border-bottom: 2px solid #ddd;
+    padding-bottom: 10px;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+  }
+
+  th, td {
+    padding: 12px 14px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+  }
+
+  th {
+    background-color: #f0f0f0;
+    font-weight: 600;
+    color: #222;
+  }
+
+  tr:nth-child(even) {
+    background-color: #fafafa;
+  }
+
+  a {
+    color: #0077cc;
+    text-decoration: none;
+  }
+
+  a:hover {
+    text-decoration: underline;
+  }
+
+  .text-center {
+    text-align: center;
+    color: #777;
+  }
+
+  .pagination {
+    margin-top: 30px;
+    text-align: center;
+  }
+
+  .pagination ul {
+    display: inline-flex;
+    list-style: none;
+    padding: 0;
+  }
+
+  .pagination li {
+    margin: 0 5px;
+  }
+
+  .pagination a,
+  .pagination span {
+    display: block;
+    padding: 8px 12px;
+    background-color: #f2f2f2;
+    border-radius: 6px;
+    color: #333;
+    text-decoration: none;
+    font-size: 14px;
+  }
+
+  .pagination .active span {
+    background-color: #0077cc;
+    color: #fff;
+    font-weight: bold;
+  }
+
+  .pagination a:hover {
+    background-color: #e0e0e0;
+  }
+  a {
+    text-decoration: none;
+    color: white;
+  }
+  .link-black{
+    color: black;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card-container">
+  <h2>📋 Listado de Inspecciones a Proveedores</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Código</th>
+        <th>Fecha Inspección</th>
+        <th>Inspector</th>
+        <th>Empresa</th>
+        <th>Archivo</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for inspeccion in inspecciones %}
+      <tr>
+        <td>{{ inspeccion.codigo_inspeccion|default:"—" }}</td>
+        <td>{{ inspeccion.fecha_inspeccion|date:"d/m/Y" }}</td>
+        <td>{{ inspeccion.inspector }}</td>
+        <td>{{ inspeccion.empresa }}</td>
+        <td>
+          {% if inspeccion.archivo_excel %}
+            <a href="{{ inspeccion.archivo_excel.url }}" target="_blank" class="link-black">📎 Ver archivo</a>
+          {% else %}
+            —
+          {% endif %}
+        </td>
+        <td>
+          <a href="{% url 'detalle_inspeccion' inspeccion.id %}" class="btn btn-sm btn-outline-primary">🔍 Ver detalle</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="5" class="text-center">No hay inspecciones registradas.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  {% if is_paginated %}
+  <div class="pagination">
+    <ul>
+      {% if page_obj.has_previous %}
+      <li><a href="?page={{ page_obj.previous_page_number }}">«</a></li>
+      {% endif %}
+
+      {% for i in paginator.page_range %}
+        {% if page_obj.number == i %}
+        <li class="active"><span>{{ i }}</span></li>
+        {% elif i > page_obj.number|add:'-3' and i < page_obj.number|add:'3' %}
+        <li><a href="?page={{ i }}">{{ i }}</a></li>
+        {% endif %}
+      {% endfor %}
+
+      {% if page_obj.has_next %}
+      <li><a href="?page={{ page_obj.next_page_number }}">»</a></li>
+      {% endif %}
+    </ul>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -69,5 +69,16 @@ urlpatterns = [
     path('usuarios/<int:user_id>/blanquear/', views.blanquear_contraseña, name='usuario_blanquear_password'),
     path('usuarios/<int:user_id>/editar/', views.editar_usuario_view, name='usuario_editar'),
 
+    path("verificar-proveedores/", views.verificar_proveedores, name="verificar_proveedores"),
+    path("verificar-proveedores-excel/", views.comparar_proveedores_excel, name="verificar_proveedores_excel"),
+    path('proveedores/',views.proveedores_view, name='proveedores'),
+    path('proveedores/activos',views.proveedores_activos_view, name='proveedores_activos'),
+    path('proveedores_list/',views.proveedores_list, name='proveedores_list'),
+    path("proveedor/<int:pk>/", views.detalle_proveedor, name="detalle_proveedor"),
+    path('proveedores_edit/<int:pk>', views.editar_proveedor, name='editar_proveedor'),
+    path('inspecciones/', views.listado_inspecciones_view, name='listado_inspecciones'),
+    path('inspecciones/<int:inspeccion_id>/', views.detalle_inspeccion, name='detalle_inspeccion'),
+    path('proveedores/actualizar_proveedores',views.actualizar_proveedores,name='actualizar_proveedores'),
+    
 
 ]

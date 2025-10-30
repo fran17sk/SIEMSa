@@ -1,0 +1,1442 @@
+{% extends 'proveedores/home.html' %}
+
+{% block head %}
+{% load static %}
+<title>Verificación de Proveedores</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+
+
+<style>
+  .coincidencias {
+    background-color: #d4edda;
+    margin-top: 20px;
+  }
+
+  .faltantes {
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
+    padding: 10px;
+    border-radius: 6px;
+    font-size: 13px;
+  }
+
+  .faltantes .list-group-item {
+    background-color: transparent;
+    border: none;
+    padding: 4px 10px;
+    color: #a94442;
+    /* rojo oscuro */
+    font-size: 13px;
+  }
+
+  .filtros-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    max-width: 100%;
+    padding: 20px;
+    background-color: #fdfdfd;
+    border: 1px solid #e2e2e2;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+    margin-bottom: 30px;
+  }
+
+  .filtro {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 200px;
+  }
+
+  .filtro label {
+    font-weight: 600;
+    margin-bottom: 5px;
+    color: #333;
+  }
+
+  .filtro input,
+  .filtro select {
+    padding: 8px 12px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: border 0.2s ease;
+  }
+
+  .filtro input:focus,
+  .filtro select:focus {
+    border-color: #0077cc;
+    outline: none;
+    box-shadow: 0 0 3px rgba(0, 119, 204, 0.3);
+  }
+
+  .drop-zone {
+    border: 2px dashed #ccc;
+    border-radius: 6px;
+    padding: 20px;
+    text-align: center;
+    background-color: #f9f9f9;
+    transition: background-color 0.3s ease;
+    cursor: pointer;
+    font-size: 14px;
+    color: #555;
+  }
+
+  .drop-zone.dragover {
+    background-color: #e8f0ff;
+    border-color: #007bff;
+  }
+
+  .drop-zone input {
+    display: none;
+  }
+
+  .tabla-expedientes {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    background-color: #fff;
+    font-family: Arial, sans-serif;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  }
+
+  .tabla-expedientes th,
+  .tabla-expedientes td {
+    border: 1px solid #ccc;
+    padding: 8px 10px;
+    font-size: 12px;
+    text-align: center;
+  }
+
+  .tabla-expedientes th {
+    background-color: #f0f0f0;
+    font-weight: bold;
+    color: #333;
+  }
+
+  .tabla-expedientes tbody tr:nth-child(even) {
+    background-color: #f9f9f9;
+  }
+
+  .pagination-container {
+    display: flex;
+    justify-content: center;
+    margin-top: 30px;
+  }
+
+  .pagination {
+    display: flex;
+    list-style: none;
+    gap: 6px;
+  }
+
+  .pagination li a,
+  .pagination li span {
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    font-size: 14px;
+    color: #007bff;
+    text-decoration: none;
+    transition: background-color 0.3s;
+  }
+
+  .pagination li a:hover {
+    background-color: #007bff;
+    color: white;
+  }
+
+  .pagination .active span {
+    background-color: #007bff;
+    color: white;
+    border-color: #007bff;
+    cursor: default;
+  }
+
+  .pagination .disabled span {
+    color: #aaa;
+    border-color: #ddd;
+    cursor: not-allowed;
+  }
+
+  a {
+    text-decoration: none;
+    color: white;
+  }
+</style>
+
+<style>
+  body {
+    font-family: 'Segoe UI', sans-serif;
+    background-color: #f4f6f8;
+  }
+
+  .form-section {
+    padding: 30px;
+    background-color: white;
+    border-radius: 12px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+  }
+
+  .form-section h1 {
+    font-size: 24px;
+    margin-bottom: 25px;
+    color: #222;
+    text-align: center;
+  }
+
+  .form-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    margin-bottom: 25px;
+  }
+
+  .form-group {
+    flex: 1 1 220px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .form-group label {
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: #333;
+  }
+
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    padding: 10px 12px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: border-color 0.2s;
+  }
+
+  .form-group input:focus,
+  .form-group select:focus,
+  .form-group textarea:focus {
+    border-color: #0077cc;
+    box-shadow: 0 0 3px rgba(0, 119, 204, 0.3);
+    outline: none;
+  }
+
+  .drop-zone {
+    border: 2px dashed #bbb;
+    border-radius: 10px;
+    padding: 50px 20px;
+    text-align: center;
+    background-color: #f9fafb;
+    transition: background-color 0.3s ease;
+    cursor: pointer;
+    font-size: 16px;
+    color: #666;
+    width: 100%;
+    margin-bottom: 30px;
+  }
+
+  .drop-zone.dragover {
+    background-color: #e1f0ff;
+    border-color: #007bff;
+  }
+
+  .drop-zone input {
+    display: none;
+  }
+
+  .btn-submit {
+    display: block;
+    margin: 15px auto;
+    padding: 12px 30px;
+    font-size: 16px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
+
+  .btn-submit:hover {
+    background-color: #005bbf;
+  }
+
+  .encabezado-inspeccion {
+    background-color: #f1f5f9;
+    padding: 20px;
+    border: 2px solid #ddd;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
+    margin-bottom: 30px;
+  }
+
+  .encabezado-inspeccion h2 {
+    margin-top: 0;
+    font-size: 1.5em;
+    margin-bottom: 15px;
+    color: #333;
+  }
+
+  .encabezado-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 15px;
+  }
+
+  .encabezado-grid div {
+    font-size: 14px;
+    color: #444;
+  }
+
+  .encabezado-grid .observaciones {
+    grid-column: 1 / -1;
+    /* que ocupe todo el ancho */
+  }
+
+  .encabezado-grid .observaciones p {
+    margin: 5px 0 0;
+    color: #555;
+  }
+
+  .btn-imprimir {
+    margin-bottom: 20px;
+    background-color: #0077cc;
+    color: white;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+
+  .btn-imprimir:hover {
+    background-color: #005fa3;
+  }
+
+  .disabled {
+    display: none;
+  }
+
+  .faltantes li {
+    color: #a94442;
+    font-size: 13px;
+    background-color: #fff0f0;
+    border-color: #f5c6cb;
+  }
+  body {
+  font-family: 'Segoe UI', sans-serif;
+  background-color: #f4f6f8;
+}
+
+.form-section {
+  padding: 30px;
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+}
+
+.form-section h1 {
+  font-size: 26px;
+  margin-bottom: 20px;
+  color: #1f2937;
+  text-align: center;
+}
+
+.form-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  margin-bottom: 25px;
+}
+
+.form-group {
+  flex: 1 1 220px;
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group label {
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: #374151;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  padding: 10px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: border-color 0.2s;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  border-color: #0077cc;
+  box-shadow: 0 0 3px rgba(0, 119, 204, 0.3);
+  outline: none;
+}
+
+.drop-zone {
+  border: 2px dashed #93c5fd;
+  border-radius: 10px;
+  padding: 40px 20px;
+  text-align: center;
+  background-color: #f0f9ff;
+  transition: background-color 0.3s ease;
+  cursor: pointer;
+  font-size: 16px;
+  color: #2563eb;
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+.drop-zone.dragover {
+  background-color: #dbeafe;
+  border-color: #2563eb;
+}
+
+.drop-zone input {
+  display: none;
+}
+
+.btn-submit {
+  display: block;
+  margin: 15px auto;
+  padding: 12px 30px;
+  font-size: 16px;
+  background-color: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.btn-submit:hover {
+  background-color: #1d4ed8;
+}
+
+.excel-preview {
+  margin-top: 20px;
+}
+
+.table-container {
+  max-height: 250px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+}
+
+#previewTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+#previewTable th,
+#previewTable td {
+  border: 1px solid #ccc;
+  padding: 6px 8px;
+  text-align: center;
+}
+#previewTable th {
+  background-color: #f3f4f6;
+  font-weight: bold;
+}
+.card-container{
+  margin: 60px;
+  
+}
+</style>
+
+
+<!--
+
+<style>
+  body {
+    font-family: "Segoe UI", sans-serif;
+    margin: 30px;
+    background: #f4f4f9;
+    color: #333;
+  }
+
+  h2 {
+    color: #2c3e50;
+  }
+
+  input[type="file"] {
+    padding: 10px;
+    margin-bottom: 20px;
+  }
+
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    background-color: white;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  }
+
+  th, td {
+    border: 1px solid #ccc;
+    padding: 8px 12px;
+    text-align: left;
+  }
+
+  th {
+    background-color: #f0f0f0;
+    font-weight: bold;
+  }
+
+  .column-status {
+    margin-top: 20px;
+    padding: 10px;
+    background-color: #ecf0f1;
+    border-left: 5px solid #3498db;
+  }
+
+  .column-status strong {
+    color: #2c3e50;
+  }
+
+  .has-data {
+    color: green;
+    font-weight: bold;
+  }
+
+  .no-data {
+    color: red;
+    font-weight: bold;
+  }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+-->
+{% endblock %}
+
+{% block content %}
+<div class="card-container" id="cards">
+  <div class="form-section">
+    <h1>Verificación de Proveedores</h1>
+
+    <!-- Loader -->
+    <div id="loader" class="d-none text-center mt-3">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Cargando...</span>
+      </div>
+      <p class="mt-2">Procesando archivo, por favor espere...</p>
+    </div>
+
+    <!-- Formulario -->
+    <form id="filtroForm" enctype="multipart/form-data">
+      <!-- Fila 1 -->
+      <div class="form-row">
+        <div class="form-group">
+          <label for="fechaInspeccion">Fecha de inspección *</label>
+          <input type="date" id="fechaInspeccion" name="fecha_inspeccion"
+                 value="{{ fecha_actual|date:'Y-m-d' }}" required>
+        </div>
+
+        <div class="form-group">
+          <label for="controladorInput">Inspector *</label>
+          <input type="text" id="controladorInput" name="controlador"
+                 value="{{ usuario_logueado }}" readonly>
+        </div>
+
+        <div class="form-group">
+          <label for="codigoInspeccion">Código de inspección</label>
+          <input type="text" id="codigoInspeccion" name="codigo_inspeccion"
+                 placeholder="**********" disabled>
+        </div>
+      </div>
+
+      <!-- Fila 2 -->
+      <div class="form-row">
+        <div class="form-group">
+          <label for="empresaInput">Empresa (Concesionario) *</label>
+          <select id="empresaInput" name="empresa">
+            <option value="">Seleccione una empresa</option>
+            {% for concesionario in concesionarios %}
+              <option value="{{ concesionario.concesionario }}">{{ concesionario.concesionario }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="columnaProveedores">Columna de proveedores *</label>
+          <select name="columna_proveedores" id="columnaProveedores"></select>
+        </div>
+
+        <div class="form-group">
+          <label for="columnaDni">Columna de DNI *</label>
+          <select name="columna_dni" id="columnaDni"></select>
+        </div>
+      </div>
+
+      <!-- Fila 3 -->
+      <div class="form-row">
+        <div class="form-group" style="flex: 1 1 100%;">
+          <label for="observaciones">Observaciones (opcional)</label>
+          <textarea id="observaciones" name="observaciones" rows="3"
+                    placeholder="Observaciones del control..."></textarea>
+        </div>
+      </div>
+
+      <!-- Dropzone -->
+      <div class="drop-zone" id="dropZone">
+        <span id="dropZoneText">📁 Soltá el archivo Excel aquí o hacé clic</span>
+        <input type="file" id="excelInput" name="archivo_excel" accept=".xlsx" required>
+      </div>
+
+      <!-- Previsualizador Excel -->
+      <div id="excelPreview" class="excel-preview d-none">
+        <h3>📊 Previsualización de columnas</h3>
+        <div class="table-container">
+          <table id="previewTable"></table>
+        </div>
+        <p id="matchInfo" style="margin-top:10px; font-size:14px; color:#333;"></p>
+      </div>
+      <!-- Botón -->
+      <button type="submit" class="btn-submit">Comparar</button>
+    </form>
+  </div>
+
+  
+  <button onclick="imprimirResultados()" class="btn-imprimir disabled" id="btn_imprimir">🖨️ Imprimir
+    resultados</button>
+  <button onclick="descargarExcel()" class="btn-imprimir disabled" id="btn_excel">⬇️ Descargar Excel</button>
+  <button onclick="guardarPDF()" class="btn-imprimir disabled" id="btn_pdf">💾 Guardar PDF</button>
+  <button id="notificar-secretaria" class="btn-imprimir disabled" onclick="Notificar()">
+    📧 Notificar Secretaría
+  </button>
+
+  <div id="resultado" class="d-none">
+    <!-- Encabezado de inspección -->
+    <div class="encabezado-inspeccion">
+      <div style="display: flex;flex-flow: row; justify-content: space-between;">
+        <h2>📋 Inspección registrada</h2>
+        <img src="{% static 'app/img/logo.png'%}" alt="" style="width: 500px;">
+      </div>
+      <div class="encabezado-grid">
+        <div><strong>Fecha de Inspección:</strong> <span id="fechaInspeccionResultado"></span></div>
+        <div><strong>Empresa:</strong> <span id="empresaResultado"></span></div>
+        <div><strong>Inspector:</strong> <span id="inspectorResultado"></span></div>
+        <div><strong>Código de inspección:</strong> <span id="codigoResultado"></span></div>
+        <div><strong>Fecha de Registro:</strong> <span id="fechaRegistro"></span></div>
+        <div class="observaciones">
+          <strong>Observaciones:</strong>
+          <span id="observacionesResultado"></span>
+        </div>
+      </div>
+
+      <div class="alert alert-info">
+        <strong><span id="total"></span></strong> referencias totales:<br>
+        <span class="badge bg-success">✔️ Vigentes: <span id="cantVigentes"></span> (<span
+            id="porcVigentes"></span>)</span>
+        <span class="badge bg-warning text-dark">⚠️ Vencidos: <span id="cantVencidos"></span> (<span
+            id="porcVencidos"></span>)</span>
+        <span class="badge bg-danger">❌ No encontrados: <span id="cantNoEncontrados"></span> (<span
+            id="porcNoEncontrados"></span>)</span>
+      </div>
+      <canvas id="graficoTorta" width="250" height="250" style="max-width: 300px; margin: auto;"></canvas>
+
+      <!-- Tabla de vigentes -->
+      <div class="mb-4">
+        <h6 class="text-success">✔️ Proveedores vigentes</h6>
+        <table class="table table-bordered table-sm table-hover">
+          <thead class="table-success">
+            <tr>
+              <th>#</th>
+              <th>Nombre referencia</th>
+              <th>Coincidencia BD</th>
+              <th>Empleados</th>
+              <th>Alta</th>
+              <th>Vto</th>
+            </tr>
+          </thead>
+          <tbody id="tablaVigentes"></tbody>
+        </table>
+      </div>
+
+      <!-- Tabla de vencidos -->
+      <div class="mb-4">
+        <h6 class="text-warning">⚠️ Proveedores vencidos</h6>
+        <table class="table table-bordered table-sm table-hover">
+          <thead class="table-warning">
+            <tr>
+              <th>#</th>
+              <th>Nombre referencia</th>
+              <th>Coincidencia BD</th>
+              <th>Empleados</th>
+              <th>Alta</th>
+              <th>Vto</th>
+            </tr>
+          </thead>
+          <tbody id="tablaVencidos"></tbody>
+        </table>
+      </div>
+
+      <!-- Lista de no encontrados -->
+      <div>
+        <h6 class="text-danger">❌ Proveedores no encontrados</h6>
+        <ul id="listaNoEncontrados" class="list-group faltantes"></ul>
+      </div>
+    </div>
+    <div id="contenedor-temp-pdf" style="display:none;"></div>
+    
+
+    <img src="{% static 'app/img/logo.png'%}" alt="" style="width: 1000px;">
+  </div>
+  {% endblock %}
+
+  {% block script %}
+<!--<script>
+document.getElementById('excelInput').addEventListener('change', function (e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function (event) {
+        const data = new Uint8Array(event.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const sheetJson = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+        const preview = document.getElementById('excelPreview');
+        const columnStatus = document.getElementById('columnStatus');
+        preview.innerHTML = '';
+        columnStatus.innerHTML = '';
+
+        if (sheetJson.length === 0) {
+            preview.innerHTML = "<p>No se encontraron datos en la hoja.</p>";
+            return;
+        }
+
+        // Mostrar primeras 5 filas
+        const maxRows = 9;
+        const table = document.createElement('table');
+        const rows = sheetJson.slice(0, maxRows);
+
+        rows.forEach((row, i) => {
+            const tr = document.createElement('tr');
+            for (let j = 0; j <= 13; j++) {  // A-K
+                const cell = row[j] !== undefined ? row[j] : '';
+                const td = i === 0 ? document.createElement('th') : document.createElement('td');
+                td.textContent = cell;
+                tr.appendChild(td);
+            }
+            table.appendChild(tr);
+        });
+
+        preview.appendChild(table);
+
+        // Verificar columnas A-K
+        const colLetters = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q'];
+        let resultHTML = `<strong>Columnas con datos (A - K):</strong><ul>`;
+        colLetters.forEach((letter, index) => {
+            const hasData = sheetJson.some(row => row[index] !== undefined && row[index] !== '');
+            resultHTML += `<li>${letter}: <span class="${hasData ? 'has-data' : 'no-data'}">${hasData ? '✔ Sí' : '✖ No'}</span></li>`;
+        });
+        resultHTML += `</ul>`;
+        columnStatus.innerHTML = resultHTML;
+    };
+
+    reader.readAsArrayBuffer(file);
+});
+</script>
+</!-->
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+<script>
+document.getElementById("excelInput").addEventListener("change", handleFile, false);
+
+function handleFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const data = new Uint8Array(e.target.result);
+    const workbook = XLSX.read(data, { type: "array" });
+
+    const sheetName = workbook.SheetNames[0];
+    const sheet = workbook.Sheets[sheetName];
+    const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+    if (rows.length === 0) return;
+
+    // Buscar fila con títulos relevantes
+    let headerRow = rows.find(r =>
+      r.some(c => /empresa|fecha|dni|cuit/i.test(c))
+    ) || rows[0];
+
+    // Construir tabla
+    const previewTable = document.getElementById("previewTable");
+    previewTable.innerHTML = "";
+
+    // Encabezados con letras (A, B, C…)
+    let colHeaders = "<tr>";
+    headerRow.forEach((_, idx) => {
+      colHeaders += `<th>${String.fromCharCode(65 + idx)}</th>`;
+    });
+    colHeaders += "</tr>";
+    previewTable.innerHTML += colHeaders;
+
+    // Fila de títulos detectada
+    let tr = "<tr>";
+    headerRow.forEach((cell, idx) => {
+      let value = cell || "";
+      let highlight = /empresa/i.test(value) ? "style='background:#d1fae5;'" :
+                      /fecha/i.test(value)   ? "style='background:#e0f2fe;'" :
+                      /dni|cuit/i.test(value)? "style='background:#fef3c7;'" : "";
+      tr += `<td ${highlight}>${value}</td>`;
+    });
+    tr += "</tr>";
+    previewTable.innerHTML += tr;
+
+    // Mostrar contenedor
+    document.getElementById("excelPreview").classList.remove("d-none");
+
+    // Detectar columnas y autoseleccionar selects
+    let colEmpresa = null, colDni = null;
+    const matches = [];
+    headerRow.forEach((cell, idx) => {
+      if (/empresa/i.test(cell)) {
+        colEmpresa = idx;
+      }
+      if (/dni|cuit/i.test(cell)) {
+        colDni = idx;
+      }
+      if (/fecha/i.test(cell)) {
+      }
+    });
+
+    // Llenar selects con todas las columnas
+    const options = headerRow.map((_, i) =>
+      `<option value="${i}">${String.fromCharCode(65+i)}</option>`).join("");
+    document.getElementById("columnaProveedores").innerHTML = options;
+    document.getElementById("columnaDni").innerHTML = options;
+
+    // Autoseleccionar detectados
+    if (colEmpresa !== null) {
+      document.getElementById("columnaProveedores").value = colEmpresa;
+    }
+    if (colDni !== null) {
+      document.getElementById("columnaDni").value = colDni;
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+</script>
+
+  <script>
+    function getCookie(name) {
+      let cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+          const cookie = cookies[i].trim();
+          // Coincide con el nombre de cookie
+          if (cookie.substring(0, name.length + 1) === (name + '=')) {
+            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+            break;
+          }
+        }
+      }
+      return cookieValue;
+    }
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('excelInput');
+    const dropText = document.getElementById('dropZoneText');
+
+    dropZone.addEventListener('click', () => fileInput.click());
+
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('dragover');
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+      dropZone.classList.remove('dragover');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      const files = e.dataTransfer.files;
+      if (files.length) {
+        fileInput.files = files;
+        dropText.textContent = '📄 ' + files[0].name;
+      }
+    });
+
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files.length) {
+        dropText.textContent = '📄 ' + fileInput.files[0].name;
+      }
+    });
+
+    // Interceptar envío
+
+    document.addEventListener("DOMContentLoaded", function () {
+  const form = document.getElementById("filtroForm");
+  const resultado = document.getElementById("resultado");
+  const loader = document.getElementById("loader");  // 🔹 referencia al loader
+
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+
+    const formData = new FormData(form);
+    const archivo = formData.get("archivo_excel");
+    const empresa = formData.get("empresa");
+    const inspector = formData.get("controlador");
+    const usuario = "{{ request.user.username }}";
+    const fecha = new Date().toLocaleString();
+
+    if (!archivo || !empresa || !inspector || !formData.get("columna_proveedores")) {
+      Swal.fire("Error", "Por favor completá todos los campos requeridos.", "warning");
+      return;
+    }
+
+    Swal.fire({
+      title: '¿Registrar inspección para esta empresa?',
+      html: `
+        <b>Empresa:</b> ${empresa}<br>
+        <b>Inspector:</b> ${inspector}<br>
+        <b>Usuario (auditor):</b> ${usuario}<br>
+        <b>Fecha y hora:</b> ${fecha}
+      `,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, registrar',
+      cancelButtonText: 'Cancelar'
+    }).then((result) => {
+      if (!result.isConfirmed) return;
+
+      // 🔹 Mostrar loader
+      loader.classList.remove("d-none");
+
+      fetch("{% url 'verificar_proveedores_excel' %}", {
+        method: "POST",
+        headers: {
+          "X-CSRFToken": getCookie("csrftoken")
+        },
+        body: formData
+      })
+        .then(res => res.json())
+        .then(data => {
+          // 🔹 Ocultar loader
+          loader.classList.add("d-none");
+
+          if (data.error) {
+            Swal.fire("Error", data.error, "error");
+            return;
+          }
+
+          // Mostrar resultados
+              document.getElementById('btn_imprimir').classList.remove('disabled');
+              document.getElementById('notificar-secretaria').classList.remove('disabled');
+              document.querySelector(".form-section").classList.add("d-none");
+              resultado.classList.remove("d-none");
+              // Datos generales
+
+              document.getElementById("fechaInspeccionResultado").textContent = data.inspeccion.fecha_inspeccion;
+              document.getElementById("fechaRegistro").textContent = data.inspeccion.fecha;
+              document.getElementById("empresaResultado").textContent = data.inspeccion.empresa;
+              document.getElementById("inspectorResultado").textContent = data.inspeccion.inspector;
+              document.getElementById("codigoResultado").textContent = data.inspeccion.codigo || "-";
+              document.getElementById("observacionesResultado").textContent = data.inspeccion.observaciones || "-";
+              const ctx = document.getElementById('graficoTorta').getContext('2d');
+
+              const dataTorta = {
+                labels: ['Vigentes', 'Vencidos', 'No Encontrados'],
+                datasets: [{
+                  label: 'Estado de proveedores',
+                  data: [
+                    data.vigentes.length,
+                    data.vencidos.length,
+                    data.no_encontrados.length
+                  ],
+                  backgroundColor: [
+                    'rgba(40, 167, 69, 0.6)',     // verde
+                    'rgba(255, 193, 7, 0.6)',     // amarillo
+                    'rgba(220, 53, 69, 0.6)'      // rojo
+                  ],
+                  borderColor: [
+                    'rgba(40, 167, 69, 1)',
+                    'rgba(255, 193, 7, 1)',
+                    'rgba(220, 53, 69, 1)'
+                  ],
+                  borderWidth: 1
+                }]
+              };
+
+              const configTorta = {
+                type: 'pie',
+                data: dataTorta,
+                options: {
+                  responsive: true,
+                  plugins: {
+                    legend: {
+                      position: 'bottom'
+                    },
+                    tooltip: {
+                      callbacks: {
+                        label: function (context) {
+                          let label = context.label || '';
+                          let value = context.parsed;
+                          let total = data.total_referencia;
+                          let porcentaje = total ? ((value / total) * 100).toFixed(2) : 0;
+                          return `${label}: ${value} (${porcentaje}%)`;
+                        }
+                      }
+                    }
+                  }
+                }
+              };
+
+              new Chart(ctx, {
+                type: 'pie',
+                data: {
+                  labels: ['Vigentes', 'Vencidos', 'No Encontrados'],
+                  datasets: [{
+                    data: [
+                      data.vigentes.length,
+                      data.vencidos.length,
+                      data.no_encontrados.length
+                    ],
+                    backgroundColor: ['#28a745', '#ffc107', '#dc3545']
+                  }]
+                },
+                options: {
+                  plugins: {
+                    legend: {
+                      position: 'bottom'
+                    },
+                    datalabels: {
+                      color: '#000',
+                      font: {
+                        weight: 'bold',
+                        size: 16
+                      },
+                      formatter: (value, context) => {
+                        const total = data.total_referencia;
+                        const percentage = total ? ((value / total) * 100).toFixed(1) : 0;
+                        return `${value} (${percentage}%)`;
+                      }
+                    }
+                  }
+                },
+                plugins: [ChartDataLabels]
+              });
+
+              window.ultimoResultadoInspeccion = data;
+document.getElementById('btn_excel').classList.remove('disabled');
+document.getElementById('btn_pdf').classList.remove('disabled');
+
+              // Conteos
+              document.getElementById("total").textContent = data.total_referencia;
+              document.getElementById("cantVigentes").textContent = data.vigentes.length;
+              document.getElementById("cantVencidos").textContent = data.vencidos.length;
+              document.getElementById("cantNoEncontrados").textContent = data.no_encontrados.length;
+              document.getElementById("porcVigentes").textContent = data.porcentaje_vigentes;
+              document.getElementById("porcVencidos").textContent = data.porcentaje_vencidos;
+              document.getElementById("porcNoEncontrados").textContent = data.porcentaje_no_encontrados;
+
+              // Cargar tabla de vigentes
+              tablaVigentes.innerHTML = "";
+              data.vigentes.forEach((item, idx) => {
+                tablaVigentes.innerHTML += `
+    <tr>
+      <td>${idx + 1}</td>
+      <td>${item.referencia}</td>
+      <td>${item.coincidencia}</td>
+      <td>${item.empleados}</td>
+      <td>${item.fecha_alta || "-"}</td>
+      <td>${item.fecha_vto || "-"}</td>
+    </tr>`;
+              });
+
+              // Cargar tabla de vencidos
+              tablaVencidos.innerHTML = "";
+              data.vencidos.forEach((item, idx) => {
+                tablaVencidos.innerHTML += `
+    <tr>
+      <td>${idx + 1}</td>
+      <td>${item.referencia}</td>
+      <td>${item.coincidencia}</td>
+      <td>${item.empleados}</td>
+      <td>${item.fecha_alta || "-"}</td>
+      <td>${item.fecha_vto || "-"}</td>
+    </tr>`;
+              });
+
+              // Cargar lista de no encontrados
+              listaNoEncontrados.innerHTML = "";
+              data.no_encontrados.forEach(nombre => {
+                listaNoEncontrados.innerHTML += `
+  <li class="list-group-item d-flex justify-content-between align-items-center">
+    <span style="flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+      ${nombre.referencia}
+    </span>
+    <span class="">
+      ${nombre.empleados} empleados
+    </span>
+  </li>`;
+              });
+
+              // Resetear formulario
+              form.reset();
+              document.getElementById("dropZoneText").textContent = "📁 Soltá el archivo Excel aquí o hacé clic para seleccionarlo";
+
+              Swal.fire("Éxito", "La inspección fue registrada correctamente.", "success");
+            });
+        });
+      });
+
+      // Actualizar nombre del archivo al seleccionar
+      const inputFile = document.getElementById("excelInput");
+      const dropZoneText = document.getElementById("dropZoneText");
+
+      inputFile.addEventListener("change", function () {
+        const file = this.files[0];
+        if (file) {
+          dropZoneText.textContent = `📎 Archivo seleccionado: ${file.name}`;
+        } else {
+          dropZoneText.textContent = "📁 Soltá el archivo Excel aquí o hacé clic para seleccionarlo";
+        }
+      });
+    })
+
+    function getCookie(name) {
+      let cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+          const cookie = cookies[i].trim();
+          if (cookie.substring(0, name.length + 1) === (name + '=')) {
+            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+            break;
+          }
+        }
+      }
+      return cookieValue;
+    }
+
+
+    function imprimirResultados() {
+      const canvas = document.getElementById("graficoTorta");
+      const dataURL = canvas.toDataURL("image/png"); // Convertir canvas a imagen
+
+      // Clonar el contenido y reemplazar el canvas por la imagen
+      const contenidoOriginal = document.getElementById("resultado");
+      const clon = contenidoOriginal.cloneNode(true);
+
+      const canvasEnClon = clon.querySelector("#graficoTorta");
+      const img = document.createElement("img");
+      img.src = dataURL;
+      img.alt = "Gráfico de torta";
+      img.style.maxWidth = "100%";
+      img.style.display = "block";
+      img.style.margin = "0 auto";
+
+      if (canvasEnClon) {
+        canvasEnClon.parentNode.replaceChild(img, canvasEnClon);
+      }
+
+      // Crear ventana nueva y escribir contenido con estilos
+      const ventana = window.open("", "_blank");
+      ventana.document.write(`
+    <html>
+      <head>
+        <title>Resultados de Inspección</title>
+        <style>
+        * {
+          box-sizing: border-box;
+        }
+
+        body {
+          font-family: 'Segoe UI', Tahoma, sans-serif;
+          font-size:16px;
+          margin: 20px;
+          color: #FFFFF;
+        }
+
+        h2, h5, h6 {
+          margin: 0 0 10px;
+          font-weight: 600;
+        }
+
+        .encabezado-inspeccion {
+          background-color: #f9f9f9;
+          padding: 20px;
+          border-radius: 6px;
+          border: 1px solid #ddd;
+          margin-bottom: 30px;
+        }
+
+        .encabezado-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+          gap: 10px;
+          font-size: 14px;
+          margin-top: 10px;
+        }
+
+        .observaciones {
+          grid-column: 1 / -1;
+          margin-top: 10px;
+        }
+
+        .alert {
+          border: 1px solid #ccc;
+          border-left: 5px solid #17a2b8;
+          background-color: #e9f7fd;
+          padding: 10px 15px;
+          margin-top: 20px;
+          font-size: 14px;
+        }
+
+        .badge {
+          display: inline-block;
+          padding: 4px 8px;
+          border-radius: 4px;
+          margin-right: 8px;
+          font-size: 13px;
+        }
+
+        .bg-success { background-color: #d4edda; color: #155724; }
+        .bg-warning { background-color: #fff3cd; color: #856404; }
+        .bg-danger { background-color: #f8d7da; color: #721c24; }
+
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-top: 10px;
+        }
+
+        th, td {
+          border: 1px solid #ccc;
+          padding: 6px 8px;
+          text-align: center;
+          font-size: 12px;
+        }
+
+        thead {
+          background-color: #e6f2ea;
+          font-weight: bold;
+        }
+
+        h6 {
+          margin-top: 30px;
+          font-size: 16px;
+        }
+
+        ul.faltantes {
+          padding-left: 20px;
+          font-size: 13px;
+          margin-top: 10px;
+        }
+
+        ul.faltantes li {
+          margin-bottom: 5px;
+        }
+
+        @media print {
+          body {
+            margin: 0;
+            padding: 0;
+            color-adjust: exact;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+        }
+      </style>
+      </head>
+      <body>
+        ${clon.innerHTML}
+      </body>
+    </html>
+  `);
+
+      ventana.document.close();
+      ventana.focus();
+      ventana.print();
+    }
+
+
+function descargarExcel() {
+  // Tomamos los datos procesados del último fetch
+  if (!window.ultimoResultadoInspeccion) {
+    Swal.fire("Error", "No hay resultados para exportar.", "error");
+    return;
+  }
+
+  const { vigentes, vencidos, no_encontrados } = window.ultimoResultadoInspeccion;
+
+  const sheetVigentes = [
+    ["#", "Referencia", "Coincidencia", "Empleados", "Fecha Alta", "Fecha Vto"],
+    ...vigentes.map((item, i) => [
+      i + 1,
+      item.referencia,
+      item.coincidencia,
+      item.empleados,
+      item.fecha_alta || "-",
+      item.fecha_vto || "-"
+    ])
+  ];
+
+  const sheetVencidos = [
+    ["#", "Referencia", "Coincidencia", "Empleados", "Fecha Alta", "Fecha Vto"],
+    ...vencidos.map((item, i) => [
+      i + 1,
+      item.referencia,
+      item.coincidencia,
+      item.empleados,
+      item.fecha_alta || "-",
+      item.fecha_vto || "-"
+    ])
+  ];
+
+  const sheetNoEncontrados = [
+    ["#", "Referencia", "Empleados"],
+    ...no_encontrados.map((item, i) => [
+      i + 1,
+      item.referencia,
+      item.empleados
+    ])
+  ];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(sheetVigentes), "Vigentes");
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(sheetVencidos), "Vencidos");
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(sheetNoEncontrados), "No Encontrados");
+
+  XLSX.writeFile(wb, "Informe_Inspeccion.xlsx");
+}
+
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+<script>
+function Notificar() {
+  const contenido = document.getElementById("resultado");
+
+  if (!contenido || contenido.classList.contains("d-none")) {
+    Swal.fire("Error", "No hay resultados disponibles para guardar en PDF.", "error");
+    return;
+  }
+
+  const clon = contenido.cloneNode(true);
+  clon.style.fontSize = "11px";
+  clon.style.padding = "10px";
+
+  const canvas = document.getElementById("graficoTorta");
+  const dataURL = canvas.toDataURL("image/png");
+  const img = document.createElement("img");
+  img.src = dataURL;
+  img.style.maxWidth = "100%";
+  img.style.margin = "10px auto";
+
+  const canvasInClone = clon.querySelector("#graficoTorta");
+  if (canvasInClone) {
+    canvasInClone.parentNode.replaceChild(img, canvasInClone);
+  }
+
+  const opt = {
+    margin: 0.3,
+    filename: 'Informe_Inspeccion.pdf',
+    image: { type: 'jpeg', quality: 0.95 },
+    html2canvas: {
+      scale: 1.4,
+      useCORS: true
+    },
+    jsPDF: {
+      unit: 'in',
+      format: 'a4',
+      orientation: 'portrait'
+    },
+    pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+  };
+
+  html2pdf().set(opt).from(clon).outputPdf('blob').then(blob => {
+
+    // Enviar a servidor
+    const formData = new FormData();
+    formData.append("pdf", blob, "Informe_Inspeccion.pdf");
+
+    fetch("/enviar-mail-secretaria/", {
+      method: "POST",
+      body: formData,
+      headers: {
+        "X-CSRFToken": getCSRFToken()
+      }
+    })
+    .then(response => {
+      if (response.ok) {
+        Swal.fire("Éxito", "El informe fue enviado a Secretaría.", "success");
+      } else {
+        throw new Error("Error en la respuesta del servidor.");
+      }
+    })
+    .catch(error => {
+      console.error("Error al enviar el PDF:", error);
+      Swal.fire("Error", "Hubo un problema al enviar el informe.", "error");
+    });
+  });
+}
+
+
+
+
+function guardarPDF() {
+  const contenido = document.getElementById("resultado");
+
+  if (!contenido || contenido.classList.contains("d-none")) {
+    Swal.fire("Error", "No hay resultados disponibles para guardar en PDF.", "error");
+    return;
+  }
+
+  const clon = contenido.cloneNode(true);
+  clon.style.fontSize = "11px";
+  clon.style.padding = "10px";
+
+  const canvas = document.getElementById("graficoTorta");
+  const dataURL = canvas.toDataURL("image/png");
+  const img = document.createElement("img");
+  img.src = dataURL;
+  img.style.maxWidth = "100%";
+  img.style.margin = "10px auto";
+
+  const canvasInClone = clon.querySelector("#graficoTorta");
+  if (canvasInClone) {
+    canvasInClone.parentNode.replaceChild(img, canvasInClone);
+  }
+
+  const opt = {
+    margin: 0.3,
+    filename: 'Informe_Inspeccion.pdf',
+    image: { type: 'jpeg', quality: 0.95 },
+    html2canvas: { scale: 1.4, useCORS: true },
+    jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' },
+    pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+  };
+
+  // Si no es notificación, guardar localmente
+    html2pdf().set(opt).from(clon).save();
+}
+
+</script>
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  {% endblock %}

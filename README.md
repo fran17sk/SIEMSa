@@ -140,6 +140,7 @@ mv manage_server.sh siemsa
 chmod +x siemsa
 sudo mv siemsa /usr/local/bin/
 
+
 como usarlo 
     siemsa start
     siemsa stop

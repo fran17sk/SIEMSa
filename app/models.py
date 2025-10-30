@@ -213,3 +213,71 @@ class OrganismoUsuario(models.Model):
     def __str__(self):
         return f"{self.usuario.username} - {self.organismo.nombre}"
     
+class InspeccionProveedores(models.Model):
+    empresa = models.CharField(max_length=255)
+    anio = models.IntegerField(blank=True, null=True)
+    inspector = models.CharField(max_length=255)
+    codigo_inspeccion = models.CharField(max_length=50, unique=True, blank=True, null=True)
+    fecha_inspeccion = models.DateField(null=True, blank=True)
+    columna_proveedores = models.PositiveIntegerField()
+    columna_dni = models.PositiveIntegerField(null=True, blank=True)  # 👈 Te faltaba guardar esta también
+    archivo_excel = models.FileField(upload_to='inspecciones_excel/')
+    observaciones = models.TextField(blank=True, null=True)
+    usuario_registro = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    fecha_registro = models.DateTimeField(auto_now_add=True)
+
+    # Nuevos campos para guardar resultados procesados
+    resultados_vigentes = JSONField(blank=True, null=True)
+    resultados_vencidos = JSONField(blank=True, null=True)
+    resultados_no_encontrados = JSONField(blank=True, null=True)
+    total_referencias = models.PositiveIntegerField(blank=True, null=True)
+
+    def __str__(self):
+        return f"Inspección {self.codigo_inspeccion or self.pk} - {self.empresa}"
+
+class RegistroProveedores(models.Model):
+    creado = models.DateTimeField()
+    numero_tramite = models.CharField(max_length=255,blank=True, null=True)
+    mes = models.CharField(max_length=255,blank=True, null=True)
+    anio = models.PositiveIntegerField(blank=True, null=True)
+    numero_certificado = models.CharField(max_length=255,blank=True, null=True)
+    tipo_registro = models.CharField(max_length=255,blank=True, null=True)
+    tramite = models.CharField(max_length=255,blank=True, null=True)
+    fecha_alta = models.DateField(blank=True, null=True)
+    fecha_vto = models.DateField(blank=True, null=True)
+    estado = models.CharField(max_length=255,blank=True, null=True)
+    numero_expediente = models.CharField(max_length=255,blank=True, null=True)
+    nombre_razon_social = models.CharField(max_length=255,blank=True, null=True)
+    cuit_cuil = models.CharField(max_length=255,blank=True, null=True)
+    domicilio_real = models.CharField(max_length=255, blank=True, null=True,)
+    domicilio_social = models.CharField(max_length=255, blank=True, null=True)
+    localidad = models.CharField(max_length=255,blank=True, null=True)
+    domicilio_fiscal = models.CharField(max_length=255, blank=True, null=True)
+    telefono = models.CharField(max_length=255, blank=True, null=True)
+    representante_legal = models.TextField(blank=True, null=True)
+    documento_identidad = models.CharField(max_length=255, blank=True, null=True)
+    correo_electronico = models.EmailField(blank=True, null=True)
+    actividad = models.CharField(max_length=500,blank=True, null=True)
+    camara = models.CharField(max_length=255, blank=True, null=True)
+    declaracion_jurada = models.BooleanField(default=False,blank=True, null=True)
+    persona_asignada = models.CharField(max_length=255, blank=True, null=True)
+
+    # Campos de verificación (checkboxes tipo sí/no)
+    nomina_trabajadores = models.BooleanField(default=False,blank=True, null=True)
+    fotocopia_dni = models.BooleanField(default=False,blank=True, null=True)
+    certificado_residencia = models.BooleanField(default=False,blank=True, null=True)
+    inscripcion_afip_dgr = models.BooleanField(default=False,blank=True, null=True)
+    regularizacion_fiscal = models.BooleanField(default=False,blank=True, null=True)
+    contrato_social = models.BooleanField(default=False,blank=True, null=True)
+    acta_designacion_autoridades = models.BooleanField(default=False,blank=True, null=True)
+    dni_autoridades = models.BooleanField(default=False,blank=True, null=True)
+    certificado_residencia_autoridades = models.BooleanField(default=False,blank=True, null=True)
+    dni_representante = models.BooleanField(default=False,blank=True, null=True)
+    certificado_residencia_representante = models.BooleanField(default=False,blank=True, null=True)
+    poder_otorgado_representante = models.BooleanField(default=False,blank=True, null=True)
+    f931_seguridad_social = models.BooleanField(default=False,blank=True, null=True)
+    constancia_matriculacion_trabajadores = models.BooleanField(default=False,blank=True, null=True)
+    constancia_cuil = models.BooleanField(default=False,blank=True, null=True)
+
+    def __str__(self):
+        return f"{self.numero_expediente} - {self.nombre_razon_social}"

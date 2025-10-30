@@ -350,10 +350,15 @@
           <i data-lucide="truck"></i> <span>Exportaciones</span>
         </a>
         
-        <a href="{% url 'contratos' %}" class="{% if request.resolver_match.url_name == 'profile' %}active{% endif %}"
+        <a href="{% url 'contratos' %}" class="{% if request.resolver_match.url_name == 'contratos' %}active{% endif %}"
         
         title="Minerales">
         <i data-lucide="handshake"></i> <span>Contratos</span>
+      </a>
+      <a href="{% url 'proveedores' %}" class="{% if request.resolver_match.url_name == 'proveedores' %}active{% endif %}"
+        
+        title="Minerales">
+        <i data-lucide="truck"></i> <span>Proveedores</span>
       </a>
       {% if request.user.groups.first.name == "Administrador" or request.user.groups.first.name == "Publicador" %}
         {% endif %}
@@ -465,6 +470,15 @@
         </div>
         <a href="{% url 'contratos' %}" class="card-btn">INGRESAR</a>
       </div>
+      <div class="card">
+      <div class="card-icon"><i class="fa fa-truck" aria-hidden="true"></i>
+    </div>
+      <div class="card-title">Registro de Proveedores</div>
+      <div class="card-desc">
+        Registro de Proveedores Mineros
+      </div>
+      <a href="{% url 'proveedores' %}" class="card-btn">INGRESAR</a>
+    </div>
       {% if request.user.groups.first.name == "Administrador" %}
       <div class="card">
         <div class="card-icon">🔒</div>
