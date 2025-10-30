@@ -352,13 +352,18 @@
         
         <a href="{% url 'contratos' %}" class="{% if request.resolver_match.url_name == 'contratos' %}active{% endif %}"
         
-        title="Minerales">
+        title="Contratos">
         <i data-lucide="handshake"></i> <span>Contratos</span>
       </a>
       <a href="{% url 'proveedores' %}" class="{% if request.resolver_match.url_name == 'proveedores' %}active{% endif %}"
         
-        title="Minerales">
+        title="Proveedores">
         <i data-lucide="truck"></i> <span>Proveedores</span>
+      </a>
+      <a href="{% url 'consulta_deudas_expedientes' %}" class="{% if request.resolver_match.url_name == 'consulta_deudas_expedientes' %}active{% endif %}"
+        
+        title="SIMSA">
+        <i data-lucide="truck"></i> <span>SIMSa</span>
       </a>
       {% if request.user.groups.first.name == "Administrador" or request.user.groups.first.name == "Publicador" %}
         {% endif %}
