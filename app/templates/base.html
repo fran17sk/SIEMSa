@@ -347,7 +347,7 @@
       {% endif %}
       <a href="{% url 'exportacion' %}"
           class="{% if request.resolver_match.url_name == 'exportacion' %}active{% endif %}" title="Exportaciones">
-          <i data-lucide="truck"></i> <span>Exportaciones</span>
+          <i data-lucide="earth"></i> <span>Exportaciones</span>
         </a>
         
         <a href="{% url 'contratos' %}" class="{% if request.resolver_match.url_name == 'contratos' %}active{% endif %}"
@@ -363,7 +363,7 @@
       <a href="{% url 'consulta_deudas_expedientes' %}" class="{% if request.resolver_match.url_name == 'consulta_deudas_expedientes' %}active{% endif %}"
         
         title="SIMSA">
-        <i data-lucide="truck"></i> <span>SIMSa</span>
+        <i data-lucide="flame"></i> <span>SIMSa</span>
       </a>
       {% if request.user.groups.first.name == "Administrador" or request.user.groups.first.name == "Publicador" %}
         {% endif %}

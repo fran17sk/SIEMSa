@@ -222,15 +222,15 @@
       {% if request.user.groups.first.name == "Administrador" or request.user.groups.first.name == "Publicador"   %}
   {% endif %}
   <a href="{% url 'simsa_users' %}" class="{% if request.resolver_match.url_name == 'simsa_users' %}active{% endif %}" title="Exportacion">
-    <i data-lucide="plus"></i> <span>Usuarios SIMSa</span>
+    <i data-lucide="users"></i> <span>Usuarios SIMSa</span>
   </a>
   <a href="{% url 'reportes_home' %}" class="{% if request.resolver_match.url_name == 'reportes_home' or request.resolver_match.url_name == 'deudas_expedientes' %}active{% endif %}" title="Exportaciones">
-    <i data-lucide="truck"></i> <span>Reportes</span>
+    <i data-lucide="file-chart-column"></i> <span>Reportes</span>
   </a>
   
   
   <a href="{% url 'consulta_deudas_expedientes' %}" class="{% if request.resolver_match.url_name == 'consulta_deudas_expedientes' %}active{% endif %}" title="Países">
-    <i data-lucide="earth"></i> <span>Consulta Expediente</span>
+    <i data-lucide="badge-dollar-sign"></i> <span>Consulta Expediente</span>
   </a>
 
   {% if request.user.groups.first.name == "Administrador" or request.user.groups.first.name == "Publicador"   %}
