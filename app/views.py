@@ -1170,6 +1170,7 @@ def top_productores_valor_fob(request):
         'valores': valores,
     })
 
+
 def exportar_excel_top_productores(request, year):
     year = int(year)
     wb = Workbook()
@@ -1193,9 +1194,14 @@ def exportar_excel_top_productores(request, year):
     # ============================
     toneladas_data = (
         MinExport.objects
-        .filter(id_export__fecha_export__year=year)
-        .values('id_export__id_productor_min__id_productor_min',
-                'id_export__id_productor_min__nom_productor_min')
+        .filter(
+            id_export__fecha_export__year=year,
+            id_export__Estado_anulacion=False      # NO incluir anuladas
+        )
+        .values(
+            'id_export__id_productor_min__id_productor_min',
+            'id_export__id_productor_min__nom_productor_min'
+        )
         .annotate(total_tn=Sum('Tn_min_export'))
         .order_by('-total_tn')[:5]
     )
@@ -1204,8 +1210,8 @@ def exportar_excel_top_productores(request, year):
     ws.append([])
 
     for prod in toneladas_data:
-        productor_nombre = prod['id_export__id_productor_min__nom_productor_min']
         productor_id = prod['id_export__id_productor_min__id_productor_min']
+        productor_nombre = prod['id_export__id_productor_min__nom_productor_min']
         total_tn = round(prod['total_tn'], 2)
 
         ws.append([productor_nombre, total_tn])
@@ -1214,12 +1220,15 @@ def exportar_excel_top_productores(request, year):
         # Detalle por mineral
         minerales = (
             MinExport.objects
-            .filter(id_export__id_productor_min__id_productor_min=productor_id,
-                    id_export__fecha_export__year=year)
+            .filter(
+                id_export__id_productor_min__id_productor_min=productor_id,
+                id_export__fecha_export__year=year,
+                id_export__Estado_anulacion=False    # NO incluir anuladas
+            )
             .values("id_min__nom_min")
             .annotate(
                 total_tn=Sum("Tn_min_export"),
-                total_fob=Sum("FOB_min_export")
+                total_fob=Sum("FOB_min_export"),
             )
             .order_by("-total_tn")
         )
@@ -1241,9 +1250,14 @@ def exportar_excel_top_productores(request, year):
     # ============================
     valor_data = (
         MinExport.objects
-        .filter(id_export__fecha_export__year=year)
-        .values('id_export__id_productor_min__id_productor_min',
-                'id_export__id_productor_min__nom_productor_min')
+        .filter(
+            id_export__fecha_export__year=year,
+            id_export__Estado_anulacion=False      # NO incluir anuladas
+        )
+        .values(
+            'id_export__id_productor_min__id_productor_min',
+            'id_export__id_productor_min__nom_productor_min'
+        )
         .annotate(total_fob=Sum('FOB_min_export'))
         .order_by('-total_fob')[:5]
     )
@@ -1252,8 +1266,8 @@ def exportar_excel_top_productores(request, year):
     ws.append([])
 
     for prod in valor_data:
-        productor_nombre = prod['id_export__id_productor_min__nom_productor_min']
         productor_id = prod['id_export__id_productor_min__id_productor_min']
+        productor_nombre = prod['id_export__id_productor_min__nom_productor_min']
         total_fob = round(prod['total_fob'], 2)
 
         ws.append([productor_nombre, total_fob])
@@ -1262,12 +1276,15 @@ def exportar_excel_top_productores(request, year):
         # Detalle por mineral
         minerales = (
             MinExport.objects
-            .filter(id_export__id_productor_min__id_productor_min=productor_id,
-                    id_export__fecha_export__year=year)
+            .filter(
+                id_export__id_productor_min__id_productor_min=productor_id,
+                id_export__fecha_export__year=year,
+                id_export__Estado_anulacion=False    # NO incluir anuladas
+            )
             .values("id_min__nom_min")
             .annotate(
                 total_tn=Sum("Tn_min_export"),
-                total_fob=Sum("FOB_min_export")
+                total_fob=Sum("FOB_min_export"),
             )
             .order_by("-total_fob")
         )
