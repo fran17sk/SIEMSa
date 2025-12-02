@@ -1176,55 +1176,121 @@ def exportar_excel_top_productores(request, year):
     ws = wb.active
     ws.title = f'Top Productores {year}'
 
-    # TÍTULO PRINCIPAL
+    # ============================
+    # TÍTULO
+    # ============================
     titulo = f"Reporte Top 5 Productores Mineros - {year}"
-    ws.merge_cells('A1:B1')
+    ws.merge_cells('A1:D1')
     cell = ws['A1']
     cell.value = titulo
     cell.font = Font(size=14, bold=True)
     cell.alignment = Alignment(horizontal='center')
 
-    # Espacio debajo del título
     ws.append([])
 
-    # Top por Toneladas
+    # ============================
+    # TOP 5 POR TONELADAS
+    # ============================
     toneladas_data = (
-        MinExport.objects.filter(id_export__fecha_export__year=year)
-        .values('id_export__id_productor_min__nom_productor_min')
-        .annotate(total=Sum('Tn_min_export'))
-        .order_by('-total')[:5]
+        MinExport.objects
+        .filter(id_export__fecha_export__year=year)
+        .values('id_export__id_productor_min__id_productor_min',
+                'id_export__id_productor_min__nom_productor_min')
+        .annotate(total_tn=Sum('Tn_min_export'))
+        .order_by('-total_tn')[:5]
     )
 
     ws.append(["Top 5 Productores por Toneladas", "Toneladas Exportadas"])
-    for r in toneladas_data:
-        ws.append([
-            r['id_export__id_productor_min__nom_productor_min'],
-            round(r['total'], 2)
-        ])
     ws.append([])
 
-    # Top por Valor FOB
+    for prod in toneladas_data:
+        productor_nombre = prod['id_export__id_productor_min__nom_productor_min']
+        productor_id = prod['id_export__id_productor_min__id_productor_min']
+        total_tn = round(prod['total_tn'], 2)
+
+        ws.append([productor_nombre, total_tn])
+        ws.append(["Mineral", "Toneladas", "FOB (USD)"])
+
+        # Detalle por mineral
+        minerales = (
+            MinExport.objects
+            .filter(id_export__id_productor_min__id_productor_min=productor_id,
+                    id_export__fecha_export__year=year)
+            .values("id_min__nom_min")
+            .annotate(
+                total_tn=Sum("Tn_min_export"),
+                total_fob=Sum("FOB_min_export")
+            )
+            .order_by("-total_tn")
+        )
+
+        for m in minerales:
+            ws.append([
+                m["id_min__nom_min"],
+                float(m["total_tn"]),
+                float(m["total_fob"]),
+            ])
+
+        ws.append([])
+
+    ws.append([])
+    ws.append([])
+
+    # ============================
+    # TOP 5 POR VALOR FOB
+    # ============================
     valor_data = (
-        MinExport.objects.filter(id_export__fecha_export__year=year)
-        .values('id_export__id_productor_min__nom_productor_min')
-        .annotate(total=Sum('FOB_min_export'))
-        .order_by('-total')[:5]
+        MinExport.objects
+        .filter(id_export__fecha_export__year=year)
+        .values('id_export__id_productor_min__id_productor_min',
+                'id_export__id_productor_min__nom_productor_min')
+        .annotate(total_fob=Sum('FOB_min_export'))
+        .order_by('-total_fob')[:5]
     )
 
-    ws.append(["Top 5 Productores por Valor FOB (USD)", "Valor Exportado"])
-    for r in valor_data:
-        ws.append([
-            r['id_export__id_productor_min__nom_productor_min'],
-            round(r['total'], 2)
-        ])
+    ws.append(["Top 5 Productores por Valor FOB (USD)", "Valor Total Exportado"])
+    ws.append([])
 
-    # Generar respuesta
-    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    filename = f'top_productores_{year}.xlsx'
+    for prod in valor_data:
+        productor_nombre = prod['id_export__id_productor_min__nom_productor_min']
+        productor_id = prod['id_export__id_productor_min__id_productor_min']
+        total_fob = round(prod['total_fob'], 2)
+
+        ws.append([productor_nombre, total_fob])
+        ws.append(["Mineral", "Toneladas", "FOB (USD)"])
+
+        # Detalle por mineral
+        minerales = (
+            MinExport.objects
+            .filter(id_export__id_productor_min__id_productor_min=productor_id,
+                    id_export__fecha_export__year=year)
+            .values("id_min__nom_min")
+            .annotate(
+                total_tn=Sum("Tn_min_export"),
+                total_fob=Sum("FOB_min_export")
+            )
+            .order_by("-total_fob")
+        )
+
+        for m in minerales:
+            ws.append([
+                m["id_min__nom_min"],
+                float(m["total_tn"]),
+                float(m["total_fob"]),
+            ])
+
+        ws.append([])
+
+    # ============================
+    # RESPUESTA
+    # ============================
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    filename = f'top_productores_detallado_{year}.xlsx'
     response['Content-Disposition'] = f'attachment; filename={filename}'
     wb.save(response)
     return response
-
 
 def exportar_pdf_top_productores(request, year):
     year = int(year)
@@ -3206,17 +3272,25 @@ def proveedores_view(request):
 
 def usuarios_simsa(request):
     # Subconsulta para obtener el nombre de la compañía
-    companies = Companies.objects.using("simsa").filter(
+    company_name = Companies.objects.using("simsa").filter(
         id=Cast(OuterRef("objectid"), output_field=UUIDField())
     ).values("name")[:1]
+
+    # Subquery para el cuit de la empresa
+    company_cuit = Companies.objects.using("simsa").filter(
+        id=Cast(OuterRef("objectid"), output_field=UUIDField())
+    ).values("cuit")[:1]
 
     # Consultar usuarios admin de empresas
     usuarios = (
         Users.objects.using("simsa")
         .filter(isdeleted=False)
         .select_related("roleid")
-        .annotate(company_name=Subquery(companies))
-        .values("username", "roleid__name","email", "company_name")
+        .annotate(
+            company_name=Subquery(company_name),
+            company_cuit=Subquery(company_cuit),
+        )
+        .values("username", "roleid__name", "email", "cuildni", "company_name", "company_cuit")
     )
 
     # Renderizamos el template pasando los usuarios al contexto
@@ -4276,12 +4350,157 @@ def deudas_expedientes(request):
 
     return render(request, "simsa/deudas_expedientes.html", {"resultados": results})
 
+def api_proyectos_por_concesionario(request):
+    company_id = request.GET.get("company_id")  # lo obtenemos por query param
+
+    if not company_id:
+        return JsonResponse({"error": "Falta el parámetro company_id"}, status=400)
+
+    try:
+        cps = Companyprojects.objects.using('simsa').filter(companyid=company_id, isdeleted=False)
+        proyectos = [
+            {
+                "id": cp.projectid.id,
+                "nombre": cp.projectid.name,
+                "anio_creacion": cp.projectid.createdyear,
+            }
+            for cp in cps
+        ]
+        return JsonResponse({"proyectos": proyectos})
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
+
+
+def api_periodos_por_proyecto(request):
+    print("➡️ Iniciando api_periodos_por_proyecto")
+
+    project_id = request.GET.get("project_id")
+    print(f"🟢 Parámetro recibido project_id={project_id}")
+
+    if not project_id:
+        print("🔴 Error: falta project_id")
+        return JsonResponse({"error": "Falta el parámetro project_id"}, status=400)
+
+    try:
+        print("🔍 Consultando presentaciones...")
+        presentaciones = (
+            Presentations.objects.using('simsa')
+            .filter(
+                projectid=project_id,
+                isdeleted=False,
+            )
+            .select_related("periodid")
+        )
+
+        print(f"📦 Presentaciones encontradas: {presentaciones.count()}")
+
+        # Evitamos duplicados usando un set de periodos
+        periodos = []
+        vistos = set()
+
+        for p in presentaciones:
+            print(f"➡️ Procesando presentación {p.id} | Periodo={getattr(p.periodid, 'name', None)}")
+            if p.periodid and p.periodid.name not in vistos:
+                periodos.append({
+                    "id": p.periodid.id,
+                    "nombre": p.periodid.name,
+                })
+                vistos.add(p.periodid.name)
+
+        print(f"✅ Total de periodos distintos: {len(periodos)}")
+        return JsonResponse({"periodos": periodos})
+
+    except Exception as e:
+        print("❌ Error en api_periodos_por_proyecto:")
+        print(traceback.format_exc())
+        return JsonResponse({"error": str(e), "trace": traceback.format_exc()}, status=500)
+
+def generar_informe_proveedores(request):
+    concesionario = request.GET.get("concesionario")
+    proyecto = request.GET.get("proyecto")
+    periodo = request.GET.get("periodo")
+
+    if not (concesionario and proyecto and periodo):
+        return JsonResponse({"error": "Faltan parámetros"}, status=400)
+
+    try:
+        with connections['simsa'].cursor() as cursor:
+            query = f'''
+            select 
+                c."Cuit",
+                c."BusinessName",
+                c."RegistrationNumber",
+                c."TotalAmount",
+                c2."Name" as "Ciiu",
+                a."Name" as "Area",
+                z."Name" as "Zone",
+                nc."Name" as "NativeCommunity",
+                cm."Name" as "ContractorMode",
+                p2."Name" as "Project",
+                c3."Name" as "Company"
+            from "Contractors" c
+            left join "Ciius" c2 on c2."Id" = c."Id"
+            left join "Areas" a on a."Id" = c."AreaId"
+            left join "Zones" z on z."Id" = c."ZoneId"
+            left join "NativeCommunities" nc on nc."Id" = c."NativeCommunityId"
+            left join "ContractorModes" cm on cm."Id" = c."ContractorModeId"
+            left join "PresentationContractors" pc on pc."ContractorId" = c."Id"
+            left join "Presentations" p on p."Id" = pc."PresentationId"
+            left join "Periods" p3 on p."PeriodId" = p3."Id"
+            left join "PresentationStates" ps on ps."Id" = p."PresentationStateId"
+            left join "Projects" p2 on p."ProjectId" = p2."Id"
+            left join "CompanyProjects" cp on cp."ProjectId" = p2."Id"
+            left join "Companies" c3 on c3."Id" = cp."CompanyId"
+            where p."IsDeleted" = false
+              and c3."Id" = %s
+              and p2."Id" = %s
+              and ps."Name" = 'Presentado'
+              and p3."Id" = %s
+              and p."IsRectification" = false
+              and p2."IsDeleted" = false
+              and c3."IsDeleted" = false
+              and cp."IsDeleted" = false
+            '''
+            cursor.execute(query, [concesionario, proyecto, periodo])
+            data = cursor.fetchall()
+            columns = [desc[0] for desc in cursor.description]
+
+        if not data:
+            return JsonResponse({"error": "No se encontraron registros"}, status=404)
+
+        # Crear Excel
+        df = pd.DataFrame(data, columns=columns)
+        output = io.BytesIO()
+        df.to_excel(output, index=False, sheet_name="Informe Proveedores")
+        output.seek(0)
+
+        response = HttpResponse(
+            output,
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = 'attachment; filename="Informe_Proveedores.xlsx"'
+        return response
+
+    except Exception as e:
+        import traceback
+        return JsonResponse({"error": str(e), "trace": traceback.format_exc()}, status=500)
 def reportes_home(request):
     """
     Página principal para la generación de reportes.
     Muestra botones tipo card para cada reporte.
+
     """
-    return render(request, "simsa/reports.html")
+
+    concesionarios = Companies.objects.using('simsa').all()
+    
+
+    context = {
+        "concesionarios": concesionarios,
+        
+        "periodos": ["2023", "2024", "2025"],
+        
+    }
+    return render(request, "simsa/reports.html",context)
 
 def tablero_home(request):
     """
@@ -4386,3 +4605,255 @@ def expedientes_concesionario(request):
     context = {"data_expedientes": data_expedientes}
     return render(request, "simsa/otros_expedientes.html", context)
 
+#######################################################PGYPM##########################################################
+def pgypm(request):
+    return render(request,'pgypm/inspeccion.html')
+
+#################################################EXPEDIENTES##############################################################
+def expedientes(request):
+    return render(request, 'expedientes/buscar_expediente.html')
+
+################################################SIRGEN######################################################
+@login_required
+def sirgen_view(request):
+
+    expedientes_queryset = Expediente.objects.filter(expedientedlt=False)
+
+    nro_exp = request.GET.get("nro_exp")
+    anio = request.GET.get("anio")
+    tipo = request.GET.get("tipo")
+    mina = request.GET.get("mina")
+    concesionario = request.GET.get("concesionario")
+
+    if nro_exp:
+        expedientes_queryset = expedientes_queryset.filter(expedienteid=nro_exp)
+
+    if anio:
+        expedientes_queryset = expedientes_queryset.filter(expedienteanio=anio)
+
+    if tipo:
+        expedientes_queryset = expedientes_queryset.filter(tipoid=tipo)
+
+    if mina:
+        expedientes_queryset = expedientes_queryset.filter(expedientenombremina__icontains=mina)
+
+    if concesionario:
+        expedientes_queryset = expedientes_queryset.filter(expedientecaratula__icontains=concesionario)
+
+    # Anotar último pasedestino
+    ultimo_pase_destino_subquery = Pase.objects.filter(
+    expedienteid=OuterRef('pk')
+    ).order_by('-pasenro').values('pasedestino')[:1]
+
+    ultimo_pase_origen_subquery = Pase.objects.filter(
+        expedienteid=OuterRef('pk')
+    ).order_by('-pasenro').values('paseorigen')[:1]
+
+    ultimo_pase_recibido_subquery = Pase.objects.filter(
+        expedienteid=OuterRef('pk')
+    ).order_by('-pasenro').values('paserecibido')[:1]
+
+    expedientes_queryset = expedientes_queryset.annotate(
+    ultimo_lugar=Subquery(ultimo_pase_destino_subquery),
+    ultimo_origen=Subquery(ultimo_pase_origen_subquery),
+    ultimo_recibido=Subquery(ultimo_pase_recibido_subquery)
+    ).order_by('-expedienteid')
+
+    # Paginación
+    paginator = Paginator(expedientes_queryset, 10)
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+
+    # Obtener nombres de organismos
+    organismos = {org.organismoid: org.organismonombre for org in Organismo.objects.all()}
+
+    # Agregar nombre del organismo al queryset paginado
+    for expediente in page_obj.object_list:
+        expediente.ultimo_lugar_nombre = organismos.get(expediente.ultimo_lugar, "Desconocido")
+        expediente.ultimo_origen_nombre = organismos.get(expediente.ultimo_origen, "Desconocido")
+        expediente.ultimo_esta_recibido = "Sí" if expediente.ultimo_recibido else "No"
+
+    # Armar query string para mantener filtros
+    query_params = request.GET.copy()
+    if 'page' in query_params:
+        query_params.pop('page')
+    query_string = urlencode(query_params)
+
+    tipos = Tipo.objects.all()
+
+    context = {
+        'now': timezone.now(),
+        'page_obj': page_obj,
+        'expedientes': page_obj.object_list,
+        'has_previous': page_obj.has_previous(),
+        'has_next': page_obj.has_next(),
+        'previous_page_number': page_obj.previous_page_number() if page_obj.has_previous() else None,
+        'next_page_number': page_obj.next_page_number() if page_obj.has_next() else None,
+        'current_page': page_obj.number,
+        'total_pages': paginator.num_pages,
+        'query_string': query_string,
+        'tipo_opciones': tipos,
+        'filtros': {
+            'nro_exp': nro_exp or '',
+            'anio': anio or '',
+            'tipo': tipo or '',
+            'mina': mina or '',
+            'concesionario': concesionario or '',
+        }
+    }
+
+    return render(request, 'sirgen/serch.html', context)
+
+
+
+@login_required
+def detalle_expediente(request, expediente_id):
+    expediente = get_object_or_404(Expediente, pk=expediente_id)
+
+    # Obtener historial completo y resolver nombres de origen/destino
+    historial_raw = Pase.objects.filter(expedienteid=expediente).order_by('-pasenro')
+    organismos = {o.organismoid: o.organismonombre for o in Organismo.objects.all()}
+    org = Organismo.objects.all()
+    for pase in historial_raw:
+        pase.pasedestino_nombre = organismos.get(pase.pasedestino, "Desconocido")
+        pase.paseorigen_nombre = organismos.get(pase.paseorigen, "Desconocido")
+
+    # PAGINACIÓN
+    page_number = request.GET.get('page', 1)
+    paginator = Paginator(historial_raw, 10)  # 20 pases por página
+    page_obj = paginator.get_page(page_number)
+
+    motivos = Motivo.objects.all()
+    lugares = Lugar.objects.all()
+
+    context = {
+        'motivos':motivos,
+        'lugares':lugares,
+        'organismos':org,
+        'now': timezone.now(),
+        'expediente': expediente,
+        'historial_pases': page_obj.object_list,
+        'page_obj': page_obj,
+        'total_pages': paginator.num_pages,
+        'current_page': page_obj.number,
+        'has_previous': page_obj.has_previous(),
+        'has_next': page_obj.has_next(),
+        'previous_page_number': page_obj.previous_page_number() if page_obj.has_previous() else None,
+        'next_page_number': page_obj.next_page_number() if page_obj.has_next() else None,
+        'query_string': request.GET.urlencode().replace(f'page={page_number}', '').strip('&'),
+    }
+
+    return render(request, 'sirgen/detalle_expediente.html', context)
+
+@login_required
+def nuevo_pase(request):
+    org = Organismo.objects.all()
+    motivos = Motivo.objects.all()
+    lugares = Lugar.objects.all()
+
+    context = {
+        'motivos':motivos,
+        'lugares':lugares,
+        'organismos':org,
+        'now': timezone.now(),
+    }
+    return render (request, 'sirgen/new.html',context)
+
+@login_required
+def buscar_expediente(request):
+    nro = request.GET.get("nro")
+    try:
+        exp = Expediente.objects.using("catastro").get(expedienteid=nro, expedientedlt=False)
+        ultimo_pase = exp.pase_set.order_by('-pasenro').first()
+
+        return JsonResponse({
+            "nro": exp.expedienteid,
+            "mina": exp.expedientenombremina,
+            "anio": exp.expedienteanio,
+            "tipo": exp.tipoid.tipo,
+            "estado": exp.estadoid.estado,
+            "fecha_ultimo_pase": ultimo_pase.pasefecha.strftime("%d/%m/%Y %H:%M") if ultimo_pase else "Sin pase"
+        })
+    except Expediente.DoesNotExist:
+        return JsonResponse({"error": "Expediente no encontrado."})
+
+@login_required
+def bandeja_entrada_view(request):
+
+    organismo_id = request.GET.get('organismo_id')
+
+    # Validar que se haya recibido un organismo válido
+    if not organismo_id:
+        context = {
+        'now': timezone.now(),
+        'organismos_list': Organismo.objects.all().order_by('organismonombre'),
+    }
+        return render(request,'sirgen/bandeja_entrada.html',context)
+
+    pases_queryset = Pase.objects.filter(
+    pasedestino=organismo_id,
+    expedienteid__expedientedlt=False,
+    paserecibido=False  # o paserecibido__isnull=True si lo necesitás
+    ).select_related('expedienteid').order_by('-pasefecha')
+
+
+    # Paginación
+    paginator = Paginator(pases_queryset, 10)
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+
+    # Obtener nombres de organismos
+    organismos = {org.organismoid: org.organismonombre for org in Organismo.objects.all()}
+
+    # Agregar datos auxiliares a cada pase
+    for pase in page_obj.object_list:
+        pase.organismo_origen_nombre = organismos.get(pase.paseorigen, "Desconocido")
+        pase.organismo_destino_nombre = organismos.get(pase.pasedestino, "Desconocido")
+    # Armar query string para mantener filtros
+    query_params = request.GET.copy()
+    if 'page' in query_params:
+        query_params.pop('page')
+    query_string = urlencode(query_params)
+
+    tipos = Tipo.objects.all()
+    
+    context = {
+        'now': timezone.now(),
+        'page_obj': page_obj,
+        'pases': page_obj.object_list,
+        'has_previous': page_obj.has_previous(),
+        'has_next': page_obj.has_next(),
+        'previous_page_number': page_obj.previous_page_number() if page_obj.has_previous() else None,
+        'next_page_number': page_obj.next_page_number() if page_obj.has_next() else None,
+        'current_page': page_obj.number,
+        'total_pages': paginator.num_pages,
+        'query_string': query_string,
+        'tipo_opciones': tipos,
+        'organismo_id': organismo_id,
+        'organismos_list': Organismo.objects.all().order_by('organismonombre'),
+    }
+
+
+    return render(request,'sirgen/bandeja_entrada.html',context)
+
+
+@require_POST
+@csrf_exempt  # o usá CSRF token con `fetch`
+def recibir_pases_masivo(request):
+    data = json.loads(request.body)
+    pase_ids = data.get('pase_ids', [])
+
+    Pase.objects.filter(id__in=pase_ids, paserecibido=False).update(paserecibido=True)
+    return JsonResponse({'status': 'ok'})
+@require_POST
+def recibir_pase(request, pase_id):
+    pase = get_object_or_404(Pase, id=pase_id)
+    print(pase)
+
+    
+    pase.paserecibido = True
+    pase.save()
+    messages.success(request, f"Pase #{pase.pasenro} marcado como recibido.")
+
+    # Redirige a donde venía (conserva filtros)
+    return redirect(request.META.get('HTTP_REFERER', 'bandeja_entrada'))

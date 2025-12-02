@@ -1,0 +1,708 @@
+{% extends 'sirgen/home.html' %}
+
+{% block head %}
+<style>
+ 
+  .filtros-container {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 20px;
+  max-width: 100%;
+  padding: 20px;
+  background-color: #f9f9f9;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+}
+.serch-container{
+  margin-left: 200px;
+  width: 75%;
+}
+.serch-container.collapsed {
+  margin-left: 50px;
+  width: 95%;
+}
+.filtro {
+  display: flex;
+  flex-direction: column;
+  min-width: 180px;
+}
+
+.filtro label {
+  font-weight: 600;
+  margin-bottom: 5px;
+  color: #333;
+}
+
+.filtro input,
+.filtro select {
+  padding: 8px 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: border 0.2s ease;
+}
+
+.filtro input:focus,
+.filtro select:focus {
+  border-color: #0077cc;
+  outline: none;
+  box-shadow: 0 0 3px rgba(0, 119, 204, 0.4);
+}
+
+.tabla-expedientes {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+  font-family: Arial, sans-serif;
+  background-color: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+.tabla-expedientes.collespand{
+  margin-left: 50px;
+}
+
+.tabla-expedientes th,
+.tabla-expedientes td {
+  border: 1px solid #ccc;
+  padding: 8px 10px; 
+  font-size: 11px; 
+  text-align: center;
+}
+
+.tabla-expedientes th {
+  background-color: #f0f0f0;
+  font-weight: bold;
+  color: #333;
+}
+
+.tabla-expedientes tbody tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.tabla-expedientes input[type="checkbox"] {
+  transform: scale(1.2);
+  cursor: default;
+}
+.pagination-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 30px;
+  margin-left: 200px;
+}
+
+.pagination {
+  list-style: none;
+  display: flex;
+  gap: 5px;
+  padding: 0;
+  margin: 0;
+}
+
+.pagination li {
+  display: inline-block;
+}
+
+.pagination a,
+.pagination span {
+  display: inline-block;
+  padding: 8px 12px;
+  text-decoration: none;
+  color: #007bff;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.pagination a:hover {
+  background-color: #007bff;
+  color: white;
+  border-color: #007bff;
+}
+
+.pagination .active span {
+  background-color: #007bff;
+  color: white;
+  border-color: #007bff;
+  cursor: default;
+}
+
+.pagination .disabled {
+  display: inline-block;
+  padding: 8px 12px;
+  color: #aaa;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  font-size: 14px;
+  cursor: not-allowed;
+}
+
+.expediente-container {
+  margin: 0px ;
+  margin-left: 200px;
+  font-family: 'Segoe UI', sans-serif;
+  color: #333;
+  padding: 0.1rem;
+}
+.expediente-container.collapsed{
+    margin-left: 50px;
+}
+
+.expediente-header {
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.expediente-header h1 {
+  font-size: 2rem;
+  margin-bottom: 0.2rem;
+}
+
+.expediente-header p {
+  color: #777;
+}
+.tab-buttons {
+  display: flex;
+  border-bottom: 2px solid #ccc;
+}
+
+.tab-btn {
+  padding: 0.7rem 1.5rem;
+  background: #f1f1f1;
+  border: none;
+  border-top-left-radius: 6px;
+  border-top-right-radius: 6px;
+  margin-right: 0.2rem;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.3s;
+}
+
+.tab-btn:hover {
+  background: #e0e0e0;
+}
+
+.tab-btn.active {
+  background: #243b55;
+  border-bottom: 2px solid #fff;
+  color: white;
+}
+
+.tab-content {
+  display: none;
+  background: #fff;
+  padding: 1rem 1.5rem;
+  border: 1px solid #ccc;
+  border-top: none;
+  border-radius: 0 0 6px 6px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.tab-content.active {
+  display: block;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem 2rem;
+}
+
+.info-grid label {
+  font-size: 0.85rem;
+  color: #666;
+  display: block;
+}
+
+.info-grid span {
+  font-weight: 500;
+  font-size: 1rem;
+  color: #222;
+}
+.historial-header{
+  display: flex;
+  flex-flow: row nowrap;
+  justify-content: space-between;
+  align-items: center;
+}
+.btn-new{
+  background: #243b55;
+  color: white;
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  cursor: pointer;
+}
+.btn-new:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+  }
+  .btn-editar-expediente{
+    background: #243b55;
+    color: white;
+    padding: 10px;
+    border-radius: 8px 8px 0 0;
+    font-size: 12px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    cursor: pointer;
+    margin-left: auto;
+  }
+  .modal {
+  display: none;
+  position: fixed;
+  z-index: 9999;
+  left: 0; top: 0;
+  width: 100%; height: 100%;
+  background-color: rgba(0,0,0,0.5);
+}
+
+.modal-contenido {
+  background: #fefefe;
+  margin: 5% auto;
+  padding: 10px 35px;
+  width: 95%;
+  max-width: 700px;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+  font-family: 'Segoe UI', sans-serif;
+  position: relative;
+}
+
+.modal-contenido h2 {
+  margin-bottom: 10px;
+  font-size: 16px;
+  color: #333;
+}
+
+.cerrar {
+  position: absolute;
+  top: 15px; right: 20px;
+  font-size: 26px;
+  color: #999;
+  cursor: pointer;
+}
+.cerrar:hover { color: #000; }
+
+/* FORM */
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 50px;
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 4px;
+  font-weight: 600;
+  color: #444;
+}
+
+.form-group input,
+.form-group select {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-size: 14px;
+  background-color: #f9f9f9;
+}
+
+.resumen {
+  margin-top: 20px;
+  font-size: 11px;
+  background: #f1f1f1;
+  padding: 12px;
+  border-left: 4px solid #243b55;
+  border-radius: 6px;
+  color: #333;
+}
+
+/* Botones */
+.modal-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.pin-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-right: auto;
+}
+
+.pin-group label {
+  font-size: 13px;
+  color: #444;
+  margin-bottom: 4px;
+}
+
+.pin-group input {
+  padding: 6px 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
+  width: 150px;
+  background-color: #fff;
+}
+
+.btn-principal {
+  background-color: #243b55;
+  color: white;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.btn-principal:hover { background-color: #243b55; }
+
+.btn-confirmar {
+  background-color: #28a745;
+  color: white;
+  padding: 9px 16px;
+  border: none;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+}
+.btn-confirmar:hover { background-color: #218838; }
+
+.btn-cancelar {
+  background-color: #6c757d;
+  color: white;
+  padding: 9px 16px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.btn-cancelar:hover { background-color: #5a6268; }
+
+@media (max-width: 600px) {
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.detalle-expediente {
+  margin: 15px 0;
+  background-color: #f8f9fa;
+  padding: 5px 10px;
+  border-radius: 8px;
+  border-left: 5px solid #243b55;
+}
+
+.detalle-expediente h3 {
+  margin-top: 0;
+  font-size: 12px;
+  margin-bottom: 12px;
+  color: #243b55;
+}
+
+.exp-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 8px 20px;
+  font-size: 11px;
+  color: #333;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="expediente-container" id="cards">
+  <header class="expediente-header">
+    <h1>Expediente Nº {{ expediente.expedienteid }}</h1>
+  </header>
+  
+
+  <!-- Tabs -->
+  <div class="tab-buttons">
+    <button class="tab-btn active" data-tab="generales">Datos Generales</button>
+    <button class="tab-btn" data-tab="tecnicos">Datos Técnicos</button>
+    <button class="tab-btn" data-tab="ubicacion">Ubicación y Estado</button>
+    <button class="tab-btn" data-tab="canon">Canon y Documentación</button>
+    <button class="tab-btn" data-tab="auditoria">Auditoría</button>
+    <div class="btn-editar-expediente">
+    <i class="fa fa-pencil" aria-hidden="true"></i>
+    <span>Editar Datos</span>
+  </div>
+  </div>
+
+  <!-- Tab Contents -->
+  <div class="tab-content active" id="generales">
+    <div class="info-grid">
+      <div><label>Año</label><span>{{ expediente.expedienteanio }}</span></div>
+      <div><label>Fecha</label><span>{{ expediente.expedientefecha }}</span></div>
+      <div><label>Tipo</label><span>{{ expediente.tipoid.tipo }}</span></div>
+      <div><label>Carátula</label><span>{{ expediente.expedientecaratula }}</span></div>
+      <div><label>Nombre Mina</label><span>{{ expediente.expedientenombremina }}</span></div>
+      <div><label>Observaciones</label><span>{{ expediente.expedienteobs }}</span></div>
+    </div>
+  </div>
+
+  <div class="tab-content" id="tecnicos">
+    <div class="info-grid">
+      <div><label>Sup. Solicitada</label><span>{{ expediente.expedientesupsolicitada }}</span></div>
+      <div><label>Sup. Graficada</label><span>{{ expediente.expedientesuplibre }}</span></div>
+      <div><label>Categoría</label><span>{{ expediente.expedientecateg }}</span></div>
+      <div><label>Fojas Iniciales</label><span>{{ expediente.expedientefojasini }}</span></div>
+      <div><label>Fojas Totales</label><span>{{ expediente.expedienteordenfojas }}</span></div>
+      <div><label>Descubrimiento Directo</label><span>{{ expediente.expedientedescdirecto|yesno:"Sí,No" }}</span></div>
+    </div>
+  </div>
+
+  <div class="tab-content" id="ubicacion">
+    <div class="info-grid">
+      <div><label>Departamento</label><span>{{ expediente.departamentoid }}</span></div>
+      <div><label>Distrito</label><span>{{ expediente.distritoid }}</span></div>
+      <div><label>Paraje</label><span>{{ expediente.expedienteparaje }}</span></div>
+      <div><label>Sección</label><span>{{ expediente.expedienteseccion }}</span></div>
+      <div><label>Parcela</label><span>{{ expediente.expedienteparcela }}</span></div>
+      <div><label>Estado</label><span>{{ expediente.estadoid.estado }}</span></div>
+    </div>
+  </div>
+
+  <div class="tab-content" id="canon">
+    <div class="info-grid">
+      <div><label>Canon</label><span>{{ expediente.expedientecanon }}</span></div>
+      <div><label>Pago Canon</label><span>{{ expediente.expedientepagocanon }}</span></div>
+      <div><label>Canon Sup. Solicitada</label><span>{{ expediente.expedientecanonsupsolic }}</span></div>
+      <div><label>Publicación</label><span>{{ expediente.expedientefchapublicvac }}</span></div>
+      <div><label>Muestra Legal</label><span>{{ expediente.expedientemuestralegal }}</span></div>
+      <div><label>Impacto Ambiental</label><span>{{ expediente.expedienteiia }}</span></div>
+    </div>
+  </div>
+
+  <div class="tab-content" id="auditoria">
+    <div class="info-grid">
+      <div><label>Usuario</label><span>{{ expediente.expedienteuser }}</span></div>
+      <div><label>IP</label><span>{{ expediente.expedientewrkst }}</span></div>
+      <div><label>Fecha</label><span>{{ expediente.expedientenow|date:"d/m/Y H:i" }}</span></div>
+      <div><label>¿Eliminado?</label><span>{{ expediente.expedientedlt|yesno:"Sí,No" }}</span></div>
+      <div><label>Eliminado por</label><span>{{ expediente.expedientedltuser }}</span></div>
+      <div><label>IP Eliminación</label><span>{{ expediente.expedientedltwrkst }}</span></div>
+    </div>
+  </div>
+  <div class="historial-header">
+    <h2>Historial de Pases</h2>
+    <div class="btn-new" id="abrirModal">
+      <i class="fa fa-plus" aria-hidden="true"></i>
+      <span>Realizar Pase</span>
+    </div>
+  </div>
+  <table class="tabla-expedientes">
+      <thead>
+          <tr>
+            <th>#</th>
+            <th>Fecha</th>
+            <th>Enviado por</th>
+            <th>Origen</th>
+            <th>Destino</th>
+            <th>Recibido</th>
+            <th>Recibido por</th>
+            <th>Fecha R</th>
+            <th>Observación</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for pase in historial_pases %}
+        <tr>
+            <td>{{ pase.pasenro }}</td>
+            <td>{{ pase.pasefecha|date:"d/m/Y H:i" }}</td>
+            <td>{{ pase.paseuser }}</td>
+            <td>{{ pase.paseorigen_nombre }}</td>
+            <td>{{ pase.pasedestino_nombre }}</td>
+            <td>
+              {% if pase.paserecibido %}
+                <i class="fa fa-check" aria-hidden="true"></i>
+              {% else %}
+                <i class="fa fa-times" aria-hidden="true"></i>
+              {% endif %}
+            </td>
+            <td>{{ pase.paseuserrecibo|default_if_none:"Pendiente" }}</td>
+            <td>{{ pase.pasefecharecibo|date:"d/m/Y H:i" }}</td>
+            <td>{{ pase.paseobservacion|default_if_none:"" }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="6">No hay pases registrados para este expediente.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+<div class="pagination-container">
+  {% if total_pages > 1 %}
+  <ul class="pagination">
+    {% if has_previous %}
+    <li><a href="?{{ query_string }}&page=1">&laquo;</a></li>
+    <li><a href="?{{ query_string }}&page={{ previous_page_number }}">&lsaquo;</a></li>
+    {% else %}
+    <li class="disabled">&laquo;</li>
+    <li class="disabled">&lsaquo;</li>
+    {% endif %}
+
+    {% for num in page_obj.paginator.page_range %}
+    {% if num == current_page %}
+    <li class="active"><span>{{ num }}</span></li>
+    {% elif num >= current_page|add:'-2' and num <= current_page|add:'2' %}
+    <li><a href="?{{ query_string }}&page={{ num }}">{{ num }}</a></li>
+    {% endif %}
+    {% endfor %}
+
+    {% if has_next %}
+    <li><a href="?{{ query_string }}&page={{ next_page_number }}">&rsaquo;</a></li>
+    <li><a href="?{{ query_string }}&page={{ total_pages }}">&raquo;</a></li>
+    {% else %}
+    <li class="disabled">&rsaquo;</li>
+    <li class="disabled">&raquo;</li>
+    {% endif %}
+  </ul>
+  {% endif %}
+</div>
+</div>
+</div>
+
+
+<!-- Modal -->
+<div id="modalPase" class="modal">
+  <div class="modal-contenido">
+    <span class="cerrar" id="cerrarModal">&times;</span>
+    <h2>Nuevo Pase de Expediente</h2>
+
+    <form method="post" action="">
+      {% csrf_token %}
+
+      <!-- Fila 2 -->
+      <div class="form-row">
+        <div class="form-group">
+          <label>Fecha del Pase</label>
+          <input type="date" name="fecha_pase" value="{{ now|date:'Y-m-d' }}">
+        </div>
+        <div class="form-group">
+          <label>Destino</label>
+          <select name="destino" required>
+            {% for org in organismos %}
+              <option value="{{ org.organismoid }}">{{ org.organismonombre }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <!-- Fila 3 -->
+      <div class="form-row">
+      <div class="form-group">
+        <label>Lugar de destino</label>
+        <select name="Lugar" required>
+          {% for lug in lugares %}
+            <option value="{{ lug.lugarid }}" {% if lug.lugarid == 30 %}selected{% endif %}>
+              {{ lug.lugardesc }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Motivo</label>
+        <select name="Motivo" required>
+          {% for mot in motivos %}
+            <option value="{{ mot.motivoid }}" {% if mot.motivoid == 57 %}selected{% endif %}>
+              {{ mot.motivodesc }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+      <!-- Fila 4 -->
+      <div class="form-row">
+        <div class="form-group">
+          <label>Usuario receptor</label>
+          <input type="text" name="usuario_receptor" placeholder="Ej: jgomez">
+        </div>
+        <div class="form-group">
+          <label>Observaciones</label>
+          <input type="text" name="observacion" placeholder="Opcional">
+        </div>
+      </div>
+<div class="detalle-expediente">
+  <h3>📄 Detalle del Expediente</h3>
+  <div class="exp-grid">
+    <div><strong>Nº:</strong> {{ expediente.expedienteid }}</div>
+    <div><strong>Mina:</strong> {{ expediente.expedientenombremina }}</div>
+    <div><strong>Año:</strong> {{ expediente.expedienteanio }}</div>
+    <div><strong>Tipo:</strong> {{ expediente.tipoid.tipo }}</div>
+    <div><strong>Fecha Últ. Pase:</strong> {{ expediente.pase_set.last.pasefecha|date:"d/m/Y H:i" }}</div>
+    <div><strong>Estado:</strong> {{ expediente.estadoid.estado }}</div>
+  </div>
+</div>
+      <!-- Resumen -->
+      <div class="resumen">
+        <strong>Resumen de auditoría:</strong><br>
+        Pase enviado por <strong>{{ request.user.username }}</strong> el <strong>{{ now|date:'d/m/Y H:i' }}</strong><br>
+        IP del equipo: <strong>{{ request.META.REMOTE_ADDR }}</strong>
+      </div>
+
+      <div class="modal-footer">
+      <div class="pin-group">
+        <label for="pin">🔒PIN</label>
+        <input type="password" id="pin" name="pin" placeholder="••••" required minlength="4" maxlength="10">
+      </div>
+
+      <button type="submit" class="btn-confirmar">✅ Confirmar</button>
+      <button type="button" class="btn-cancelar" id="cancelarModal">Cancelar</button>
+    </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block script %}
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const buttons = document.querySelectorAll(".tab-btn");
+  const contents = document.querySelectorAll(".tab-content");
+  
+  buttons.forEach(btn => {
+    btn.addEventListener("click", () => {
+      const tabId = btn.getAttribute("data-tab");
+
+      // Activar botón actual
+      buttons.forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+
+      // Mostrar solo contenido correspondiente
+      contents.forEach(c => {
+        c.classList.remove("active");
+        if (c.id === tabId) c.classList.add("active");
+      });
+    });
+  });
+});
+</script>
+
+<script>
+const modal = document.getElementById("modalPase");
+const btnAbrir = document.getElementById("abrirModal");
+const btnCerrar = document.getElementById("cerrarModal");
+const btnCancelar = document.getElementById("cancelarModal");
+
+btnAbrir.onclick = () => modal.style.display = "block";
+btnCerrar.onclick = () => modal.style.display = "none";
+btnCancelar.onclick = () => modal.style.display = "none";
+
+window.onclick = (e) => {
+  if (e.target === modal) {
+    modal.style.display = "none";
+  }
+}
+</script>
+{% endblock %}

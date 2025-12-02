@@ -7,6 +7,7 @@ urlpatterns = [
     path('cambiar-password/', views.CambioPasswordObligatorioView.as_view(), name='cambiar_password'),
     path('logout/', views.custom_logout, name='logout'),
     path('home/', views.home, name='home'),
+    path('', views.home, name='home'),
     path('paises/', views.paises, name='pais'),
     path('editar-usuario/', views.editar_usuario, name='editar_usuario'),
     path('usuarios/eliminar/<int:pk>/', views.eliminar_usuario, name='eliminar_usuario'),
@@ -99,6 +100,24 @@ urlpatterns = [
     path("reportes/empresas-sin-proyecto/pdf/", views.reporte_empresas_sin_proyecto_pdf, name="reporte_empresas_sin_proyecto_pdf"),
     path("reportes/empresas-sin-proyecto/excel/", views.reporte_empresas_sin_proyecto_excel, name="reporte_empresas_sin_proyecto_excel"),
     path('reportes/empresas-sin-presentacion-excel/',views.reporte_empresas_sin_presentacion_excel,name='reporte_empresas_sin_presentacion_excel'),
-    path('reportes/empresas-sin-presentacion-pdf/',views.reporte_empresas_sin_presentacion_pdf ,name='reporte_empresas_sin_presentacion_pdf')
+    path('reportes/empresas-sin-presentacion-pdf/',views.reporte_empresas_sin_presentacion_pdf ,name='reporte_empresas_sin_presentacion_pdf'),
+    path('api/proyectos_por_concesionario/', views.api_proyectos_por_concesionario, name='api_proyectos_por_concesionario'),
+    path('api/periodos_por_proyecto/', views.api_periodos_por_proyecto, name='api_periodos_por_proyecto'),
+    path('reportes/generar_proveedores/', views.generar_informe_proveedores, name='generar_informe_proveedores'),
+
+
+    #######################################################PGYPM##########################################################
+    path('pgypm/',views.pgypm,name='pgypm'),
+    ###################################################expedientes##########################################################
+    path('expedientes/',views.expedientes,name='buscar_expediente'),
+
+
+    path('sirgen/',views.sirgen_view,name='sirgen'),
+    path('sirgen/new',views.nuevo_pase,name='nuevo_pase'),
+    path('sirgen/expediente/<int:expediente_id>/', views.detalle_expediente, name='detalle_expediente'),
+    path('buscar-expediente', views.buscar_expediente, name='buscar_expediente'),
+    path('sirgen/bandeja_entrada', views.bandeja_entrada_view,name='bandeja_entrada'),
+    path('recibir-pase/<int:pase_id>/', views.recibir_pase, name='recibir_pase'),
+    path('recibir-pases-masivo/', views.recibir_pases_masivo, name='recibir_pases_masivo'),
 
 ]

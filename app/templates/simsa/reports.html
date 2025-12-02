@@ -73,7 +73,60 @@
         text-align: center;
         margin-top: 20px;
     }
+    /* ----- Reporte de Proveedores ----- */
+.report-card form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.report-card .form-group {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 8px;
+}
+
+.report-card label {
+    font-size: 0.9em;
+    color: #333;
+    margin-bottom: 4px;
+}
+
+.report-card select {
+    padding: 8px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    font-size: 0.9em;
+    background-color: #fff;
+}
+
+.report-card select:focus {
+    outline: none;
+    border-color: #158824;
+    box-shadow: 0 0 4px rgba(21,136,36,0.4);
+}
+
+.report-buttons .generate-btn {
+    background-color: #158824;
+    color: white;
+    border: none;
+    padding: 10px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: background-color 0.2s;
+}
+
+.report-buttons .generate-btn:hover {
+    background-color: #10472d;
+}
+
 </style>
+
 {% endblock %}
 
 {% block content %}
@@ -145,5 +198,134 @@
             </a>
         </div>
     </div>
+    <!-- Card de Reporte de Proveedores -->
+<!-- Card de Reporte de Proveedores -->
+<div class="report-card">
+    <h3>Reporte de Proveedores</h3>
+    <p style="text-align:center;">Seleccione los filtros para generar el reporte de proveedores</p>
+
+    <form id="reporte-proveedores-form" action="" method="get" target="_blank">
+        <div class="form-group">
+            <label for="concesionario">Concesionario:</label>
+            <select id="concesionario">
+                {% for c in concesionarios %}
+                    <option value="{{ c.id }}">{{ c.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="proyecto">Proyecto:</label>
+            <select name="proyecto" id="proyecto" required disabled>
+                <option value="">Seleccione un concesionario primero</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="periodo">Periodo:</label>
+            <select id="periodo-select">
+            <option value="">Seleccione un periodo</option>
+            </select>
+        </div>
+
+        <div class="report-buttons" id="btn-generar-informe">
+            <a href="">Generar Informe</a>
+            
+
+        </div>
+    </form>
 </div>
+
+</div>
+
+
+<script>
+const concesionarioSelect = document.getElementById("concesionario");
+const proyectoSelect = document.getElementById("proyecto");
+
+concesionarioSelect.addEventListener("change", function () {
+    const id = this.value;
+    proyectoSelect.innerHTML = "";
+
+    if (!id) {
+        proyectoSelect.innerHTML = '<option value="">Seleccione un concesionario primero</option>';
+        proyectoSelect.disabled = true;
+        return;
+    }
+
+    proyectoSelect.disabled = true;
+    proyectoSelect.innerHTML = '<option value="">Cargando...</option>';
+
+    fetch("{% url 'api_proyectos_por_concesionario' %}?company_id=" + id)
+        .then(resp => resp.json())
+        .then(data => {
+            proyectoSelect.innerHTML = '';
+            if (!data.proyectos || data.proyectos.length === 0) {
+                proyectoSelect.innerHTML = '<option value="">Sin proyectos disponibles</option>';
+                proyectoSelect.disabled = true;
+                return;
+            }
+            proyectoSelect.disabled = false;
+            proyectoSelect.innerHTML = '<option value="">Seleccione...</option>';
+            data.proyectos.forEach(p => {
+                const o = document.createElement('option');
+                o.value = p.id;
+                o.textContent = p.nombre;
+                proyectoSelect.appendChild(o);
+            });
+        })
+        .catch(err => {
+            console.error(err);
+            proyectoSelect.innerHTML = '<option value="">Error al cargar proyectos</option>';
+            proyectoSelect.disabled = true;
+        });
+});
+</script>
+<script>
+document.getElementById("proyecto").addEventListener("change", function() {
+  const projectId = this.value;
+  const periodoSelect = document.getElementById("periodo-select");
+  periodoSelect.innerHTML = '<option value="">Cargando...</option>';
+
+  if (projectId) {
+    fetch(`/api/periodos_por_proyecto?project_id=${projectId}`)
+      .then(response => response.json())
+      .then(data => {
+        periodoSelect.innerHTML = '<option value="">Seleccione un periodo</option>';
+        data.periodos.forEach(periodo => {
+          const opt = document.createElement("option");
+          opt.value = periodo.id;
+          console.log(periodo.id)
+          opt.textContent = periodo.nombre;
+          periodoSelect.appendChild(opt);
+        });
+
+        if (data.periodos.length === 0) {
+          periodoSelect.innerHTML = '<option value="">Sin periodos presentados</option>';
+        }
+      })
+      .catch(() => {
+        periodoSelect.innerHTML = '<option value="">Error al cargar periodos</option>';
+      });
+  } else {
+    periodoSelect.innerHTML = '<option value="">Seleccione un proyecto primero</option>';
+  }
+});
+</script>
+<script>
+document.getElementById("btn-generar-informe").addEventListener("click", function() {
+    const concesionario = document.getElementById("concesionario").value;
+    const proyecto = document.getElementById("proyecto").value;
+    const periodo = document.getElementById("periodo-select").value; // ⚡ Ojo aquí, antes no se estaba tomando
+
+    if (!concesionario || !proyecto || !periodo) {
+        alert("Seleccione concesionario, proyecto y periodo");
+        return;
+    }
+
+    const url = `/reportes/generar_proveedores/?concesionario=${encodeURIComponent(concesionario)}&proyecto=${encodeURIComponent(proyecto)}&periodo=${encodeURIComponent(periodo)}`;
+
+    window.open(url);  // descarga en nueva pestaña
+});
+</script>
 {% endblock %}

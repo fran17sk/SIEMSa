@@ -8,6 +8,10 @@
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 
   <style>
+    body{
+      font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+
+    }
     h1 {
       text-align: center;
       margin-bottom: 40px;
@@ -129,7 +133,6 @@
 
     body {
       margin: 0;
-      font-family: 'Segoe UI', sans-serif;
       background: #f4f6f8;
       display: flex;
       height: 100vh;
@@ -438,16 +441,24 @@
     </div>
     <a href="" class="card-btn">INGRESAR</a>
   </div>
+  
+  <div class="card">
+    <div class="card-icon">🗃️</div>
+    <div class="card-title">Expedientes Judiciales</div>
+    <div class="card-desc">
+      Consultar por expedientes Judiales de Canon y Catastro Minero.
+    </div>
+    <a href="{% url 'buscar_expediente' %}" class="card-btn">INGRESAR</a>
+  </div>
   <div class="card">
     <div class="card-icon"><i class="fa fa-leaf" aria-hidden="true"></i></div>
     <div class="card-title">Gestion Ambiente</div>
     <div class="card-desc">
       Gestion de informes de impacto Ambiental
     </div>
-    <a href="#" class="card-btn">INGRESAR</a>
+    <a href="{% url 'pgypm' %}" class="card-btn">INGRESAR</a>
   </div>
   -->
-
 
 
 
@@ -485,6 +496,7 @@
     </div>
     <a href="{% url 'consulta_deudas_expedientes' %}" class="card-btn">INGRESAR</a>
   </div>
+  
       {% if request.user.groups.first.name == "Administrador" %}
       <div class="card">
         <div class="card-icon">🔒</div>

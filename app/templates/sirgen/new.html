@@ -1,0 +1,699 @@
+{% extends 'sirgen/home.html' %}
+
+{% block head %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+<style>
+    .container {
+    max-width: 1200px;
+      width: 78%;
+      margin-left: 200px;
+    background: white;
+    padding: 1rem 3rem;
+    border-radius: 12px;
+    box-shadow: 0 12px 35px rgb(0 0 0 / 0.12);
+  }
+  .container.collapsed{
+    margin-left: 50px;
+    width: 90%;
+
+  }
+ 
+h2 {
+      color: #2c3e50;
+      border-bottom: 2px solid #007bff;
+      padding-bottom: 6px;
+    }
+
+    .expediente-input {
+      margin: 20px 0;
+    }
+
+    .expediente-input label {
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .expediente-input input {
+      padding: 10px 12px;
+      width: 150px;
+      font-size: 14px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      margin-left: 10px;
+    }
+
+    .tabla-expedientes {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+  margin-bottom: 20px;
+  font-family: Arial, sans-serif;
+  background-color: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+.tabla-expedientes.collespand{
+  margin-left: 50px;
+}
+
+.tabla-expedientes th,
+.tabla-expedientes td {
+  border: 1px solid #ccc;
+  padding: 8px 10px; 
+  font-size: 11px; 
+  text-align: center;
+}
+
+.tabla-expedientes th {
+  background-color: #f0f0f0;
+  font-weight: bold;
+  color: #333;
+}
+
+.tabla-expedientes tbody tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.tabla-expedientes input[type="checkbox"] {
+  transform: scale(1.2);
+  cursor: default;
+}
+    
+
+    .form-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 30px;
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      font-weight: 600;
+      display: block;
+      margin-bottom: 6px;
+      font-size: 14px;
+    }
+
+    .form-group input,
+    .form-group select {
+      width: 100%;
+      padding: 9px 12px;
+      font-size: 14px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+
+    .form-footer {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 20px;
+    }
+
+    .btn-confirmar {
+      background-color: #28a745;
+      color: white;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .btn-confirmar:hover {
+      background-color: #218838;
+    }
+
+    .alerta {
+      background: #f8d7da;
+      color: #721c24;
+      padding: 10px 15px;
+      margin-top: 10px;
+      border-left: 4px solid #dc3545;
+      border-radius: 4px;
+      font-size: 14px;
+      display: none;
+    }
+    .btn-eliminar {
+  background: transparent;
+  border: none;
+  color: #dc3545;
+  font-size: 18px;
+  cursor: pointer;
+}
+.btn-eliminar:hover {
+  color: #a71d2a;
+}
+.resumen {
+  margin-top: 20px;
+  font-size: 11px;
+  background: #f1f1f1;
+  padding: 12px;
+  border-left: 4px solid #243b55;
+  border-radius: 6px;
+  color: #333;
+}
+  .detalle-expediente {
+  margin: 15px 0;
+  background-color: #f8f9fa;
+  padding: 5px 10px;
+  border-radius: 8px;
+  border-left: 5px solid #243b55;
+}
+
+.detalle-expediente h3 {
+  margin-top: 0;
+  font-size: 12px;
+  margin-bottom: 12px;
+  color: #243b55;
+}
+
+.exp-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 3fr 1fr;
+  gap: 8px 20px;
+  font-size: 11px;
+  color: #333;
+}
+.detalle-pase {
+  margin: 15px 0;
+  background-color: #f8f9fa;
+  padding: 5px 10px;
+  border-radius: 8px;
+  border-left: 5px solid #243b55;
+}
+
+.detalle-pase h3 {
+  margin-top: 0;
+  font-size: 12px;
+  margin-bottom: 12px;
+  color: #243b55;
+}
+
+.pase-grid {
+  display: grid;
+  grid-template-columns: 1fr 3fr 2fr 1fr;
+  gap: 8px 20px;
+  font-size: 11px;
+  color: #333;
+}
+
+.resumen {
+  margin-top: 20px;
+  font-size: 11px;
+  background: #f1f1f1;
+  padding: 12px;
+  border-left: 4px solid #243b55;
+  border-radius: 6px;
+  color: #333;
+}
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  padding-top: 60px;
+  left: 0; top: 0;
+  width: 100%; height: 100%;
+  overflow: auto;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.modal-contenido {
+  background-color: #fff;
+  margin: auto;
+  padding: 20px;
+  border-radius: 8px;
+  width: 80%;
+  max-width: 900px;
+  position: relative;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.cerrar {
+  position: absolute;
+  top: 10px; right: 15px;
+  color: #aaa;
+  font-size: 28px;
+  font-weight: bold;
+  cursor: pointer;
+}
+.cerrar:hover {
+  color: #000;
+}
+</style>
+
+{% endblock %}
+
+{% block content %}
+
+<div class="container" id="cards">
+  <h2>📤 Realizar Pase</h2>
+
+<!-- Ingreso manual -->
+<div class="expediente-input">
+  <label for="expedienteInput">Ingresar N° de Expediente:</label>
+  <input type="text" id="expedienteInput" placeholder="Ej: 123456">
+</div>
+  <div id="alertaError" class="alerta"></div>
+
+<!-- Tabla de expedientes validados -->
+<table class="tabla-expedientes" id="tablaExpedientes">
+  <thead>
+    <tr>
+      <th>N°</th>
+      <th>Mina</th>
+      <th>Año</th>
+      <th>Tipo</th>
+      <th>Estado</th>
+      <th>Fecha Últ. Pase</th>    
+      <th>Acción</th>
+    </tr>
+  </thead>
+  <tbody>
+  <tr id="fila-vacia">
+    <td colspan="7" style="text-align:center; color:#999;">Aún no se han agregado expedientes</td>
+  </tr>
+</tbody>
+</table>
+
+<!-- Selección de destino común -->
+<form method="post" action="">
+  {% csrf_token %}
+  
+  <div class="form-row">
+    <div class="form-group">
+      <label>Fecha del Pase</label>
+      <input type="date" name="fecha_pase" value="{{ now|date:'Y-m-d' }}">
+    </div>
+    <div class="form-group">
+      <label>Destino</label>
+      <select name="destino" required>
+        {% for org in organismos %}
+          <option value="{{ org.organismoid }}">{{ org.organismonombre }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Lugar de destino</label>
+      <select name="lugar" required>
+        {% for lug in lugares %}
+          <option value="{{ lug.lugarid }}" {% if lug.lugarid == 30 %}selected{% endif %}>{{ lug.lugardesc }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Motivo</label>
+      <select name="motivo" required>
+        {% for mot in motivos %}
+          <option value="{{ mot.motivoid }}" {% if mot.motivoid == 57 %}selected{% endif %}>{{ mot.motivodesc }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-group">
+  <label>Usuario receptor</label>
+  <input type="text" name="usuario_receptor" placeholder="Ej: jgomez" required>
+</div>
+
+<div class="form-group">
+  <label>Observaciones</label>
+  <input type="text" name="observacion" placeholder="Opcional">
+</div>
+    
+  </div>
+
+  <!-- Lista de IDs de expedientes (oculto) -->
+  <input type="hidden" name="expedientes_ids" id="expedientesIds">
+
+  <div class="resumen">
+    <strong>Resumen de auditoría:</strong><br>
+    Pase enviado por <strong>Francisco Cruz{{ request.user.username }}</strong> el <strong>{{ now|date:'d/m/Y H:i' }}</strong><br>
+    IP del equipo: <strong>{{ request.META.REMOTE_ADDR }}</strong>
+  </div>
+
+  <div class="form-footer">
+    <div class="">
+      <label for="pin">🔒 PIN</label>
+      <input type="password" id="pin" name="pin" placeholder="••••" required minlength="4" maxlength="10">
+    </div>
+
+    <div class="botones">
+      <button type="submit" class="btn-confirmar" id="btnConfirmar" style="display: none;">
+        ✅ Confirmar Pase
+      </button>
+    </div>
+  </div>
+</form>
+<div id="modalPreview" class="modal">
+  <div class="modal-contenido">
+    <span class="cerrar" id="cerrarPreview">&times;</span>
+    <h2>📋 Confirmación de Pase Masivo</h2>
+
+    <div class="detalle-expediente">
+      <h3>📄 Expedientes a enviar</h3>
+      <div id="previewExpedientes" class="exp-grid"></div>
+    </div>
+
+    <div class="detalle-pase">
+      <h3>📋 Detalle del Pase</h3>
+      <div class="pase-grid">
+        <div><strong>Fecha:</strong> <span id="previewFecha"></span></div>
+        <div><strong>Destino:</strong> <span id="previewDestino"></span></div>
+        <div><strong>Lugar:</strong> <span id="previewLugar"></span></div>
+        <div><strong>Motivo:</strong> <span id="previewMotivo"></span></div>
+        <div><strong>Usuario receptor:</strong> <span id="previewUsuario"></span></div>
+        <div><strong>Observaciones:</strong> <span id="previewObservacion"></span></div>
+      </div>
+    </div>
+
+    <div class="resumen">
+      <strong>Resumen de auditoría:</strong><br>
+      Pase enviado por <strong>Francisco Cruz{{ request.user.username }}</strong><br>
+      Fecha de envío: <span id="previewAhora"></span><br>
+      IP del equipo: <strong>{{ request.META.REMOTE_ADDR }}</strong>
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" id="confirmarFinal" class="btn-confirmar">✅ Confirmar Envío</button>
+      <button type="button" class="btn-cancelar" id="cancelarPreview">Cancelar</button>
+    </div>
+  </div>
+</div>
+</div>
+
+{% endblock %}
+
+{% block script %}
+<script>
+  
+const input = document.getElementById('expedienteInput');
+  const tabla = document.getElementById('tablaExpedientes').querySelector('tbody');
+  const idsOcultos = document.getElementById('expedientesIds');
+  const alertaError = document.getElementById('alertaError');
+  const filaVacia = document.getElementById('fila-vacia');
+  const btnConfirmar = document.getElementById('btnConfirmar');
+
+  let expedientesAgregados = [];
+
+  input.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const nro = input.value.trim();
+
+      if (!nro || expedientesAgregados.includes(nro)) {
+        input.value = '';
+        return;
+      }
+
+      fetch(`/buscar-expediente?nro=${nro}`)
+        .then(response => response.json())
+        .then(data => {
+          if (data.error) {
+            alertaError.style.display = 'block';
+            alertaError.textContent = `❌ ${data.error}`;
+            setTimeout(() => alertaError.style.display = 'none', 3000);
+          } else {
+            // Ocultar fila vacía si existe
+            if (filaVacia) filaVacia.remove();
+
+            const row = document.createElement('tr');
+            row.innerHTML = `
+              <td>${data.nro}</td>
+              <td>${data.mina}</td>
+              <td>${data.anio}</td>
+              <td>${data.tipo}</td>
+              <td>${data.estado}</td>
+              <td>${data.fecha_ultimo_pase}</td>
+              <td><button class="btn-eliminar" data-nro="${data.nro}">
+                <i class="fa fa-trash" aria-hidden="true"></i>
+              </button></td>
+            `;
+            tabla.appendChild(row);
+            expedientesAgregados.push(nro);
+            idsOcultos.value = expedientesAgregados.join(',');
+
+            // Mostrar botón confirmar
+            if (expedientesAgregados.length > 0) {
+              btnConfirmar.style.display = 'inline-block';
+            }
+          }
+          input.value = '';
+        })
+        .catch(err => {
+          alertaError.style.display = 'block';
+          alertaError.textContent = '❌ Error consultando el expediente.';
+          setTimeout(() => alertaError.style.display = 'none', 3000);
+          input.value = '';
+        });
+    }
+  });
+
+
+tabla.addEventListener('click', function(e) {
+  const btn = e.target.closest('button.btn-eliminar');
+  if (btn) {
+    const nro = btn.getAttribute('data-nro');
+
+    // Eliminar del array
+    expedientesAgregados = expedientesAgregados.filter(id => id !== nro);
+
+    // Eliminar del DOM
+    btn.closest('tr').remove();
+
+    // Actualizar campo oculto
+    idsOcultos.value = expedientesAgregados.join(',');
+
+    // Si quedó vacío, mostrar mensaje y ocultar botón
+    if (expedientesAgregados.length === 0) {
+      const trVacio = document.createElement('tr');
+      trVacio.id = 'fila-vacia';
+      trVacio.innerHTML = `<td colspan="7" style="text-align:center; color:#999;">Aún no se han agregado expedientes</td>`;
+      tabla.appendChild(trVacio);
+      btnConfirmar.style.display = 'none';
+    }
+  }
+});
+
+document.getElementById('btnConfirmar').addEventListener('click', function(e) {
+  e.preventDefault();
+
+  const now = new Date().toLocaleString();
+  document.getElementById('previewAhora').textContent = now;
+
+  document.getElementById('previewFecha').textContent = document.querySelector('[name="fecha_pase"]').value;
+  document.getElementById('previewDestino').textContent = document.querySelector('[name="destino"] option:checked').textContent;
+  document.getElementById('previewLugar').textContent = document.querySelector('[name="lugar"] option:checked').textContent;
+  document.getElementById('previewMotivo').textContent = document.querySelector('[name="motivo"] option:checked').textContent;
+  document.getElementById('previewUsuario').textContent = document.querySelector('[name="usuario_receptor"]').value;
+  document.getElementById('previewObservacion').textContent = document.querySelector('[name="observacion"]').value;
+
+  const listaExpedientes = expedientesAgregados.map(id => {
+    const fila = Array.from(tabla.querySelectorAll('tr')).find(tr => tr.innerText.includes(id));
+    const celdas = fila.querySelectorAll('td');
+    return `
+      <div><strong>Nº:</strong> ${celdas[0].innerText}</div>
+      <div><strong>Mina:</strong> ${celdas[1].innerText}</div>
+      <div><strong>Año:</strong> ${celdas[2].innerText}</div>
+      <div><strong>Tipo:</strong> ${celdas[3].innerText}</div>
+      <div><strong>Estado:</strong> ${celdas[4].innerText}</div>
+    `;
+  }).join("");
+
+  document.getElementById('previewExpedientes').innerHTML = listaExpedientes;
+
+  // Mostrar modal
+  document.getElementById('modalPreview').style.display = 'block';
+});
+
+// Botón para cerrar modal
+document.getElementById('cerrarPreview').addEventListener('click', function() {
+  document.getElementById('modalPreview').style.display = 'none';
+});
+document.getElementById('cancelarPreview').addEventListener('click', function() {
+  document.getElementById('modalPreview').style.display = 'none';
+});
+
+// Confirmar desde el modal final
+document.getElementById('confirmarFinal').addEventListener('click', function() {
+  document.querySelector('form').submit();
+});
+</script>
+
+
+<script>
+  const formulario = document.getElementById('contratoForm').reset()
+  const fechaIniInput = document.getElementById("{{ form.fecha_ini.id_for_label }}");
+  const fechaFinInput = document.getElementById("{{ form.fecha_fin.id_for_label }}");
+  const estadoSelect = document.getElementById("activo");
+
+  function actualizarEstado() {
+    const fechaIni = new Date(fechaIniInput.value);
+    const fechaFin = new Date(fechaFinInput.value);
+    const hoy = new Date();
+
+    if (fechaIni && fechaFin && !isNaN(fechaIni) && !isNaN(fechaFin)) {
+      if (fechaIni <= hoy && hoy <= fechaFin) {
+        estadoSelect.value = "si";  // Activo
+      } else {
+        estadoSelect.value = "no";  // Caducado
+      }
+    } else {
+      estadoSelect.value = "";
+    }
+  }
+
+  fechaIniInput.addEventListener('change', actualizarEstado);
+  fechaFinInput.addEventListener('change', actualizarEstado);
+
+    
+document.getElementById('contratoForm').addEventListener('submit', async function (e) {
+  e.preventDefault(); // Evita el envío tradicional
+
+  const form = e.target;
+
+  // Obtenemos los valores
+  const nroExpediente = document.getElementById('nro_expediente').value.trim();
+  const fechaIni = document.getElementById('id_fecha_ini').value.trim();
+  const fechaFin = document.getElementById('id_fecha_fin').value.trim();
+  const estado = document.getElementById('activo').value.trim();
+  const concesionario = document.getElementById('relacion_id_concesionario').value.trim();
+
+  // Validaciones requeridas
+  if (!nroExpediente || !fechaIni || !fechaFin || !estado || !concesionario) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'Faltan campos obligatorios',
+      text: 'Debe completar: N° Expediente, Fechas, Estado y Concesionario.'
+    });
+    return;
+  }
+
+  // Construimos los datos si pasa validación
+  const data = {
+    relacion_id_concesionario: concesionario,
+    nro_expediente: nroExpediente,
+    pago_cano: document.getElementById('pago_cano').checked,
+    pago_regalias: document.getElementById('pago_regalias').checked,
+    opcion_compra : document.getElementById('opcion_compra').checked,
+    explotacion: document.getElementById('id_explotacion').value,
+    mineral_explotacion: document.getElementById('id_mineral_explotacion').value,
+    exploracion: document.getElementById('id_exploracion').value,
+    iia: document.getElementById('id_iia').value,
+    activo: estado,
+    fecha_ini: fechaIni,
+    fecha_fin: fechaFin
+  };
+
+  try {
+    const response = await fetch(form.action, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': getCookie('csrftoken')
+      },
+      body: JSON.stringify(data)
+    });
+
+    const result = await response.json();
+
+    if (response.ok) {
+      Swal.fire({
+        icon: 'success',
+        title: 'Contrato creado',
+        text: 'El contrato fue almacenado correctamente.'
+      });
+      form.reset();
+    } else {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Error al crear contrato',
+        text: result.error || 'Algo salió mal al guardar el contrato.'
+      });
+    }
+  } catch (error) {
+    Swal.fire({
+      icon: 'error',
+      title: 'Error de conexión',
+      text: 'No se pudo contactar con el servidor.'
+    });
+  }
+});
+
+// Función para obtener el CSRF token desde la cookie
+function getCookie(name) {
+  let cookieValue = null;
+  if (document.cookie && document.cookie !== '') {
+    const cookies = document.cookie.split(';');
+    for (let cookie of cookies) {
+      cookie = cookie.trim();
+      if (cookie.startsWith(name + '=')) {
+        cookieValue = decodeURIComponent(cookie.slice(name.length + 1));
+        break;
+      }
+    }
+  }
+  return cookieValue;
+}
+</script>
+
+
+<script>
+const nroExpedienteInput = document.getElementById('nro_expediente');
+const p = document.getElementById('estado_expediente');
+const info = document.getElementById('info_expediente');
+const tipo = document.getElementById('label_nro_expediente');
+
+nroExpedienteInput.addEventListener('input', async (e) => {
+  e.target.value = e.target.value.replace(/\D/g, '');
+  const nro = e.target.value;
+
+  if (nro.length < 1) {
+    p.innerHTML = '';
+    p.title = '';
+    info.innerText = '';
+    tipo.innerText = 'Nro Expediente';
+    return;
+  }
+
+  try {
+    p.innerHTML = '<i class="fa fa-spinner fa-spin" style="color: #888;"></i>';
+    p.title = 'Verificando...';
+
+    const response = await fetch(`/verificar-expediente/${nro}/`);
+
+    if (response.status === 200 || response.status === 300) {
+      const expediente = await response.json();
+
+      if (response.status === 200) {
+        p.innerHTML = '<i class="fa fa-check-circle" style="color: green;"></i>';
+        p.title = 'Vigente';
+      } else {
+        p.innerHTML = '<i class="fa fa-archive" style="color: orange;"></i>';
+        p.title = 'Archivado';
+      }
+
+      info.innerText = `Nombre: ${expediente.nombre}`;
+      tipo.innerText = `Nro Expediente | ${expediente.tipo}`;
+
+    } else {
+      p.innerHTML = '<i class="fa fa-times-circle" style="color: red;"></i>';
+      p.title = 'No encontrado';
+      tipo.innerText = 'Nro Expediente | No existe';
+    }
+
+  } catch (error) {
+    console.error('Error en la consulta:', error);
+    p.innerHTML = '<i class="fa fa-exclamation-circle" style="color: red;"></i>';
+    p.title = 'Error de conexión';
+    tipo.innerText = 'Nro Expediente';
+    info.innerText = 'Error de conexión al servidor';
+  }
+});
+</script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+{% endblock %}

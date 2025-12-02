@@ -34,6 +34,7 @@
     table {
         width: 100%;
         border-collapse: collapse;
+        font-size: 13px;
     }
 
     th, td {
@@ -91,19 +92,24 @@
             <tr>
                 <th></th>
                 <th>Usuario</th>
+                <th>Cuil/Dni</th>
                 <th>Rol</th>
                 <th>Correo Electrónico</th>
                 <th>Compañía</th>
+                <th>CUIT</th>
             </tr>
         </thead>
         <tbody>
             {% for u in usuarios %}
             <tr>
+                {% load format_filters %}
                 <td>{{ forloop.counter }}</td>
                 <td>{{ u.username }}</td>
+                <td>{{ u.cuildni|default:"-"|format_id }}</td>
                 <td>{{ u.roleid__name }}</td>
                 <td>{{ u.email }}</td>
                 <td>{{ u.company_name|default:"-" }}</td>
+                <td>{{ u.company_cuit|default:"-"|format_id  }}</td>
             </tr>
             {% empty %}
             <tr>

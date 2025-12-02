@@ -1,0 +1,400 @@
+{% extends 'sirgen/home.html' %}
+
+{% block head %}
+<style>
+ 
+  .filtros-container {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 20px;
+  max-width: 100%;
+  padding: 20px;
+  background-color: #f9f9f9;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+}
+.serch-container{
+  margin-left: 200px;
+  width: 75%;
+}
+.serch-container.collapsed {
+  margin-left: 50px;
+  width: 95%;
+}
+.filtro {
+  display: flex;
+  flex-direction: column;
+  min-width: 180px;
+}
+
+.filtro label {
+  font-weight: 600;
+  margin-bottom: 5px;
+  color: #333;
+}
+
+.filtro input,
+.filtro select {
+  padding: 8px 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: border 0.2s ease;
+}
+
+.filtro input:focus,
+.filtro select:focus {
+  border-color: #0077cc;
+  outline: none;
+  box-shadow: 0 0 3px rgba(0, 119, 204, 0.4);
+}
+
+.tabla-expedientes {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+  font-family: Arial, sans-serif;
+  background-color: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+.tabla-expedientes.collespand{
+  margin-left: 50px;
+}
+
+.tabla-expedientes th,
+.tabla-expedientes td {
+  border: 1px solid #ccc;
+  padding: 8px 10px; 
+  font-size: 11px; 
+  text-align: center;
+}
+
+.tabla-expedientes th {
+  background-color: #f0f0f0;
+  font-weight: bold;
+  color: #333;
+}
+
+.tabla-expedientes tbody tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.tabla-expedientes input[type="checkbox"] {
+  transform: scale(1.2);
+  cursor: default;
+}
+.pagination-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 30px;
+  margin-left: 200px;
+}
+
+.pagination {
+  list-style: none;
+  display: flex;
+  gap: 5px;
+  padding: 0;
+  margin: 0;
+}
+
+.pagination li {
+  display: inline-block;
+}
+
+.pagination a,
+.pagination span {
+  display: inline-block;
+  padding: 8px 12px;
+  text-decoration: none;
+  color: #007bff;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.pagination a:hover {
+  background-color: #007bff;
+  color: white;
+  border-color: #007bff;
+}
+
+.pagination .active span {
+  background-color: #007bff;
+  color: white;
+  border-color: #007bff;
+  cursor: default;
+}
+
+.pagination .disabled {
+  display: inline-block;
+  padding: 8px 12px;
+  color: #aaa;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  font-size: 14px;
+  cursor: not-allowed;
+}
+
+
+
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="serch-container" id="cards">
+  <form method="get" id="organismo-form" class="mb-3">
+  <label for="organismo-select"><strong>Filtrar por organismo de destino:</strong></label>
+  <select name="organismo_id" id="organismo-select" onchange="document.getElementById('organismo-form').submit();">
+    <option value="">-- Seleccione un organismo --</option>
+    {% for org in organismos_list %}
+      <option value="{{ org.organismoid }}" {% if org.organismoid|stringformat:"s" == request.GET.organismo_id %}selected{% endif %}>
+        {{ org.organismonombre }}
+      </option>
+    {% endfor %}
+  </select>
+</form>
+  <table class="tabla-expedientes">
+    <thead>
+      <tr>
+        <th><input type="checkbox" id="check-all"></th>
+        <th>N°</th>
+        <th>Exp</th>
+        <th>Fecha</th>
+        <th>Motivo</th>
+        <th>Origen</th>
+        <th>Destino</th>
+        <th>Usuario que envía</th>
+        <th>Usuario receptor</th>
+        <th>R</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for pase in pases %}
+      <tr>
+        <td>
+          <input type="checkbox" class="pase-checkbox" value="{{ pase.id }}"
+                data-expediente="{{ pase.expedienteid.expedienteid }}">
+        </td>
+
+        <td>{{ pase.pasenro }}</td>
+        <td>
+          <a href="{% url 'detalle_expediente' expediente_id=pase.expedienteid.expedienteid %}">
+            {{ pase.expedienteid.expedienteid }}
+          </a>
+        </td>
+
+        <td>{{ pase.pasefecha|date:"d/m/Y" }}</td>
+        <td>{{ pase.pasemotivoid }}</td>
+        <td>{{ pase.organismo_origen_nombre }}</td>
+        <td>{{ pase.organismo_destino_nombre }}</td>
+        <td>{{ pase.paseuser }}</td>
+        <td>{{ pase.paseuserrecibo }}</td>
+        <td>
+          {% if pase.paserecibido %}
+            <i class="fa fa-check" aria-hidden="true"></i>
+          {% else %}
+            <i class="fa fa-times" aria-hidden="true"></i>
+          {% endif %}
+        </td>
+        <td>
+          <button type="button" class="btn btn-sm btn-success recibir-btn"
+                  onclick="confirmarRecepcion({{ pase.id }})"
+                  data-pase-id="{{ pase.id }}"
+                  {% if pase.esta_recibido == "Sí" %}disabled{% endif %}>
+            Recibir
+          </button>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="11">No se encontraron pases para este organismo.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <div style="margin-top: 10px;">
+  <button id="btn-recibir-masivo" class="btn btn-primary" disabled onclick="recibirMasivo()">
+    <i class="fa fa-check-square"></i> Recibir masivo
+  </button>
+</div>
+
+  <div class="pagination-container">
+    {% if total_pages > 1 %}
+    <ul class="pagination">
+      {% if has_previous %}
+      <li><a href="?{{ query_string }}&page=1">&laquo;</a></li>
+      <li><a href="?{{ query_string }}&page={{ previous_page_number }}">&lsaquo;</a></li>
+      {% else %}
+      <li class="disabled">&laquo;</li>
+      <li class="disabled">&lsaquo;</li>
+      {% endif %}
+      
+      {% for num in page_obj.paginator.page_range %}
+      {% if num == current_page %}
+      <li class="active"><span>{{ num }}</span></li>
+      {% elif num >= current_page|add:'-2' and num <= current_page|add:'2' %}
+      <li><a href="?{{ query_string }}&page={{ num }}">{{ num }}</a></li>
+      {% endif %}
+      {% endfor %}
+      
+      {% if has_next %}
+      <li><a href="?{{ query_string }}&page={{ next_page_number }}">&rsaquo;</a></li>
+      <li><a href="?{{ query_string }}&page={{ total_pages }}">&raquo;</a></li>
+      {% else %}
+      <li class="disabled">&rsaquo;</li>
+      <li class="disabled">&raquo;</li>
+      {% endif %}
+    </ul>
+    {% endif %}
+  </div>
+</div>
+  {% endblock %}
+  
+  {% block script %}
+  
+  <script>
+  // Enviar el formulario automáticamente al cambiar el valor del select "tipo"
+  document.getElementById('tipo').addEventListener('change', function() {
+    document.getElementById('filtros-form').submit();
+  });
+</script>
+
+<script>
+function confirmarRecepcion(paseId) {
+  Swal.fire({
+    title: '¿Confirmar recepción?',
+    text: "Esta acción marcará el pase como recibido.",
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#28a745',
+    cancelButtonColor: '#d33',
+    confirmButtonText: 'Sí, recibir',
+    cancelButtonText: 'Cancelar'
+  }).then((result) => {
+    if (result.isConfirmed) {
+      fetch(`/recibir-pase/${paseId}/`, {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': getCookie('csrftoken'),
+          'Content-Type': 'application/json'
+        }
+      })
+      .then(response => {
+        if (response.ok) {
+          Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: 'success',
+            title: 'Pase recibido con éxito',
+            showConfirmButton: false,
+            timer: 3000
+          }).then(() => {
+            // Recargar para reflejar el cambio
+            location.reload();
+          });
+        } else {
+          Swal.fire('Error', 'No se pudo recibir el pase.', 'error');
+        }
+      });
+    }
+  });
+}
+
+// Función para obtener el token CSRF desde las cookies
+function getCookie(name) {
+  let cookieValue = null;
+  if (document.cookie && document.cookie !== '') {
+    const cookies = document.cookie.split(';');
+    for (let cookie of cookies) {
+      cookie = cookie.trim();
+      if (cookie.startsWith(name + '=')) {
+        cookieValue = decodeURIComponent(cookie.slice(name.length + 1));
+        break;
+      }
+    }
+  }
+  return cookieValue;
+}
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const checkboxes = document.querySelectorAll('.pase-checkbox');
+  const btnRecibirMasivo = document.getElementById('btn-recibir-masivo');
+  const recibirBtns = document.querySelectorAll('.recibir-btn');
+  const checkAll = document.getElementById('check-all');
+
+  function updateUI() {
+    const selected = Array.from(checkboxes).some(cb => cb.checked);
+    btnRecibirMasivo.disabled = !selected;
+
+    recibirBtns.forEach(btn => {
+      btn.disabled = selected || btn.getAttribute('data-recibido') === "Sí";
+    });
+  }
+
+  checkboxes.forEach(cb => cb.addEventListener('change', updateUI));
+  checkAll.addEventListener('change', function () {
+    checkboxes.forEach(cb => cb.checked = checkAll.checked);
+    updateUI();
+  });
+});
+
+// Función existente: confirmarRecepcion(paseId)
+// ...
+
+function recibirMasivo() {
+  const selectedCheckboxes = document.querySelectorAll('.pase-checkbox:checked');
+  if (selectedCheckboxes.length === 0) return;
+
+  // Obtener lista de expedientes para mostrar en SweetAlert
+  const expedientes = Array.from(selectedCheckboxes).map(cb => cb.dataset.expediente);
+  const listaExpedientes = expedientes.map(exp => `<li>Expediente Nº <strong>${exp}</strong></li>`).join('');
+
+  Swal.fire({
+    title: `¿Recibir ${selectedCheckboxes.length} pases?`,
+    html: `
+      <p>Esta acción marcará como recibidos los siguientes expedientes:</p>
+      <ul style="text-align: left; margin-left: 20px;">
+        ${listaExpedientes}
+      </ul>
+    `,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Sí, recibir todos',
+    cancelButtonText: 'Cancelar',
+    width: 600
+  }).then((result) => {
+    if (result.isConfirmed) {
+      const paseIds = Array.from(selectedCheckboxes).map(cb => cb.value);
+      fetch(`/recibir-pases-masivo/`, {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': getCookie('csrftoken'),
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ pase_ids: paseIds })
+      }).then(response => {
+        if (response.ok) {
+          Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: 'success',
+            title: 'Pases recibidos con éxito',
+            showConfirmButton: false,
+            timer: 3000
+          }).then(() => {
+            location.reload();
+          });
+        } else {
+          Swal.fire('Error', 'No se pudieron recibir los pases.', 'error');
+        }
+      });
+    }
+  });
+}
+</script>
+
+{% endblock %}

@@ -1,0 +1,273 @@
+{% extends 'sirgen/home.html' %}
+
+{% block head %}
+<style>
+ 
+  .filtros-container {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 20px;
+  max-width: 100%;
+  padding: 20px;
+  background-color: #f9f9f9;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+}
+.serch-container{
+  margin-left: 200px;
+}
+.serch-container.collapsed {
+  margin-left: 50px;
+}
+.filtro {
+  display: flex;
+  flex-direction: column;
+  min-width: 180px;
+}
+
+.filtro label {
+  font-weight: 600;
+  margin-bottom: 5px;
+  color: #333;
+}
+
+.filtro input,
+.filtro select {
+  padding: 8px 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: border 0.2s ease;
+}
+
+.filtro input:focus,
+.filtro select:focus {
+  border-color: #0077cc;
+  outline: none;
+  box-shadow: 0 0 3px rgba(0, 119, 204, 0.4);
+}
+
+.tabla-expedientes {
+  border-collapse: collapse;
+  margin-top: 20px;
+  font-family: Arial, sans-serif;
+  background-color: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  width: 100%;
+}
+.tabla-expedientes.collespand{
+  margin-left: 50px;
+}
+
+.tabla-expedientes th,
+.tabla-expedientes td {
+  border: 1px solid #ccc;
+  padding: 8px 10px; 
+  font-size: 11px; 
+  text-align: center;
+}
+
+.tabla-expedientes th {
+  background-color: #f0f0f0;
+  font-weight: bold;
+  color: #333;
+}
+
+.tabla-expedientes tbody tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.tabla-expedientes input[type="checkbox"] {
+  transform: scale(1.2);
+  cursor: default;
+}
+.pagination-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 30px;
+  margin-left: 200px;
+}
+
+.pagination {
+  list-style: none;
+  display: flex;
+  gap: 5px;
+  padding: 0;
+  margin: 0;
+}
+
+.pagination li {
+  display: inline-block;
+}
+
+.pagination a,
+.pagination span {
+  display: inline-block;
+  padding: 8px 12px;
+  text-decoration: none;
+  color: #007bff;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.pagination a:hover {
+  background-color: #007bff;
+  color: white;
+  border-color: #007bff;
+}
+
+.pagination .active span {
+  background-color: #007bff;
+  color: white;
+  border-color: #007bff;
+  cursor: default;
+}
+
+.pagination .disabled {
+  display: inline-block;
+  padding: 8px 12px;
+  color: #aaa;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  font-size: 14px;
+  cursor: not-allowed;
+}
+
+
+
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="serch-container" id="cards">
+
+  <form method="get" id="filtros-form">
+    <div class="filtros-container" id="cards">
+      <div class="filtro">
+        <label for="nro_exp">N° de Expediente</label>
+        <input type="number" id="nro_exp" name="nro_exp" value="{{ filtros.nro_exp }}">
+      </div>
+  
+      <div class="filtro">
+        <label for="anio">Año</label>
+        <input type="number" id="anio" name="anio" value="{{ filtros.anio }}">
+      </div>
+  
+      <div class="filtro">
+        <label for="tipo">Tipo</label>
+        <select id="tipo" name="tipo">
+          <option value="">Todos</option>
+          {% for opcion in tipo_opciones %}
+          <option value="{{ opcion.tipoid }}" {% if filtros.tipo|add:"0" == opcion.tipoid %}
+          selected{% endif %}>{{ opcion }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      
+      <div class="filtro">
+        <label for="mina">Nombre de la Mina</label>
+        <input type="text" id="mina" name="mina" value="{{ filtros.mina }}">
+      </div>
+      
+      <div class="filtro">
+        <label for="concesionario">Concesionario</label>
+        <input type="text" id="concesionario" name="concesionario" value="{{ filtros.concesionario }}">
+      </div>
+      
+      <div class="filtro" style="align-self: flex-end; display: none;">
+        <button type="submit">Buscar</button>
+      </div>
+    </div>
+  </form>
+  
+  
+  <table class="tabla-expedientes">
+    <thead>
+      <tr>
+        <th>N° Exp</th>
+        <th>Año</th>
+        <th>Tipo</th>
+        <th>Estado</th>
+        <th>Denominación</th>
+        <th>DD</th>
+        <th>P</th>
+        <th>Origen</th>
+        <th>Destino</th>
+        <th>Recibido</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for expediente in expedientes %}
+      <tr>
+        <td><a href="{% url 'detalle_expediente' expediente_id=expediente.expedienteid%}">
+          {{ expediente.expedienteid }}
+        </a></td>
+        <td>{{ expediente.expedienteanio }}</td>
+        <td style="background-color: {{ expediente.tipoid.tipocolorhexa }};">{{ expediente.tipoid }}</td>
+        <td>{{ expediente.estadoid }}</td>
+        <td>{{ expediente.expedientenombremina }}</td>
+        <td>
+          <input type="checkbox" {% if expediente.expedientereconstruido %}checked{% endif %} disabled>
+        </td>
+        <td>{{ expediente.expedientemuestralegal }}</td>
+        <td>{{ expediente.ultimo_origen_nombre }}</td>
+        <td>{{ expediente.ultimo_lugar_nombre }}</td>
+        <td>
+          {% if expediente.ultimo_esta_recibido %}
+                <i class="fa fa-check" aria-hidden="true"></i>
+              {% else %}
+                <i class="fa fa-times" aria-hidden="true"></i>
+              {% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="12">No se encontraron expedientes.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <div class="pagination-container">
+    {% if total_pages > 1 %}
+    <ul class="pagination">
+      {% if has_previous %}
+      <li><a href="?{{ query_string }}&page=1">&laquo;</a></li>
+      <li><a href="?{{ query_string }}&page={{ previous_page_number }}">&lsaquo;</a></li>
+      {% else %}
+      <li class="disabled">&laquo;</li>
+      <li class="disabled">&lsaquo;</li>
+      {% endif %}
+      
+      {% for num in page_obj.paginator.page_range %}
+      {% if num == current_page %}
+      <li class="active"><span>{{ num }}</span></li>
+      {% elif num >= current_page|add:'-2' and num <= current_page|add:'2' %}
+      <li><a href="?{{ query_string }}&page={{ num }}">{{ num }}</a></li>
+      {% endif %}
+      {% endfor %}
+      
+      {% if has_next %}
+      <li><a href="?{{ query_string }}&page={{ next_page_number }}">&rsaquo;</a></li>
+      <li><a href="?{{ query_string }}&page={{ total_pages }}">&raquo;</a></li>
+      {% else %}
+      <li class="disabled">&rsaquo;</li>
+      <li class="disabled">&raquo;</li>
+      {% endif %}
+    </ul>
+    {% endif %}
+  </div>
+</div>
+  {% endblock %}
+  
+  {% block script %}
+  
+  <script>
+  // Enviar el formulario automáticamente al cambiar el valor del select "tipo"
+  document.getElementById('tipo').addEventListener('change', function() {
+    document.getElementById('filtros-form').submit();
+  });
+</script>
+
+{% endblock %}

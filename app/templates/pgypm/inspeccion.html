@@ -1,0 +1,583 @@
+{% extends 'pgypm/base.html' %}
+
+{% block content %}
+
+  <style>
+    :root{
+      --bg:#ffffff; /* dark navy */
+      --card:#0b1220;
+      --muted:#94a3b8;
+      --accent:#0ea5a4; /* teal */
+      --glass: rgba(255,255,255,0.03);
+      --success: #16a34a;
+      --danger:#ef4444;
+      --soft-shadow: 0 6px 18px rgba(2,6,23,0.6);
+      --radius:12px;
+      --gap:16px;
+      color-scheme: dark;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+      background: linear-gradient(180deg,#071025 0%, #071423 60%);
+      color:#e6eef8;
+      -webkit-font-smoothing:antialiased;
+    }
+
+    header{display:flex;gap:18px;align-items:center;margin-top: 35px;margin-bottom:20px}
+    .brand{display:flex;align-items:center;gap:14px}
+    
+    h1{font-size:18px;margin:0}
+    p.lead{margin:0;color:var(--muted);font-size:13px}
+
+    .controls{margin-left:auto;display:flex;gap:12px;align-items:center}
+    .controls input, .controls select, .controls button{
+      background:var(--glass);
+      border:1px solid rgba(255,255,255,0.03);
+      color:inherit;padding:8px 10px;border-radius:10px;font-size:13px
+    }
+    .controls input[type="month"]{padding:8px 12px}
+    .controls .pill{display:flex;gap:8px;align-items:center}
+
+    /* Kanban layout */
+    .board{
+      display:grid;grid-template-columns:repeat(3,1fr);gap:var(--gap);align-items:start;
+    }
+
+    .column{background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent);border-radius:14px;padding:14px;min-height:420px;box-shadow:var(--soft-shadow);}
+    .column .col-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+    .col-title{font-weight:700}
+    .col-count{color:var(--muted);font-size:16px;font-weight: 800;}
+
+    /* Card */
+    .card{
+      background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border:1px solid rgba(255,255,255,0.03);
+      padding:12px;border-radius:12px;margin-bottom:12px;display:flex;gap:12px;align-items:flex-start;cursor:grab;
+      transition:transform .15s ease, box-shadow .15s ease;
+    }
+    .card:active{cursor:grabbing}
+    .card.dragging{opacity:.6;transform:scale(.995)}
+    .card:hover{transform:translateY(-4px);box-shadow:0 10px 30px rgba(2,6,23,0.6)}
+
+    .card .meta{flex:1}
+    .card .chip{display:inline-block;padding:6px 8px;border-radius:999px;font-size:12px;font-weight:600}
+    .date{font-weight:700;font-size:13px}
+    .company{color:var(--muted);font-size:13px;margin-top:4px}
+    .project{margin-top:8px;font-weight:600}
+
+    .inspectors{display:flex;gap:8px;margin-top:10px}
+    .avatar{width:34px;height:34px;border-radius:50%;display:inline-grid;place-items:center;background:linear-gradient(180deg,rgba(255,255,255,0.03),transparent);border:1px solid rgba(255,255,255,0.04);font-weight:700}
+    .badge{font-size:12px;padding:6px 8px;border-radius:8px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.03)}
+
+    .card-footer{display:flex;gap:8px;align-items:center;margin-top:10px}
+    .status-pill{font-weight:700;font-size:12px;padding:6px 8px;border-radius:8px}
+
+    /* Empty column */
+    .empty{color:var(--muted);font-size:13px;text-align:center;padding:18px;border-radius:8px;background:linear-gradient(180deg,rgba(255,255,255,0.01),transparent);}
+
+    /* Responsive */
+    @media (max-width:920px){
+      .board{grid-template-columns:1fr;}
+      header{flex-direction:column;align-items:flex-start;gap:12px}
+      .controls{margin-left:0;width:100%;justify-content:space-between}
+    }
+
+    /* small helpers */
+    .muted{color:var(--muted)}
+    .tiny{font-size:12px}
+
+  </style>
+  <style>
+    /* Calendario */
+    .calendar{
+      display:grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap:6px;
+      background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent);
+      padding:12px;
+      border-radius:12px;
+      box-shadow:var(--soft-shadow);
+    }
+    .calendar .day{
+      background:linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+      border:1px solid rgba(255,255,255,0.05);
+      border-radius:10px;
+      padding:8px;
+      min-height:80px;
+      display:flex;
+      flex-direction:column;
+      justify-content:space-between;
+      transition:all .15s ease;
+    }
+    .calendar .day:hover{
+      transform:translateY(-3px);
+      box-shadow:0 8px 20px rgba(2,6,23,0.6);
+    }
+    .calendar .day.inactive{opacity:0.3}
+    .calendar .day-number{font-size:13px;font-weight:700}
+    .calendar .day-events{margin-top:4px;display:flex;flex-direction:column;gap:4px}
+    .calendar .event{
+      font-size:11px;
+      border-radius:6px;
+      padding:2px 4px;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+      overflow:hidden;
+    }
+    .event.pending{background:rgba(239,68,68,0.25);border:1px solid rgba(239,68,68,0.3)}
+    .event.in_progress{background:rgba(14,165,164,0.25);border:1px solid rgba(14,165,164,0.3)}
+    .event.done{background:rgba(22,163,74,0.25);border:1px solid rgba(22,163,74,0.3)}
+/* Botón flotante */
+.btn-new {
+  position: fixed;
+  top: 20px;
+  right: 25px;
+  font-weight: bold;
+  border: none;
+  border-radius: 50px;
+  padding: 12px 22px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: 0.3s;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+.btn-new:hover {
+  background: #192242;
+  color: white;
+}
+
+/* Modal */
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+}
+.hidden {
+  display: none;
+}
+.modal-content {
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+  background: linear-gradient(180deg,#071025 0%, #071423 60%);
+  color: #fff;
+  padding: 25px;
+  border-radius: 16px;
+  width: 420px;
+  box-shadow: 0 0 25px rgba(0,0,0,0.5);
+}
+.modal-content h2 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  font-size: 1.3rem;
+  color: #ffffff;
+}
+.modal-content label {
+  display: block;
+  font-size: 0.9rem;
+  margin-top: 8px;
+}
+.modal-content input,
+.modal-content select {
+  width: 100%;
+  padding: 8px;
+  margin-top: 5px;
+  border: 1px solid #444;
+  border-radius: 6px;
+  background: #2b2b2b;
+  color: #fff;
+}
+.modal-actions {
+  margin-top: 15px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+.btn-cancel {
+  background: #444;
+  color: #fff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.btn-cancel:hover {
+  background: #555;
+}
+.btn-save {
+  background: #ffffff;
+  color: #111;
+  font-weight: bold;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.btn-save:hover {
+  background: #0e1931;
+  color: white;
+}
+.row-header{
+  display: flex;
+  width: 100%;
+  flex-flow: row nowrap;
+  justify-content: space-between ;
+}
+
+  </style>
+
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <div class="logo"></div>
+      <div>
+        <h1>Tablero de Inspecciones</h1>
+        <p class="lead">Filtra por mes para ver pendientes, en curso y finalizadas</p>
+      </div>
+    </div>
+
+    <div class="controls">
+      <label class="pill">Mes: <input id="monthPicker" type="month" /></label>
+      <input id="search" placeholder="Buscar por concesionario, proyecto o inspector..." />
+      <button id="resetBtn" title="Mostrar todo">Reset</button>
+      <!-- Botón para nueva inspección -->
+<button class="btn-new" onclick="openModal()">➕ Nueva Inspección</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="board" id="board">
+      <div class="column" data-status="pending">
+        <div class="col-header">
+          <div class="row-header">
+            <div class="col-title">
+              Pendientes
+            </div>
+          <div class="col-count muted" id="count-pending">0</div>
+        </div>
+      </div>
+        <div class="col-list" data-list="pending"></div>
+      </div>
+
+      <div class="column" data-status="in_progress">
+        <div class="col-header"><div class="row-header"><div class="col-title">En curso</div><div class="col-count muted" id="count-in_progress">0</div></div></div>
+        <div class="col-list" data-list="in_progress"></div>
+      </div>
+
+      <div class="column" data-status="done">
+        <div class="col-header"><div class="row-header"><div class="col-title">Finalizadas</div><div class="col-count muted" id="count-done">0</div></div></div>
+        <div class="col-list" data-list="done"></div>
+      </div>
+    </section>
+      <section id="agenda-section" style="margin-top:40px;">
+    <h2 style="font-size:18px;margin-bottom:12px;">Agenda del mes</h2>
+    <div id="calendar" class="calendar"></div>
+  </section>
+  <div id="modal" class="modal hidden">
+  <div class="modal-content">
+    <h2>Nueva Inspección</h2>
+    <form id="newInspectionForm">
+      <label>Concesionario</label>
+      <input type="text" id="company" placeholder="Ej: Minera Salta SA" required>
+
+      <label>Proyecto</label>
+      <input type="text" id="project" placeholder="Ej: Cerro Rojo" required>
+
+      <label>Inspectores</label>
+      <input type="text" id="inspectors" placeholder="Ej: López, Pérez" required>
+
+      <label>Fecha inicio</label>
+      <input type="date" id="start_date" required>
+
+      <label>Fecha fin</label>
+      <input type="date" id="end_date" required>
+
+      <label>Estado</label>
+      <select id="status" required>
+        <option value="pending">Pendiente</option>
+        <option value="in_progress">En curso</option>
+        <option value="done">Finalizada</option>
+      </select>
+
+      <div class="modal-actions">
+        <button type="button" class="btn-cancel" onclick="closeModal()">Cancelar</button>
+        <button type="submit" class="btn-save">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+  </main>
+<script>
+ // === DATOS DE EJEMPLO ===
+const sample = [
+  { id:1, start_date:'2025-11-03', end_date:'2025-11-03', company:'Minera del Norte S.A.', project:'Proyecto Cerro Azul', inspectors:['A. Gómez','L. Pérez'], status:'pending' },
+  { id:2, start_date:'2025-11-07', end_date:'2025-11-08', company:'Recursos Salta S.R.L.', project:'Pozo Verde', inspectors:['M. Díaz'], status:'in_progress' },
+  { id:3, start_date:'2025-11-12', end_date:'2025-11-15', company:'Andes Minerals', project:'Cumbre', inspectors:['A. Gómez','Francisco Cruz'], status:'done' },
+  { id:4, start_date:'2025-10-21', end_date:'2025-10-23', company:'Minera del Norte S.A.', project:'Faja Este', inspectors:['S. Molina'], status:'pending' },
+  { id:5, start_date:'2025-11-20', end_date:'2025-11-22', company:'Salta Minerals', project:'Cerro Rojo', inspectors:['L. Pérez','M. Díaz'], status:'in_progress' },
+
+  // Nuevos ejemplos
+  { id:6, start_date:'2025-09-05', end_date:'2025-09-06', company:'Lithium Corp', project:'Salar de Pozuelos', inspectors:['V. Romero','T. Rivas'], status:'pending' },
+  { id:7, start_date:'2025-09-09', end_date:'2025-09-09', company:'Cobre Norte Ltda.', project:'El Tolar', inspectors:['M. Sánchez','L. Pérez'], status:'in_progress' },
+  { id:8, start_date:'2025-09-14', end_date:'2025-09-16', company:'Mina Pacífico', project:'Quebrada Grande', inspectors:['R. Torres','F. Ramírez'], status:'done' },
+  { id:9, start_date:'2025-09-18', end_date:'2025-09-18', company:'Minas Argentinas', project:'El Dorado', inspectors:['G. López'], status:'pending' },
+  { id:10, start_date:'2025-09-24', end_date:'2025-09-26', company:'Salta Gold Mining', project:'San Lorenzo', inspectors:['N. Vázquez','C. Méndez'], status:'in_progress' },
+
+  { id:11, start_date:'2025-10-01', end_date:'2025-10-02', company:'Lithium & Energy SA', project:'Los Andes', inspectors:['D. Pérez','E. Castro'], status:'done' },
+  { id:12, start_date:'2025-10-10', end_date:'2025-10-13', company:'Copper Hill Mining', project:'Abra Grande', inspectors:['S. Molina','L. Pérez'], status:'in_progress' },
+  { id:13, start_date:'2025-10-15', end_date:'2025-10-16', company:'Salta Minerals', project:'La Esperanza', inspectors:['M. Díaz','P. Aguilar'], status:'pending' },
+  { id:14, start_date:'2025-10-22', end_date:'2025-10-23', company:'Andes Minerals', project:'Cumbre Sur', inspectors:['R. Torres','V. Romero'], status:'done' },
+  { id:15, start_date:'2025-10-27', end_date:'2025-10-28', company:'Minera del Norte S.A.', project:'Zona Norte', inspectors:['A. Gómez','T. Rivas'], status:'pending' },
+
+  { id:16, start_date:'2025-12-29', end_date:'2025-12-30', company:'Cobre Norte Ltda.', project:'Altos del Desierto', inspectors:['F. Ramírez','L. Pérez'], status:'in_progress' },
+  { id:17, start_date:'2025-12-02', end_date:'2025-12-04', company:'Andes Lithium', project:'Salar Chico', inspectors:['N. Vázquez'], status:'pending' },
+  { id:18, start_date:'2025-12-06', end_date:'2025-12-07', company:'Patagonia Mining', project:'Río Blanco', inspectors:['S. Molina','E. Castro'], status:'done' },
+  { id:19, start_date:'2025-12-19', end_date:'2025-12-20', company:'Minas Argentinas', project:'Filo Sur', inspectors:['R. Torres'], status:'in_progress' },
+  { id:20, start_date:'2025-12-25', end_date:'2025-12-27', company:'Lithium Corp', project:'Pozuelos Oeste', inspectors:['A. Gómez','C. Méndez'], status:'done' }
+];
+  const board = document.getElementById('board');
+  const monthPicker = document.getElementById('monthPicker');
+  const search = document.getElementById('search');
+  const resetBtn = document.getElementById('resetBtn');
+
+  // === CONFIGURAR MES ACTUAL POR DEFECTO ===
+  (function(){
+    const now = new Date();
+    const mm = now.toISOString().slice(0,7);
+    monthPicker.value = mm;
+  })();
+
+  function formatDateISO(iso){
+    const d = new Date(iso + 'T00:00:00');
+    return d.toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'});
+  }
+
+  function initials(name){
+    return name.split(' ').map(p=>p[0]).slice(0,2).join('').toUpperCase();
+  }
+
+  // === CREAR CARD ===
+  function renderCard(item){
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.draggable = true;
+    card.dataset.id = item.id;
+    card.dataset.status = item.status;
+
+    const dateText = item.start_date === item.end_date
+      ? formatDateISO(item.start_date)
+      : `${formatDateISO(item.start_date)} - ${formatDateISO(item.end_date)}`;
+
+    card.innerHTML = `
+      <div class="meta">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div class="date">${dateText}</div>
+            <div class="company">${item.company}</div>
+          </div>
+          <div class="tiny muted">#${item.id}</div>
+        </div>
+
+        <div class="project">${item.project}</div>
+
+        <div class="inspectors">
+          ${item.inspectors.map(i=>`<div class="avatar" title="${i}">${initials(i)}</div>`).join('')}
+        </div>
+
+        <div class="card-footer">
+          <div class="badge">Inspectores: ${item.inspectors.length}</div>
+          <div class="muted tiny">
+            ${item.status === 'pending' ? 'Pendiente' : item.status === 'in_progress' ? 'En curso' : 'Finalizada'}
+          </div>
+        </div>
+      </div>
+    `;
+
+    // === DRAG HANDLERS ===
+    card.addEventListener('dragstart', (e)=>{
+      card.classList.add('dragging');
+      e.dataTransfer.setData('text/plain', item.id);
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    card.addEventListener('dragend', ()=>card.classList.remove('dragging'));
+
+    return card;
+  }
+
+  // === LIMPIAR COLUMNAS ===
+  function clearColumns(){
+    document.querySelectorAll('[data-list]').forEach(el=>el.innerHTML='');
+  }
+
+  // === RENDER PRINCIPAL ===
+  function render(data){
+    clearColumns();
+
+    const month = monthPicker.value; // YYYY-MM
+    const q = search.value.trim().toLowerCase();
+
+    const filtered = data.filter(it=>{
+      if(month){
+        const startMonth = it.start_date.slice(0,7);
+        const endMonth = it.end_date.slice(0,7);
+        if(startMonth !== month && endMonth !== month) return false;
+      }
+      if(!q) return true;
+      const hay = [it.company,it.project,...it.inspectors].join(' ').toLowerCase();
+      return hay.includes(q);
+    });
+
+    filtered.forEach(item=>{
+      const list = document.querySelector(`[data-list="${item.status}"]`);
+      if(list) list.appendChild(renderCard(item));
+    });
+
+    // === CONTADORES ===
+    ['pending','in_progress','done'].forEach(s=>{
+      const el = document.getElementById('count-'+s);
+      if(el) el.textContent = document.querySelectorAll(`[data-list="${s}"] .card`).length;
+    });
+
+    // === SIN INSPECCIONES ===
+    document.querySelectorAll('.column').forEach(col=>{
+      const list = col.querySelector('[data-list]');
+      if(!list.children.length){
+        list.innerHTML = '<div class="empty">Sin inspecciones para este mes.</div>';
+      }
+    });
+
+    attachDropzones();
+    renderCalendar(data); // actualizar calendario
+  }
+
+  // === DRAG & DROP ===
+  function attachDropzones(){
+    document.querySelectorAll('.col-list').forEach(zone=>{
+      zone.addEventListener('dragover', e=>{
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        zone.style.outline = '2px dashed rgba(255,255,255,0.04)';
+      });
+      zone.addEventListener('dragleave', ()=> zone.style.outline = '');
+      zone.addEventListener('drop', e=>{
+        e.preventDefault();
+        zone.style.outline = '';
+        const id = e.dataTransfer.getData('text/plain');
+        const item = sample.find(s=>String(s.id)===String(id));
+        if(!item) return;
+        const newStatus = zone.closest('.column').dataset.status;
+        item.status = newStatus;
+        render(sample);
+      });
+    });
+  }
+
+  // === CALENDARIO ===
+  function renderCalendar(data){
+    const cal = document.getElementById('calendar');
+    cal.innerHTML = '';
+
+    const monthValue = monthPicker.value;
+    if(!monthValue){
+      cal.innerHTML='<div class="empty">Selecciona un mes para ver la agenda.</div>';
+      return;
+    }
+
+    const [year, month] = monthValue.split('-').map(Number);
+    const firstDay = new Date(year, month - 1, 1);
+    const startDay = firstDay.getDay();
+    const daysInMonth = new Date(year, month, 0).getDate();
+
+    const days = [];
+    for(let i=0; i<startDay; i++) days.push({inactive:true});
+    for(let d=1; d<=daysInMonth; d++){
+      const dateISO = `${year}-${String(month).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      const events = [];
+
+      for(const e of data){
+        const start = new Date(e.start_date);
+        const end = new Date(e.end_date);
+        const current = new Date(dateISO);
+        if(current >= start && current <= end){
+          events.push(e);
+        }
+      }
+
+      days.push({day:d,events});
+    }
+
+    days.forEach(cell=>{
+      const div=document.createElement('div');
+      div.className='day'+(cell.inactive?' inactive':'');
+      if(cell.day){
+        div.innerHTML = `
+          <div class="day-number">${cell.day}</div>
+          <div class="day-events">
+            ${cell.events.map(e=>`
+              <div class="event ${e.status}" title="${e.company} — ${e.project}">
+                ${e.company.split(' ')[0]}
+              </div>`).join('')}
+          </div>
+        `;
+      }
+      cal.appendChild(div);
+    });
+  }
+
+  // === EVENTOS ===
+  monthPicker.addEventListener('change', ()=>render(sample));
+  search.addEventListener('input', ()=>render(sample));
+  resetBtn.addEventListener('click', ()=>{monthPicker.value='';search.value='';render(sample)});
+
+  // === INICIALIZAR ===
+  render(sample);
+
+  // API pequeña
+  window.Kanban = {
+    add(item){ sample.push(item); render(sample); },
+    update(id, fields){ const it = sample.find(s=>s.id===id); if(it) Object.assign(it,fields); render(sample); },
+    data: sample
+  };
+</script>
+<script>
+  const modal = document.getElementById('modal');
+  const form = document.getElementById('newInspectionForm');
+  let inspections = [...sample]; // usa los datos existentes
+
+  function openModal(){
+    modal.classList.remove('hidden');
+  }
+
+  function closeModal(){
+    modal.classList.add('hidden');
+    form.reset();
+  }
+
+  form.addEventListener('submit', (e)=>{
+    e.preventDefault();
+
+    const newItem = {
+      company: form.company.value,
+      project: form.project.value,
+      inspectors: form.inspectors.value,
+      start_date: form.start_date.value,
+      end_date: form.end_date.value,
+      status: form.status.value
+    };
+
+    inspections.push(newItem);
+    render(inspections);
+    closeModal();
+  });
+</script>
+
+</body>
+</html>
+
+{% endblock %}
