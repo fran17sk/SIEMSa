@@ -4351,7 +4351,7 @@ def deudas_expedientes(request):
     inner join "CanonPeriods" cp on cp."Id" = c."CanonPeriodId"
     inner join "CompanyExpedients" ce on ce."ExpedientId" = e."Id" 
     inner join "Companies" c2 on c2."Id" = ce."CompanyId"
-    where c."Paid" = 0
+    where c."CanonStateId" = '00000000-0000-0000-0000-000000000010'
         and e."Tipo" = 'Mina'
         and cp."StartDate" <= CURRENT_DATE
         and ce."IsDeleted" = False
