@@ -395,15 +395,7 @@
   <div style="flex: 1; overflow-y: auto;">
     <div class="card-container" id="cards">
       <!--
-  <div class="card">
-    <div class="card-icon">👨‍💻 </div>
-    <div class="card-title">Informatica</div>
-    <div class="card-desc">
-      Area de informatica de la Secretaria de Mineria y Energia
-    </div>
-    <a href="" class="card-btn">INGRESAR</a>
-  </div>
-  
+ 
       <div class="card">
     <div class="card-icon">💼</div>
     <div class="card-title">Catastro Minero</div>
@@ -506,6 +498,15 @@
         </div>
         <a href="{% url 'administration'%}" class="card-btn">INGRESAR</a>
       </div>
+       <div class="card">
+    <div class="card-icon">👨‍💻 </div>
+    <div class="card-title">Informatica</div>
+    <div class="card-desc">
+      Area de informatica de la Secretaria de Mineria y Energia
+    </div>
+    <a href="{% url 'inventario_list'%}" class="card-btn">INGRESAR</a>
+  </div>
+  
       {% endif %}
 
     </div>

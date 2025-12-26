@@ -1,0 +1,192 @@
+
+
+{% extends "informatica/home.html" %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <style>
+    body {
+      font-family: "Segoe UI", sans-serif;
+      background-color: #f8f9fa;
+      margin: 0;
+    }
+
+    .container {
+      max-width: 700px;
+      margin: auto;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+      padding: 30px 40px;
+      position: relative;
+    }
+
+    h2 {
+      text-align: center;
+      color: #343a40;
+    }
+
+    label {
+      display: block;
+      margin-top: 20px;
+      font-weight: 600;
+      color: #495057;
+    }
+
+    input[type="text"],
+    textarea,
+    input[type="file"] {
+      width: 100%;
+      padding: 10px 12px;
+      margin-top: 6px;
+      border: 1px solid #ced4da;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+
+    textarea {
+      resize: vertical;
+    }
+
+    input[type="submit"] {
+      background-color: #007bff;
+      color: white;
+      font-weight: bold;
+      border: none;
+      border-radius: 6px;
+      padding: 12px 20px;
+      margin-top: 25px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    input[type="submit"]:hover {
+      background-color: #0056b3;
+    }
+
+    .overlay {
+      display: none;
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background-color: rgba(255, 255, 255, 0.8);
+      z-index: 10;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .spinner {
+      border: 6px solid #f3f3f3;
+      border-top: 6px solid #007bff;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .sent-list {
+      margin-top: 30px;
+      border-top: 1px solid #dee2e6;
+      padding-top: 20px;
+    }
+
+    .sent-list h3 {
+      font-size: 18px;
+      color: #28a745;
+      margin-bottom: 10px;
+    }
+
+    .sent-list ul {
+      list-style: none;
+      padding-left: 0;
+    }
+
+    .sent-list li {
+      padding: 6px 0;
+      font-size: 15px;
+      color: #343a40;
+    }
+
+    .check {
+      color: #28a745;
+      margin-right: 6px;
+      font-weight: bold;
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+  <h2>Enviar Correos Masivos</h2>
+
+  <form method="post" enctype="multipart/form-data" id="correo-form">
+    {% csrf_token %}
+    <label for="asunto">Asunto:</label>
+    <input type="text" name="asunto" required>
+
+    <label for="mensaje">Mensaje del correo:</label>
+    <textarea name="mensaje" rows="8" required></textarea>
+
+    <label for="archivo">Archivo Excel (.xlsx):</label>
+    <input type="file" name="archivo" accept=".xlsx" required>
+
+    <input type="submit" value="Enviar correos">
+  </form>
+
+  <div class="overlay" id="loader">
+    <div class="spinner"></div>
+  </div>
+
+  {% if mensajes_enviados %}
+    <div class="sent-list">
+      <h3>✔ Correos enviados exitosamente:</h3>
+      <ul>
+        {% for m in mensajes_enviados %}
+          <li><span class="check">✔</span>{{ m }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% endif %}
+</div>
+
+{% endblock %}
+
+{% block script %}
+<script>
+  const form = document.getElementById("correo-form");
+  const loader = document.getElementById("loader");
+
+  form.addEventListener("submit", function () {
+    loader.style.display = "flex";
+  });
+
+  {% if error %}
+    Swal.fire({
+      toast: true,
+      position: 'top-end',
+      icon: 'error',
+      title: '{{ error }}',
+      showConfirmButton: false,
+      timer: 3000,
+      timerProgressBar: true
+    });
+  {% endif %}
+
+  {% if mensajes_enviados %}
+    Swal.fire({
+      toast: true,
+      position: 'top-end',
+      icon: 'success',
+      title: 'Correos enviados exitosamente',
+      showConfirmButton: false,
+      timer: 3000,
+      timerProgressBar: true
+    });
+  {% endif %}
+</script>
+{% endblock %}

@@ -281,3 +281,58 @@ class RegistroProveedores(models.Model):
 
     def __str__(self):
         return f"{self.numero_expediente} - {self.nombre_razon_social}"
+    
+#######################INDORMATICA#######################################
+
+class InventarioInformatico(models.Model):
+    TIPO_EQUIPO_CHOICES = [
+        ('Escaner', 'Escaner'),
+        ('Impresora', 'Impresora'),
+        ('Monitor', 'Monitor'),
+        ('Pc', 'Pc'),
+        ('Switch', 'Switch'),
+        ('Ups', 'Ups'),
+        ('Router', 'Router'),
+        ('Modem', 'Modem'),
+        ('Parlante', 'Parlante'),
+        ('Notebook Vieja', 'Notebook Vieja'),
+        ('Notebook', 'Notebook'),
+        ('Telefono', 'Telefono'),
+        ('Telefono Satelital', 'Telefono Satelital'),
+        ('GPS', 'GPS'),
+        ('Cargador', 'Cargador'),
+        ('Switch Telefono', 'Switch Telefono'),
+        ('Lectora  Externa', 'Lectora Externa'),
+        ('Camara', 'Camara'),
+        ('Otros', 'Otros'),
+        ('', ''),
+    ]
+
+    ESTADO_CHOICES = [
+        ('En uso', 'En uso'),
+        ('Desuso', 'Desuso'),
+        ('Archivado', 'Archivado'),
+        ('Defectuoso', 'Defectuoso'),
+        ('De baja', 'De baja'),
+    ]
+
+    equipo = models.CharField(max_length=50, choices=TIPO_EQUIPO_CHOICES, null=True, blank=True)
+    marca = models.CharField(max_length=255, null=True, blank=True)
+    modelo = models.CharField(max_length=255, null=True, blank=True)
+    numero_inventario = models.CharField(max_length=100, null=True, blank=True)
+    numero_serie = models.CharField(max_length=100, null=True, blank=True)
+    estado = models.CharField(max_length=50, choices=ESTADO_CHOICES, null=True, blank=True)
+    ubicacion = models.CharField(max_length=255, null=True, blank=True)
+    observaciones = models.TextField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.equipo or 'Equipo sin nombre'} - {self.numero_inventario or 'Sin inventario'}"
+
+class InventarioXUsuario(models.Model):
+    inventario = models.ForeignKey(InventarioInformatico, on_delete=models.SET_NULL, null=True, blank=True, related_name='asignaciones')
+    usuario = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='inventarios_asignados')
+    fecha_asignacion = models.DateField(default=now)
+    fecha_desvinculacion = models.DateField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.inventario} asignado a {self.usuario}"

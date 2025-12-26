@@ -88,7 +88,8 @@ urlpatterns = [
     path("consulta-deudas-expedientes/", views.consulta_deuda_expediente, name="consulta_deudas_expedientes"),
     path('expediente/deuda/', views.consulta_deuda_datos, name='consulta_deuda_datos'),
     path('expediente/otros/',views.expedientes_concesionario, name='exp_conc'),
-
+    path('pagos/interbanking',views.veps_interbanking,name='pagos_interbanking'),
+    path('pagos_electronicos',views.pagos_electronicos, name='pagos_electronicos'),
     # Usuarios Admin
     path('reportes/usuarios/pdf/', views.usuarios_pdf, name='usuarios_pdf'),
     path('reportes/usuarios/excel/', views.usuarios_excel, name='usuarios_excel'),
@@ -119,5 +120,15 @@ urlpatterns = [
     path('sirgen/bandeja_entrada', views.bandeja_entrada_view,name='bandeja_entrada'),
     path('recibir-pase/<int:pase_id>/', views.recibir_pase, name='recibir_pase'),
     path('recibir-pases-masivo/', views.recibir_pases_masivo, name='recibir_pases_masivo'),
+    ###################################################INFORMATICA##########################################################
+
+    path('informatica/', views.home_informatica, name='informatica'),
+    path('informatica/inventario/', views.inventario_list, name='inventario_list'),
+    path('informatica/inventario/nuevo/', views.inventario_create, name='inventario_create'),
+    path('informatica/inventario/editar/<int:pk>/', views.inventario_edit, name='inventario_edit'),
+    path('informatica/inventario/importar/', views.importar_excel, name='importar_excel'),
+    path('informatica/enviar-correos/', views.enviar_correos_view, name='enviar_correos'),
+    path("notificar-secretaria/", views.notificar_secretaria, name="notificar_secretaria"),
+    path('informatica/montos_canon',views.montos_canon,name='montos_canon'),
 
 ]

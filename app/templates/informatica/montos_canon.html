@@ -1,0 +1,311 @@
+{% extends 'informatica/home.html' %}
+{% load static %}
+
+{% block head %}
+<style>
+:root {
+  --primary: #1f3c88;
+  --danger: #c0392b;
+  --bg: #f4f6f9;
+  --card: #ffffff;
+  --border: #e0e0e0;
+  --text: #2c3e50;
+  --muted: #7f8c8d;
+  --hover: rgba(31,60,136,.06);
+}
+
+/* Layout */
+.page {
+  padding: 24px;
+}
+
+/* Card */
+.table-container {
+  background: var(--card);
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.08);
+  animation: fadeIn .3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Header */
+.table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.table-header h2 {
+  margin: 0;
+  font-size: 20px;
+  color: var(--text);
+}
+
+.table-header p {
+  margin: 2px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* Buttons */
+.btn-primary {
+  background: var(--primary);
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.btn-primary:hover {
+  opacity: .9;
+}
+
+.btn-icon {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  margin: 0 4px;
+}
+
+.btn-icon.edit { color: var(--primary); }
+.btn-icon.delete { color: var(--danger); }
+
+/* Table */
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+thead {
+  background: #f0f2f5;
+}
+
+th {
+  padding: 12px;
+  font-size: 12px;
+  text-transform: uppercase;
+  color: var(--muted);
+  text-align: left;
+}
+
+td {
+  padding: 12px;
+  border-top: 1px solid var(--border);
+  font-size: 14px;
+}
+
+tbody tr:hover {
+  background: var(--hover);
+}
+
+.right { text-align: right; }
+.center { text-align: center; }
+.strong { font-weight: 600; }
+.muted { color: var(--muted); }
+
+.truncate {
+  max-width: 260px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Empty */
+.empty {
+  text-align: center;
+  padding: 30px;
+  color: var(--muted);
+}
+
+/* Modal */
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+
+.hidden {
+  display: none;
+}
+
+.modal-content {
+  background: #1e1e1e;
+  padding: 20px;
+  border-radius: 10px;
+  width: 360px;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.btn-primary { background: #3b82f6; color: #fff; }
+.btn-danger { background: #dc2626; color: #fff; }
+.btn-secondary { background: #374151; color: #fff; }
+.btn-secondary {
+  background: #ecf0f1;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+}
+
+.btn-danger {
+  background: var(--danger);
+  color: white;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page">
+
+  <div class="table-container">
+
+    <div class="table-header">
+      <div>
+        <h2>Montos de Canon</h2>
+        <p>Gestión de cánones mineros</p>
+      </div>
+
+      <button class="btn-primary" onclick="openCreateModal()">+ Nuevo Canon</button>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Yacencia</th>
+          <th>Fecha</th>
+          <th class="right">Canon</th>
+          <th>Observación</th>
+          <th class="center">Acciones</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        {% for c in canon %}
+        <tr>
+          <td class="muted">{{ c.id }}</td>
+          <td class="strong">{{ c.yacencia }}</td>
+          <td>{{ c.fecha|date:"d/m/Y" }}</td>
+          <td class="right strong">
+            {% if c.canon %}$ {{ c.canon|floatformat:2 }}{% else %}—{% endif %}
+          </td>
+          <td class="truncate">{{ c.observacion|default:"—" }}</td>
+          <td class="center">
+            <button class="btn-icon edit"
+              onclick="openEditModal('{{ c.id }}','{{ c.yacencia }}','{{ c.fecha|date:"Y-m-d" }}','{{ c.canon }}','{{ c.observacion|default:'' }}')">✏️</button>
+            <button class="btn-icon delete" onclick="openDeleteModal({{ c.id }})">⛔</button>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="empty">No hay registros de canon</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+  </div>
+</div>
+
+<!-- MODALES -->
+<div id="modalForm" class="modal hidden">
+  <div class="modal-content">
+    <h3 id="modalTitle">Editar</h3>
+
+    <form id="canonForm">
+      <input type="hidden" id="recordId">
+
+      <label>Monto</label>
+      <input type="number" id="amount" required>
+
+      <div class="modal-actions">
+        <button type="submit" class="btn-primary">Guardar</button>
+        <button type="button" onclick="closeModal()" class="btn-secondary">Cancelar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal Eliminar -->
+<div id="modalDelete" class="modal hidden">
+  <div class="modal-content">
+    <h3>Confirmar eliminación</h3>
+    <p>¿Seguro que desea eliminar este registro?</p>
+
+    <div class="modal-actions">
+      <button class="btn-danger" onclick="confirmDelete()">Eliminar</button>
+      <button class="btn-secondary" onclick="closeDeleteModal()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let deleteId = null;
+
+/* ===== MODAL CREAR ===== */
+function openCreateModal() {
+  document.getElementById("modalTitle").innerText = "Crear registro";
+  document.getElementById("recordId").value = "";
+  document.getElementById("amount").value = "";
+  document.getElementById("modalForm").classList.remove("hidden");
+}
+
+/* ===== MODAL EDITAR ===== */
+function openEditModal(id) {
+  document.getElementById("modalTitle").innerText = "Editar registro";
+  document.getElementById("recordId").value = id;
+
+  // ejemplo: cargar datos (si ya los tenés en la tabla)
+  // document.getElementById("amount").value = document.getElementById(`amount-${id}`).innerText;
+
+  document.getElementById("modalForm").classList.remove("hidden");
+}
+
+/* ===== MODAL ELIMINAR ===== */
+function openDeleteModal(id) {
+  deleteId = id;
+  document.getElementById("modalDelete").classList.remove("hidden");
+}
+
+/* ===== CERRAR ===== */
+function closeModal() {
+  document.getElementById("modalForm").classList.add("hidden");
+}
+
+function closeDeleteModal() {
+  document.getElementById("modalDelete").classList.add("hidden");
+  deleteId = null;
+}
+
+/* ===== CONFIRMAR ELIMINAR ===== */
+function confirmDelete() {
+  if (!deleteId) return;
+
+  console.log("Eliminar ID:", deleteId);
+
+  // acá podés hacer fetch / submit / redirect
+  // fetch(`/eliminar/${deleteId}`, { method: "POST" })
+
+  closeDeleteModal();
+}
+</script>
+{% endblock %}

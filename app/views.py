@@ -4367,6 +4367,38 @@ def deudas_expedientes(request):
 
     return render(request, "simsa/deudas_expedientes.html", {"resultados": results})
 
+def veps_interbanking(request):
+    with connections['simsa'].cursor() as cursor:
+        cursor.execute(""" 
+                    select distinct on (e."Expediente",cp."Name") 
+                       v."AutoId" as "Vep", 
+                       CASE
+                            WHEN vs2."Name" = 'Pendiente de pago interbanking' THEN 'Interbanking'
+                            WHEN vs2."Name" = 'Pendiente de pago electrónico' THEN 'Macroclick'
+                            WHEN vs2."Name" = 'Pendiente de verificación de pago' THEN 'Pago Manual'
+                            ELSE vs2."Name"
+                        END AS "State_Vep"
+                       ,vs."Name" as "Vep_result" ,c."Name" as "Company" ,e."Expediente",e."Nombre" as "exp_name", e."Tipo" as "tipo",
+                       e."Yacencia",c2."Pertenencias", c2."PaidDate", c2."Paid" , cp."Name" 
+                    from "Veps" v 
+                       inner join "VepStates" vs on v."VepStateId" = vs."Id" 
+                       inner join "VepLogs" vl on vl."VepId" = v."Id" 
+                       inner join "VepStates" vs2 on vl."VepStateId" = vs2."Id" 
+                       inner join "Users" u on vl."CreatedBy"::uuid = u."Id" 
+                       left join "Companies" c on u."ObjectId"::uuid = c."Id" 
+                       inner join "VepDetails" vd on vd."VepId" = v."Id" 
+                       inner join "Canons" c2 on vd."CanonId" = c2."Id" 
+                       inner join "Expedients" e on e."Id" = c2."ExpedientId" 
+                       inner join "CanonPeriods" cp on cp."Id" = c2."CanonPeriodId" 
+                       where (vs2."Name" = 'Pendiente de pago interbanking' or vs2."Name" = 'Pendiente de verificación de pago' or vs2."Name" = 'Pendiente de pago electrónico') and vs."Name" = 'Pago verificado'
+                       """)
+        cols = [col[0] for col in cursor.description]
+        result = [dict(zip(cols, row)) for row in cursor.fetchall()]
+    return JsonResponse(result, safe=False)
+
+def pagos_electronicos(request):
+    return render(request, 'simsa/pagos_electronicos.html')
+
 def api_proyectos_por_concesionario(request):
     company_id = request.GET.get("company_id")  # lo obtenemos por query param
 
@@ -4874,3 +4906,197 @@ def recibir_pase(request, pase_id):
 
     # Redirige a donde venía (conserva filtros)
     return redirect(request.META.get('HTTP_REFERER', 'bandeja_entrada'))
+
+
+
+def home_informatica(request):
+    return render(request, 'informatica/home.html')
+
+def inventario_list(request):
+    inventarios = InventarioInformatico.objects.all()
+    return render(request, 'informatica/inventario_list.html', {'inventarios': inventarios})
+
+# Crear
+def inventario_create(request):
+    if request.method == 'POST':
+        form = InventarioForm(request.POST)
+        if form.is_valid():
+            inventario = form.save()
+            usuario = form.cleaned_data.get('usuario')
+            if usuario:
+                InventarioXUsuario.objects.create(
+                    inventario=inventario,
+                    usuario=usuario,
+                    fecha_asignacion=now()
+                )
+            messages.success(request, "Inventario registrado correctamente.")
+            return redirect('inventario_list')
+    else:
+        form = InventarioForm()
+    return render(request, 'informatica/inventario_form.html', {'form': form, 'titulo': 'Registrar equipo'})
+
+# Editar
+def inventario_edit(request, pk):
+    inventario = get_object_or_404(InventarioInformatico, pk=pk)
+    if request.method == 'POST':
+        form = InventarioForm(request.POST, instance=inventario)
+        if form.is_valid():
+            form.save()
+            return redirect('inventario_list')
+    else:
+        form = InventarioForm(instance=inventario)
+    return render(request, 'informatica/inventario_form.html', {'form': form, 'titulo': 'Editar equipo'})
+
+def importar_excel(request):
+    if request.method == 'POST':
+        form = ImportExcelForm(request.POST, request.FILES)
+        if form.is_valid():
+            archivo = request.FILES['archivo_excel']
+            try:
+                wb = openpyxl.load_workbook(archivo)
+                sheet = wb.active
+            except Exception as e:
+                messages.error(request, f"No se pudo leer el archivo: {str(e)}")
+                return redirect('inventario_list')
+
+            EQUIPO_VALIDOS = dict(InventarioInformatico.TIPO_EQUIPO_CHOICES).keys()
+            ESTADO_VALIDOS = dict(InventarioInformatico.ESTADO_CHOICES).keys()
+
+            total_importados = 0
+            total_errores = 0
+
+            for idx, row in enumerate(sheet.iter_rows(min_row=2), start=2):
+                # Ignorar filas completamente vacías
+                if all(cell.value is None or str(cell.value).strip() == '' for cell in row):
+                    continue
+
+                equipo = str(row[0].value).strip() if row[0].value is not None else ''
+                marca = str(row[1].value).strip() if row[1].value is not None else ''
+                modelo = str(row[2].value).strip() if row[2].value is not None else ''
+                numero_inventario = str(row[3].value).strip() if row[3].value is not None else ''
+                numero_serie = str(row[4].value).strip() if row[4].value is not None else ''
+                estado = str(row[5].value).strip() if row[5].value is not None else ''
+                ubicacion = str(row[6].value).strip() if row[6].value is not None else ''
+                observaciones = str(row[7].value).strip() if row[7].value is not None else ''
+
+                # Validación de choices
+                if equipo and equipo not in EQUIPO_VALIDOS:
+                    messages.warning(request, f"Fila {idx}: equipo inválido '{equipo}'.")
+                    total_errores += 1
+                    continue
+
+                if estado and estado not in ESTADO_VALIDOS:
+                    messages.warning(request, f"Fila {idx}: estado inválido '{estado}'.")
+                    total_errores += 1
+                    continue
+
+                try:
+                    InventarioInformatico.objects.create(
+                        equipo=equipo or None,
+                        marca=marca or None,
+                        modelo=modelo or None,
+                        numero_inventario=numero_inventario or None,
+                        numero_serie=numero_serie or None,
+                        estado=estado or None,
+                        ubicacion=ubicacion or None,
+                        observaciones=observaciones or None
+                    )
+                    total_importados += 1
+                except Exception as e:
+                    messages.error(request, f"Error inesperado en fila {idx}: {str(e)}")
+                    print(request, f"Error inesperado en fila {idx}: {str(e)}")
+                    total_errores += 1
+                    continue
+
+            # Mensajes finales
+            if total_importados:
+                messages.success(request, f"Se importaron correctamente {total_importados} registros.")
+            if total_errores:
+                messages.warning(request, f"Se omitieron {total_errores} filas por errores.")
+
+            return redirect('inventario_list')
+    else:
+        form = ImportExcelForm()
+
+    return render(request, 'informatica/importar_excel.html', {'form': form})
+
+
+def enviar_correos_view(request):
+    mensajes_enviados = []
+
+    if request.method == 'POST':
+        print("➡ POST recibido")
+        asunto = request.POST.get('asunto')
+        mensaje = request.POST.get('mensaje')
+        archivo = request.FILES.get('archivo')
+
+        if not archivo or not archivo.name.endswith('.xlsx'):
+            return render(request, 'enviar_correo.html', {
+                'error': 'Debe subir un archivo .xlsx válido.'
+            })
+
+        try:
+            df = pd.read_excel(archivo)
+            print(f"✅ {len(df)} filas encontradas")
+            mensajes_enviados = []
+
+            for i, row in df.iterrows():
+                try:
+                    nombre = row.get('nombre')
+                    apellido = row.get('apellido')
+                    empresa = row.get('empresa')
+                    email = row.get('mail')
+                    correo = email
+
+                    mensaje_con_saltos = mensaje.replace('\n', '<br>')
+                    print(f"Fila {i}: nombre={nombre}, apellido={apellido}, empresa={empresa}, email={email}")
+
+                    if email:
+                        nombre_apellido = " ".join(part for part in [nombre, apellido] if part).strip()
+                        nombre_apellido = f"<strong>{nombre_apellido}</strong>" if nombre_apellido else "<strong>Usuario</strong>"
+                        empresa_html = f" de <strong>{empresa}</strong>" if empresa else ""
+
+                        mensaje_html = f"""
+                            <p>Estimado@, {nombre_apellido},</p>
+                            <p>{mensaje_con_saltos}</p>
+                            <br><br>
+                            <img src="https://drive.google.com/uc?export=view&id=11cxyJkHG3RhnoGdqTnDtOqtBXElU0_Hp" width="200" alt="Logo">
+                        """
+
+                        print(f"📧 Enviando a: {correo} (fila {i})")
+
+                        email_obj = EmailMessage(
+                            subject=asunto,
+                            body=mensaje_html,
+                            from_email=settings.EMAIL_HOST_USER,
+                            to=[email]
+                        )
+                        email_obj.content_subtype = "html"
+                        email_obj.send()
+
+                        mensajes_enviados.append(f"{nombre} {apellido} Empresa:{empresa} - Correo electronico: {correo}")
+
+                except Exception as e:
+                    import traceback
+                    print(f"❌ Error enviando a {correo} (fila {i}): {e}")
+                    traceback.print_exc()
+
+        except Exception as e:
+            import traceback
+            print(f"❌ Error procesando el archivo: {e}")
+            traceback.print_exc()
+            return render(request, 'informatica/envio_correos_masivo.html', {
+                'error': f"Error procesando el archivo: {e}"
+            })
+
+    return render(request, 'informatica/envio_correos_masivo.html', {
+        'mensajes_enviados': mensajes_enviados
+    })
+
+def montos_canon(request):
+    canon = Canon.objects.using('catastro').all().order_by('-id')
+
+    context = {
+        'canon': canon
+    } 
+    return render(request,'informatica/montos_canon.html' , context)

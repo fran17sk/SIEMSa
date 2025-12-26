@@ -221,22 +221,19 @@
       </a>
       {% if request.user.groups.first.name == "Administrador" or request.user.groups.first.name == "Publicador"   %}
   {% endif %}
-  <a href="{% url 'simsa_users' %}" class="{% if request.resolver_match.url_name == 'simsa_users' %}active{% endif %}" title="Exportacion">
-    <i data-lucide="users"></i> <span>Usuarios SIMSa</span>
+  <a href="{% url 'inventario_list' %}" class="{% if request.resolver_match.url_name == 'inventario_list' %}active{% endif %}" title="Exportacion">
+    <i data-lucide="users"></i> <span>Inventario</span>
   </a>
-  <a href="{% url 'reportes_home' %}" class="{% if request.resolver_match.url_name == 'reportes_home' or request.resolver_match.url_name == 'deudas_expedientes' %}active{% endif %}" title="Exportaciones">
-    <i data-lucide="file-chart-column"></i> <span>Reportes</span>
+  <a href="{% url 'enviar_correos' %}" class="{% if request.resolver_match.url_name == 'enviar_correos' or request.resolver_match.url_name == 'deudas_expedientes' %}active{% endif %}" title="Exportaciones">
+    <i data-lucide="file-chart-column"></i> <span>Envio Mails</span>
   </a>
   
   
-  <a href="{% url 'consulta_deudas_expedientes' %}" class="{% if request.resolver_match.url_name == 'consulta_deudas_expedientes' %}active{% endif %}" title="Países">
-    <i data-lucide="badge-dollar-sign"></i> <span>Consulta Expediente</span>
-  </a>
-
-  <a href="{% url 'pagos_electronicos' %}" class="{% if request.resolver_match.url_name == 'pagos_electronicos' %}active{% endif %}" title="Países">
-    <i data-lucide="badge-dollar-sign"></i> <span>Pagos Electronicos</span>
-  </a>
+  
   {% if request.user.groups.first.name == "Administrador" or request.user.groups.first.name == "Publicador"   %}
+  <a href="{% url 'montos_canon' %}" class="{% if request.resolver_match.url_name == 'montos_canon' %}active{% endif %}" title="Países">
+    <i data-lucide="badge-dollar-sign"></i> <span>Montos de Canon</span>
+  </a>
   {% endif %}
   <!-- Nueva sección Gráficos -->
 

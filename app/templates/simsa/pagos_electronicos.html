@@ -1,0 +1,586 @@
+{% extends "simsa/home.html" %}
+
+{% block content %}
+<div class="main">
+    <div class="filters">
+    <div class="filter-group">
+        <label>Fecha inicio</label>
+        <input type="date" id="fechaInicio">
+    </div>
+
+    <div class="filter-group">
+        <label>Fecha fin</label>
+        <input type="date" id="fechaFin">
+    </div>
+
+    <div class="filter-group">
+        <label>Empresa</label>
+        <input type="text" id="empresaFiltro" placeholder="Nombre empresa">
+    </div>
+
+    <div class="filter-group">
+        <label>Método de pago</label>
+        <select id="medioFiltro">
+            <option value="">Todos</option>
+        </select>
+    </div>
+
+    <div class="filter-group">
+        <button class="add-btn" onclick="aplicarFiltros()">Filtrar</button>
+        <button class="add-btn" style="background:#6b7280" onclick="limpiarFiltros()">Limpiar</button>
+    </div>
+</div>
+    <div class="table-container">
+
+        <div class="table-header">
+            <h2>Pagos Interbanking - MacroClick</h2>
+
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th></th>
+                    <th>VEP</th>
+                    <th>Empresa</th>
+                    <th>Medio</th>
+                    <th>Estado VEP</th>
+                    <th>Registros</th>
+                    <th>Fecha de Pago</th>
+                    <th>Total Abonado</th>
+                </tr>
+            </thead>
+            <tbody id="vep-body">
+                <tr>
+                    <td colspan="8" class="no-data">Cargando datos…</td>
+                </tr>
+            </tbody>
+        </table>
+
+    </div>
+</div>
+
+<style>
+    .filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1.2rem;
+    background: #f8fafc;
+    padding: 1rem;
+    border-radius: 10px;
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    font-size: 0.75rem;
+}
+
+.filter-group label {
+    font-weight: 600;
+    margin-bottom: 4px;
+    color: #374151;
+}
+
+.filter-group input,
+.filter-group select {
+    padding: 6px 8px;
+    border-radius: 6px;
+    border: 1px solid #d1d5db;
+    font-size: 0.8rem;
+}
+    .toggle {
+        cursor: pointer;
+        font-size: 1.2rem;
+        text-align: center;
+        width: 30px;
+        color: #003366;
+    }
+
+    .toggle:hover {
+        color: #0055a5;
+    }
+
+    .detail-row {
+        display: none;
+        background-color: #f9f9f9;
+    }
+
+    :root {
+        --sidebar-bg: #1f2937;
+        --sidebar-accent: #3b82f6;
+        --text-light: #f9fafb;
+        --text-muted: #9ca3af;
+        --hover-bg: rgba(59, 130, 246, 0.1);
+    }
+
+    body {
+        margin: 0;
+        font-family: 'Segoe UI', sans-serif;
+        background: #f4f6f8;
+        display: flex;
+        height: 100vh;
+        overflow: hidden;
+    }
+
+    .sidebar {
+        width: 250px;
+        background-color: var(--sidebar-bg);
+        color: var(--text-light);
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        transition: all 0.3s ease-in-out;
+        box-shadow: 2px 0 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .sidebar .menu {
+        padding: 2rem 1rem;
+    }
+
+    .sidebar .menu .logo {
+        font-size: 1.5rem;
+        font-weight: bold;
+        margin-bottom: 2.5rem;
+        text-align: center;
+        letter-spacing: 1px;
+        color: white;
+    }
+
+    .sidebar nav a {
+        display: flex;
+        align-items: center;
+        text-decoration: none;
+        color: var(--text-light);
+        padding: 0.75rem 1rem;
+        margin-bottom: 0.5rem;
+        border-radius: 8px;
+        transition: background 0.2s, color 0.2s;
+    }
+
+    .sidebar nav a:hover,
+    .sidebar nav a.active {
+        background-color: var(--hover-bg);
+        color: var(--sidebar-accent);
+    }
+
+    .sidebar nav a svg {
+        margin-right: 12px;
+        stroke-width: 1.8;
+    }
+
+    .user-footer {
+        padding: 1.2rem;
+        text-align: center;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        font-size: 0.95rem;
+        color: var(--text-muted);
+        background-color: #111827;
+    }
+
+    .main {
+        flex: 1;
+        padding: 2rem;
+        overflow-y: auto;
+        animation: fadeIn 0.4s ease;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @media (max-width: 768px) {
+        .sidebar {
+            position: fixed;
+            left: -100%;
+            height: 100vh;
+            z-index: 999;
+        }
+
+        .sidebar.open {
+            left: 0;
+        }
+
+        .toggle-btn {
+            position: fixed;
+            top: 1rem;
+            left: 1rem;
+            z-index: 1000;
+            background: var(--sidebar-accent);
+            color: white;
+            border: none;
+            padding: 0.6rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+        }
+    }
+
+    .table-container {
+        background: #fff;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+        transition: transform 0.3s ease;
+    }
+
+    .table-container:hover {
+        transform: translateY(-3px);
+    }
+
+    .table-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .table-header h2 {
+        font-size: 1.5rem;
+        font-weight: 600;
+    }
+
+    .add-btn {
+        background-color: #004080;
+        color: white;
+        padding: 0.5rem 1rem;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: background 0.3s ease;
+    }
+
+    .add-btn:hover {
+        background-color: #002a55;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 0.5rem;
+    }
+
+    th,
+    td {
+        padding: 1rem;
+        font-size: 0.8rem;
+        text-align: left;
+        border-bottom: 1px solid #eee;
+    }
+
+    th {
+        background-color: #f0f2f5;
+        font-weight: 600;
+    }
+
+    .actions button {
+        background: none;
+        border: none;
+        cursor: pointer;
+        margin-right: 0.6rem;
+        font-size: 1.1rem;
+        color: #555;
+        transition: color 0.2s ease;
+    }
+
+    .actions button:hover {
+        color: #004080;
+    }
+
+    .actions .fa-trash:hover {
+        color: #c0392b;
+    }
+
+    @media (max-width: 600px) {
+
+        th,
+        td {
+            padding: 0.6rem;
+        }
+    }
+
+    .pagination {
+        margin-top: 1.5rem;
+        text-align: center;
+    }
+
+    .pagination a,
+    .pagination span {
+        display: inline-block;
+        margin: 0 6px;
+        padding: 8px 12px;
+        border-radius: 4px;
+        color: #004080;
+        text-decoration: none;
+        border: 1px solid #ddd;
+    }
+
+    .pagination a:hover {
+        background-color: #e0ecff;
+    }
+
+    .pagination span {
+        background-color: #004080;
+        color: white;
+        font-weight: bold;
+    }
+
+    .no-data {
+        text-align: center;
+        color: #888;
+        padding: 20px;
+    }
+
+    .subtable {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+    }
+
+    .subtable th,
+    .subtable td {
+        padding: 5px;
+        border: 1px solid #ddd;
+        text-align: center;
+    }
+
+    .detail-row {
+        background-color: #f9f9f9;
+    }
+
+    a i {
+        color: #111827;
+    }
+
+    .btn-pdf {
+        display: inline-block;
+        padding: 10px 20px;
+        background-color: #003366;
+        /* azul oscuro */
+        color: white;
+        font-weight: bold;
+        border-radius: 6px;
+        text-decoration: none;
+        transition: background 0.3s ease;
+    }
+
+    .btn-pdf:hover {
+        background-color: #0055a5;
+    }
+</style>
+
+<script>
+    let rawData = [];
+let groupedData = [];
+document.addEventListener("DOMContentLoaded", () => {
+    fetch("{% url 'pagos_interbanking' %}")
+        .then(r => r.json())
+        .then(data => {
+            rawData = data;
+            groupedData = groupByVep(data);
+            cargarMedios(data);
+            buildTable(groupedData);
+        })
+        .catch(err => console.error(err));
+});
+function cargarMedios(data) {
+    const select = document.getElementById("medioFiltro");
+    const medios = [...new Set(data.map(d => d.State_Vep).filter(Boolean))];
+
+    medios.forEach(m => {
+        const opt = document.createElement("option");
+        opt.value = m;
+        opt.textContent = m;
+        select.appendChild(opt);
+    });
+}
+
+
+    
+    function groupByVep(data) {
+        const grouped = {};
+
+        data.forEach(item => {
+            if (!grouped[item.Vep]) {
+                grouped[item.Vep] = {
+                    vep: item.Vep,
+                    empresa: item.Company,
+                    estado_log: item.State_Vep,
+                    estado_vep: item.Vep_result,
+                    detalles: [],
+                    total_abonado: 0,
+                    paid_date: null
+                };
+            }
+
+            const paidValue = parseFloat(item.Paid) || 0;
+            grouped[item.Vep].total_abonado += paidValue;
+
+            if (item.PaidDate) {
+                const currentDate = new Date(item.PaidDate);
+                const savedDate = grouped[item.Vep].paid_date
+                    ? new Date(grouped[item.Vep].paid_date)
+                    : null;
+
+                if (!savedDate || currentDate > savedDate) {
+                    grouped[item.Vep].paid_date = item.PaidDate;
+                }
+            }
+
+            grouped[item.Vep].detalles.push({
+                expediente: item.Expediente,
+                expediente_name: item.exp_name,
+                expediente_tipo: item.tipo,
+                periodo: item.Name,
+                yacencia: item.Yacencia,
+                pertenencias: item.Pertenencias,
+                paid: paidValue
+            });
+        });
+
+        return Object.values(grouped)
+            .sort((a, b) => b.vep - a.vep);;
+    }
+
+    function buildTable(veps) {
+        const tbody = document.getElementById("vep-body");
+        tbody.innerHTML = "";
+
+        veps.forEach(vep => {
+            const mainRow = document.createElement("tr");
+
+            mainRow.innerHTML = `
+    <td class="toggle" onclick="toggleDetails(${vep.vep})">➕</td>
+    <td>${vep.vep}</td>
+    <td>${vep.empresa}</td>
+    <td>${vep.estado_log}</td>
+    <td>${vep.estado_vep}</td>
+    <td>${vep.detalles.length}</td>
+    <td>${formatDate(vep.paid_date)}</td>
+    <td><strong>${formatMoney(vep.total_abonado)}</strong></td>
+`;
+
+            const detailRow = document.createElement("tr");
+            detailRow.id = `details-${vep.vep}`;
+            detailRow.className = "details-row";
+
+            detailRow.innerHTML = `
+            <td colspan="6">
+                <table class="subtable">
+                    <thead>
+                        <tr>
+                            <th>Expediente</th>
+                            <th>Nombre</th>
+                            <th>Tipo</th>
+                            <th>Período</th>
+                            <th>Yacencia</th>
+                            <th>Pertenencias</th>
+                            <th>Monto</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+    ${vep.detalles.map(d => `
+        <tr>
+            <td>${d.expediente}</td>
+            <td>${d.expediente_name}</td>
+            <td>${d.expediente_tipo}</td>
+            <td>${d.periodo}</td>
+            <td>${d.yacencia}</td>
+            <td>${d.pertenencias}</td>
+            <td>${formatMoney(d.paid)}</td>
+        </tr>
+    `).join("")}
+    <tr>
+        <td colspan="6"><strong>Total</strong></td>
+        <td colspan="1"><strong>${formatMoney(vep.total_abonado)}</strong></td>
+    </tr>
+</tbody>
+                </table>
+            </td>
+        `;
+            detailRow.className = "detail-row";
+            tbody.appendChild(mainRow);
+            tbody.appendChild(detailRow);
+        });
+    }
+
+    function toggleDetails(vepId) {
+        const row = document.getElementById(`details-${vepId}`);
+        const icon = row.previousSibling.querySelector(".toggle");
+
+        if (row.style.display === "table-row") {
+            row.style.display = "none";
+            icon.textContent = "➕";
+        } else {
+            row.style.display = "table-row";
+            icon.textContent = "➖";
+        }
+    }
+
+    function formatDate(date) {
+        if (!date) return "-";
+        return new Date(date).toLocaleDateString("es-AR");
+    }
+
+    function formatMoney(value) {
+        return Number(value).toLocaleString("es-AR", {
+            style: "currency",
+            currency: "ARS"
+        });
+    }
+
+function aplicarFiltros() {
+    const fi = document.getElementById("fechaInicio").value;
+    const ff = document.getElementById("fechaFin").value;
+    const empresa = document.getElementById("empresaFiltro").value.toLowerCase();
+    const medio = document.getElementById("medioFiltro").value;
+
+    let filtrados = groupedData.filter(v => {
+
+        // Empresa
+        if (empresa && !v.empresa.toLowerCase().includes(empresa)) {
+            return false;
+        }
+
+        // Método de pago
+        if (medio && v.estado_log !== medio) {
+            return false;
+        }
+
+        // Fecha pago
+        if (fi || ff) {
+            if (!v.paid_date) return false;
+            const fechaPago = new Date(v.paid_date);
+
+            if (fi && fechaPago < new Date(fi)) return false;
+            if (ff && fechaPago > new Date(ff)) return false;
+        }
+
+        return true;
+    });
+
+    buildTable(filtrados);
+}
+function limpiarFiltros() {
+    document.getElementById("fechaInicio").value = "";
+    document.getElementById("fechaFin").value = "";
+    document.getElementById("empresaFiltro").value = "";
+    document.getElementById("medioFiltro").value = "";
+
+    buildTable(groupedData);
+}
+</script>
+
+
+{% endblock %}

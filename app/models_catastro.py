@@ -1,3 +1,4 @@
+
 from django.db import models
 
 class AnotacionesLineas(models.Model):
@@ -2246,3 +2247,4 @@ class Contratos(models.Model):
     class Meta:
         managed = False
         db_table = 'contratos'
+    

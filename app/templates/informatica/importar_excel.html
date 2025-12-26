@@ -1,0 +1,106 @@
+{% extends "informatica/home.html" %}
+
+{% block head %}
+<style>
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #f8f9fa;
+    }
+
+    .container {
+        margin: 60px auto 40px 220px;
+        background-color: #ffffff;
+        padding: 40px;
+        border-radius: 12px;
+        box-shadow: 0 6px 24px rgba(0, 0, 0, 0.06);
+    }
+
+    h2 {
+        text-align: center;
+        color: #343a40;
+        margin-bottom: 25px;
+        font-size: 24px;
+    }
+
+    p.instructions {
+        background-color: #e9f5ff;
+        border-left: 5px solid #007bff;
+        padding: 15px 20px;
+        border-radius: 6px;
+        font-size: 15px;
+        color: #333;
+        margin-bottom: 25px;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    label {
+        display: block;
+        margin-bottom: 6px;
+        font-weight: 600;
+        color: #495057;
+    }
+
+    input[type="file"] {
+        padding: 10px;
+        border: 1px solid #ced4da;
+        border-radius: 6px;
+        width: 100%;
+        background-color: #f8f9fa;
+        font-size: 14px;
+    }
+
+    button[type="submit"] {
+        background-color: #007bff;
+        color: white;
+        padding: 12px 25px;
+        font-size: 15px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        width: 100%;
+        transition: background-color 0.3s ease;
+    }
+
+    button[type="submit"]:hover {
+        background-color: #0056b3;
+    }
+
+    .back-link {
+        display: block;
+        text-align: center;
+        margin-top: 25px;
+        text-decoration: none;
+        color: #007bff;
+        font-weight: 500;
+    }
+
+    .back-link:hover {
+        text-decoration: underline;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h2>Importar Inventario desde Excel</h2>
+
+    <p class="instructions">
+        Asegúrese de que el archivo Excel tenga el siguiente orden de columnas:<br>
+        <strong>Equipo, Marca, Modelo, N° Inventario, N° Serie, Estado, Ubicación / Área, Observaciones</strong>
+    </p>
+
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="form-group">
+            {{ form.archivo_excel.label_tag }}
+            {{ form.archivo_excel }}
+        </div>
+        <button type="submit">📥 Importar archivo</button>
+    </form>
+
+    <a href="{% url 'inventario_list' %}" class="back-link">← Volver al listado</a>
+</div>
+{% endblock %}
