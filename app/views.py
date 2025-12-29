@@ -4399,6 +4399,10 @@ def veps_interbanking(request):
 def pagos_electronicos(request):
     return render(request, 'simsa/pagos_electronicos.html')
 
+def pagos_graficos(request):
+    return render(request, 'simsa/pagos_graficos.html')
+
+
 def api_proyectos_por_concesionario(request):
     company_id = request.GET.get("company_id")  # lo obtenemos por query param
 

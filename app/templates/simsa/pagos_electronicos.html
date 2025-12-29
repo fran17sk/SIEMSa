@@ -33,7 +33,7 @@
     <div class="table-container">
 
         <div class="table-header">
-            <h2>Pagos Interbanking - MacroClick</h2>
+            <h2>Pagos Interbanking - MacroClick - Pagos Manuales</h2>
 
         </div>
 
@@ -64,7 +64,7 @@
     .filters {
     display: flex;
     flex-wrap: wrap;
-    gap: 1rem;
+    justify-content: space-between;
     margin-bottom: 1.2rem;
     background: #f8fafc;
     padding: 1rem;
@@ -76,6 +76,7 @@
     display: flex;
     flex-direction: column;
     font-size: 0.75rem;
+    width: 200px;
 }
 
 .filter-group label {
@@ -260,6 +261,7 @@
         cursor: pointer;
         font-weight: 600;
         transition: background 0.3s ease;
+        width: 100px;
     }
 
     .add-btn:hover {
@@ -477,7 +479,7 @@ function cargarMedios(data) {
             detailRow.className = "details-row";
 
             detailRow.innerHTML = `
-            <td colspan="6">
+            <td colspan="8">
                 <table class="subtable">
                     <thead>
                         <tr>
@@ -544,13 +546,14 @@ function cargarMedios(data) {
 function aplicarFiltros() {
     const fi = document.getElementById("fechaInicio").value;
     const ff = document.getElementById("fechaFin").value;
-    const empresa = document.getElementById("empresaFiltro").value.toLowerCase();
+    const empresa = document.getElementById("empresaFiltro").value.trim().toLowerCase();
     const medio = document.getElementById("medioFiltro").value;
 
     let filtrados = groupedData.filter(v => {
 
-        // Empresa
-        if (empresa && !v.empresa.toLowerCase().includes(empresa)) {
+        // Empresa (maneja null)
+        const empresaVep = (v.empresa ?? "pago verificado por secretaría").toLowerCase();
+        if (empresa && !empresaVep.includes(empresa)) {
             return false;
         }
 
@@ -559,7 +562,7 @@ function aplicarFiltros() {
             return false;
         }
 
-        // Fecha pago
+        // Fecha de pago
         if (fi || ff) {
             if (!v.paid_date) return false;
             const fechaPago = new Date(v.paid_date);

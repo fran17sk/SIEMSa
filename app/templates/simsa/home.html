@@ -236,6 +236,10 @@
   <a href="{% url 'pagos_electronicos' %}" class="{% if request.resolver_match.url_name == 'pagos_electronicos' %}active{% endif %}" title="Países">
     <i data-lucide="badge-dollar-sign"></i> <span>Pagos Electronicos</span>
   </a>
+
+  <a href="{% url 'pagos_graficos' %}" class="{% if request.resolver_match.url_name == 'pagos_graficos' %}active{% endif %}" title="Países">
+    <i data-lucide="badge-dollar-sign"></i> <span>Pagos graficos</span>
+  </a>
   {% if request.user.groups.first.name == "Administrador" or request.user.groups.first.name == "Publicador"   %}
   {% endif %}
   <!-- Nueva sección Gráficos -->

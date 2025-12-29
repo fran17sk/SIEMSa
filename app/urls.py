@@ -90,6 +90,7 @@ urlpatterns = [
     path('expediente/otros/',views.expedientes_concesionario, name='exp_conc'),
     path('pagos/interbanking',views.veps_interbanking,name='pagos_interbanking'),
     path('pagos_electronicos',views.pagos_electronicos, name='pagos_electronicos'),
+    path('pagos_graficos',views.pagos_graficos, name='pagos_graficos'),
     # Usuarios Admin
     path('reportes/usuarios/pdf/', views.usuarios_pdf, name='usuarios_pdf'),
     path('reportes/usuarios/excel/', views.usuarios_excel, name='usuarios_excel'),
