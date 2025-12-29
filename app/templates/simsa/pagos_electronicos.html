@@ -69,6 +69,7 @@
     background: #f8fafc;
     padding: 1rem;
     border-radius: 10px;
+    width: 100%;
 }
 
 .filter-group {
@@ -463,7 +464,7 @@ function cargarMedios(data) {
             mainRow.innerHTML = `
     <td class="toggle" onclick="toggleDetails(${vep.vep})">➕</td>
     <td>${vep.vep}</td>
-    <td>${vep.empresa}</td>
+    <td>${vep.empresa ?? "Pago Verificado por Secretaría"}</td>
     <td>${vep.estado_log}</td>
     <td>${vep.estado_vep}</td>
     <td>${vep.detalles.length}</td>
