@@ -91,6 +91,8 @@ urlpatterns = [
     path('pagos/interbanking',views.veps_interbanking,name='pagos_interbanking'),
     path('pagos_electronicos',views.pagos_electronicos, name='pagos_electronicos'),
     path('pagos_graficos',views.pagos_graficos, name='pagos_graficos'),
+    path('regalias/',views.regalias,name='regalias'),
+    path('regalias/consulta/', views.pagos_regalias_por_empresa, name='concepts_by_company'),
     # Usuarios Admin
     path('reportes/usuarios/pdf/', views.usuarios_pdf, name='usuarios_pdf'),
     path('reportes/usuarios/excel/', views.usuarios_excel, name='usuarios_excel'),

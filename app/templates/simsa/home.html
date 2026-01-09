@@ -240,6 +240,9 @@
   <a href="{% url 'pagos_graficos' %}" class="{% if request.resolver_match.url_name == 'pagos_graficos' %}active{% endif %}" title="Países">
     <i data-lucide="badge-dollar-sign"></i> <span>Pagos graficos</span>
   </a>
+  <a href="{% url 'regalias' %}" class="{% if request.resolver_match.url_name == 'regalias' %}active{% endif %}" title="Países">
+    <i data-lucide="badge-dollar-sign"></i> <span>Pagos Regalias</span>
+  </a>
   {% if request.user.groups.first.name == "Administrador" or request.user.groups.first.name == "Publicador"   %}
   {% endif %}
   <!-- Nueva sección Gráficos -->

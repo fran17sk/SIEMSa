@@ -4530,3 +4530,33 @@ class Efmigrationshistory(models.Model):
         db_table = '__EFMigrationsHistory'
 
 
+class RoyaltyPresentationsPayments(models.Model):
+    ddjjid = models.UUIDField(db_column='DDJJId')
+    vepid = models.UUIDField(db_column='VepId', primary_key=True)
+    montopagado = models.DecimalField(db_column='MontoPagado', max_digits=24, decimal_places=8)
+    fechavencimiento = models.DateField(db_column='FechaVencimiento')
+    fechapago = models.DateTimeField(db_column='FechaPago', null=True)
+    aniopago = models.IntegerField(db_column='AnioPago')
+    mespago = models.IntegerField(db_column='MesPago')
+    mespagotexto = models.CharField(db_column='MesPagoTexto', max_length=32)
+    tipopago = models.CharField(db_column='TipoPago', max_length=32)
+
+    class Meta:
+        managed = False
+        db_table = 'view_royaltypresentationspayments'
+
+class RoyaltyProductionResume(models.Model):
+    ddjj_id = models.UUIDField(db_column='DDJJId', primary_key=True)
+    prod_id = models.UUIDField(db_column='ProdId')
+    producto_id = models.UUIDField(db_column='ProductoId', max_length=50)
+    producto = models.TextField(db_column='Producto')
+    cantidad = models.DecimalField(db_column='Cantidad', max_digits=18, decimal_places=4)
+    measurement_name = models.TextField(db_column='MeasurementName')
+    declared_vnr = models.DecimalField(db_column='DeclaredVNR', max_digits=18, decimal_places=2)
+    total_vnr = models.DecimalField(db_column='TotalVNR', max_digits=18, decimal_places=2)
+
+    class Meta:
+        managed = False
+        db_table = 'view_royaltypresentationsproduction'
+        verbose_name = 'Resumen Producción Regalías'
+        verbose_name_plural = 'Resumen Producción Regalías'

@@ -1985,56 +1985,53 @@ def contratos_view(request):
         concesionarios = Concesionarios.objects.using('catastro').all().order_by('concesionario')
         return render(request, 'contratos/new.html', {'form': form , 'concesionarios':concesionarios})
 
-
 def lista_contratos(request):
     print('actualizando estados')
+
     today = timezone.now().date()
 
-    # Contratos actualmente vigentes → activo = True
-    Contratos.objects.filter(fecha_ini__lte=today, fecha_fin__gte=today).update(activo=True)
+    # Contratos vigentes → activo = True
+    Contratos.objects.using('catastro').filter(
+        fecha_ini__lte=today,
+        fecha_fin__gte=today
+    ).update(activo=True)
 
-    # Contratos no vigentes (ya finalizaron o aún no comenzaron) → activo = False
-    Contratos.objects.exclude(fecha_ini__lte=today, fecha_fin__gte=today).update(activo=False)
-    print('actualizados')
-
+    # Contratos no vigentes → activo = False
+    Contratos.objects.using('catastro').exclude(
+        fecha_ini__lte=today,
+        fecha_fin__gte=today
+    ).update(activo=False)
 
     search = request.GET.get('q', '').strip()
     page_number = request.GET.get('page', 1)
 
-    
-    subquery = Simsaexpedientescontratos.objects.filter(
-        id_contrato=OuterRef('pk')
-    ).order_by('id').values('nro_expediente')[:1]
+    # Queryset base (AJUSTADO AL MODELO REAL)
+    contratos = Contratos.objects.using('catastro').all()
 
-    contratos = Contratos.objects.annotate(
-        nro_expediente=Subquery(subquery)
-    ).order_by('id')
-    
+    # Búsqueda
     if search:
         contratos = contratos.filter(
-            relacion_id_concesionario__icontains=search
-        ) | contratos.filter(
-            id__icontains=search
-        ) | contratos.filter(
-            expedientes__nro_expediente__icontains=search
-        ).distinct()
+            Q(id_concesionario__icontains=search) |
+            Q(id__icontains=search) |
+            Q(expediente__icontains=search)
+        )
 
-    paginator = Paginator(contratos, 10)  # 10 contratos por página
+    paginator = Paginator(contratos, 10)
     page_obj = paginator.get_page(page_number)
 
-    # Si es una solicitud AJAX, devolver JSON
+    # Respuesta AJAX
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
         data = []
         for contrato in page_obj:
-            expediente = contrato.expedientes.first()  
             data.append({
                 'id': contrato.id,
-                'nro_expediente': expediente.nro_expediente if expediente else '',
-                'concesionario': contrato.relacion_id_concesionario,
-                'pago_cano': contrato.pago_cano,
-                'pago_regalias': contrato.pago_regalias,
+                'expediente': contrato.expediente or '',
+                'concesionario': contrato.id_concesionario,
+                'paga_canon': contrato.paga_canon,
                 'opcion_compra': contrato.opcion_compra,
                 'activo': contrato.activo,
+                'fecha_ini': contrato.fecha_ini.strftime('%Y-%m-%d') if contrato.fecha_ini else '',
+                'fecha_fin': contrato.fecha_fin.strftime('%Y-%m-%d') if contrato.fecha_fin else '',
             })
 
         return JsonResponse({
@@ -2043,11 +2040,11 @@ def lista_contratos(request):
             'current_page': page_obj.number,
         })
 
+    # Render normal
     return render(request, 'contratos/list.html', {
         'contratos': page_obj,
         'search': search,
     })
-
 
 def str_to_bool(value):
     if isinstance(value, bool):
@@ -4402,6 +4399,84 @@ def pagos_electronicos(request):
 def pagos_graficos(request):
     return render(request, 'simsa/pagos_graficos.html')
 
+def regalias(request):
+    empresas = Companies.objects.using('simsa').all().order_by("name")
+
+    context = {
+        'empresas': empresas
+    }
+
+    return render(request, 'simsa/regalias.html', context)
+def pagos_regalias_por_empresa(request):
+    company_id = request.GET.get('company_id')
+
+    if not company_id:
+        return JsonResponse({'data': []})
+
+    # 🔹 DDJJ de la empresa
+    ddjjs = Royaltyddjjs.objects.using('simsa').select_related(
+        'royaltyperiodid'
+    ).filter(
+        companyid_id=company_id,
+        isdeleted=False
+    )
+
+    ddjj_ids = [d.id for d in ddjjs]
+
+    if not ddjj_ids:
+        return JsonResponse({'data': []})
+
+    # 🔹 Mapeo DDJJ → Período
+    periodos_por_ddjj = {
+        d.id: f"{d.royaltyperiodid.name} {d.royaltyperiodid.year}"
+        for d in ddjjs
+        if d.royaltyperiodid
+    }
+
+    # 🔹 PAGOS
+    pagos = RoyaltyPresentationsPayments.objects.using('simsa').filter(
+        ddjjid__in=ddjj_ids
+    ).order_by('-fechapago', '-fechavencimiento')
+
+    # 🔹 PRODUCTOS (DESDE LA VIEW)
+    productos = RoyaltyProductionResume.objects.using('simsa').filter(
+        ddjj_id__in=ddjj_ids
+    )
+
+    productos_por_ddjj = defaultdict(list)
+    for p in productos:
+        productos_por_ddjj[p.ddjj_id].append({
+            'prodid': p.prod_id,
+            'productoid': p.producto_id,
+            'producto': p.producto,
+            'cantidad': float(p.cantidad),
+            'measurementname': p.measurement_name,
+            'declaredvnr': float(p.declared_vnr),
+            'totalvnr': float(p.total_vnr),
+        })
+
+    # 🔹 ARMADO FINAL
+    data = []
+    for p in pagos:
+        data.append({
+            'ddjjid': str(p.ddjjid),
+            'vepid': str(p.vepid),
+            'tipopago': p.tipopago,
+            'periodo': periodos_por_ddjj.get(p.ddjjid, '—'),
+            'estado': 'PAGADO' if p.fechapago else 'PENDIENTE',
+            'montopagado': float(p.montopagado),
+            'fechavencimiento': (
+                p.fechavencimiento.strftime('%d/%m/%Y')
+                if p.fechavencimiento else '-'
+            ),
+            'fechapago': (
+                p.fechapago.strftime('%d/%m/%Y')
+                if p.fechapago else None
+            ),
+            'productos': productos_por_ddjj.get(p.ddjjid, [])
+        })
+
+    return JsonResponse({'data': data})
 
 def api_proyectos_por_concesionario(request):
     company_id = request.GET.get("company_id")  # lo obtenemos por query param
@@ -5104,3 +5179,5 @@ def montos_canon(request):
         'canon': canon
     } 
     return render(request,'informatica/montos_canon.html' , context)
+
+

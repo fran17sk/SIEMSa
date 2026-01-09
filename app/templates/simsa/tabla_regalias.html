@@ -1,0 +1,32 @@
+{% if conceptos %}
+<table>
+  <thead>
+    <tr>
+      <th>Concepto</th>
+      <th>Fecha</th>
+      <th>Monto</th>
+      <th>Recargo</th>
+      <th>Total</th>
+      <th>Pagado</th>
+      <th>Saldo</th>
+      <th>Estado</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for c in conceptos %}
+    <tr class="{% if c.balance == 0 %}pagado{% else %}pendiente{% endif %}">
+      <td>{{ c.concepto }}</td>
+      <td>{{ c.generationdate|date:"d/m/Y" }}</td>
+      <td>${{ c.amount }}</td>
+      <td>${{ c.surcharge }}</td>
+      <td>${{ c.total }}</td>
+      <td>${{ c.paid }}</td>
+      <td>${{ c.balance }}</td>
+      <td>{{ c.conceptstateid }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p>No se encontraron pagos de regalías para la empresa seleccionada.</p>
+{% endif %}
