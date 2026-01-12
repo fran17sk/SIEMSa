@@ -193,7 +193,6 @@ function renderProductos(productos) {
         <tr>
           <th>Producto</th>
           <th>Cantidad</th>
-          <th>Unidad</th>
         </tr>
       </thead>
       <tbody>
@@ -203,8 +202,7 @@ function renderProductos(productos) {
     html += `
       <tr>
         <td>${p.producto}</td>
-        <td>${p.cantidad}</td>
-        <td>${p.measurementname}</td>
+        <td>${p.cantidad} ${p.measurementname}</td>
       </tr>
     `;
   });

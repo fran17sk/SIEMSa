@@ -4,6 +4,12 @@ from django.contrib.auth.models import User
 from django.db.models import JSONField
 from django.utils.timezone import now
 
+def es_asuntos_legales(self):
+    return self.organismos_usuario.filter(
+        organismo__organismonombre="Asuntos Legales"
+    ).exists()
+
+User.add_to_class("es_asuntos_legales", property(es_asuntos_legales))
 
 class Mineral(models.Model):
     id_min = models.AutoField(primary_key=True,unique=True)

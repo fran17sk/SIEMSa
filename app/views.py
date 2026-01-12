@@ -1,4 +1,5 @@
 from django.contrib.auth import authenticate, login
+from django.core.exceptions import PermissionDenied
 from django.shortcuts import render, redirect
 from django.contrib.auth.models import User
 from django.shortcuts import render, redirect
@@ -121,6 +122,7 @@ import csv
 from django.db import connection
 from unidecode import unidecode
 
+
 def group_required(group_names):
     def in_groups(u):
         if u.is_authenticated:
@@ -233,7 +235,7 @@ def mineral_delete(request, pk):
 
 @login_required(login_url='/login/')
 def new_exportacion(request,exportacion_id=None):
-
+    
     if request.user.groups.filter(name='Lector').exists():
         return redirect('exportaciones')
 
@@ -1981,6 +1983,8 @@ def contratos_view(request):
                 return JsonResponse({'success': False, 'errors': form.errors})
             messages.error(request, 'Por favor corrige los errores en el formulario.')
     else:
+        if request.user.es_asuntos_legales:
+            raise PermissionDenied
         form = ContratosForm()
         concesionarios = Concesionarios.objects.using('catastro').all().order_by('concesionario')
         return render(request, 'contratos/new.html', {'form': form , 'concesionarios':concesionarios})
