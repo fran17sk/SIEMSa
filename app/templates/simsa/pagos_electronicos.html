@@ -34,7 +34,9 @@
 
         <div class="table-header">
             <h2>Pagos Interbanking - MacroClick - Pagos Manuales</h2>
-
+            <button class="add-btn" onclick="imprimirTabla()">
+                🖨️ Imprimir
+            </button>
         </div>
 
         <table>
@@ -585,6 +587,73 @@ function limpiarFiltros() {
     buildTable(groupedData);
 }
 </script>
+<script>
+function imprimirTabla() {
+    const contenido = document.querySelector(".table-container").innerHTML;
 
+    const ventana = window.open("", "", "width=1200,height=800");
+
+    ventana.document.write(`
+        <html>
+        <head>
+            <title>Pagos Interbanking</title>
+            <style>
+                body {
+                    font-family: 'Segoe UI', sans-serif;
+                    padding: 20px;
+                    background: white;
+                }
+
+                h2 {
+                    text-align: center;
+                    margin-bottom: 20px;
+                }
+
+                table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    font-size: 12px;
+                }
+
+                th, td {
+                    border: 1px solid #ddd;
+                    padding: 8px;
+                    text-align: left;
+                }
+
+                th {
+                    background-color: #f0f2f5;
+                }
+
+                .toggle {
+                    display: none;
+                }
+
+                .detail-row {
+                    display: table-row !important;
+                }
+
+                .subtable {
+                    width: 100%;
+                    margin-top: 5px;
+                }
+
+                .subtable th, .subtable td {
+                    font-size: 11px;
+                }
+            </style>
+        </head>
+        <body>
+            ${contenido}
+        </body>
+        </html>
+    `);
+
+    ventana.document.close();
+    ventana.focus();
+    ventana.print();
+    ventana.close();
+}
+</script>
 
 {% endblock %}
