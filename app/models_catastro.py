@@ -2224,6 +2224,14 @@ class GrupoMinero(models.Model):
 
 
 ########################################################################################
+class TipoContratos(models.Model):
+    id = models.AutoField(primary_key=True)
+    contratos_nombre = models.TextField(blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'tipo_contratos'
+
 class Contratos(models.Model):
     id_concesionario = models.CharField(max_length=255)
     paga_canon = models.BooleanField()
@@ -2243,8 +2251,10 @@ class Contratos(models.Model):
     updatedate = models.DateField(blank=True, null=True)
     deleteby = models.TextField(blank=True, null=True)
     deletedate = models.DateField(blank=True, null=True)
+    observaciones = models.TextField(blank=True, null=True)
+    tipo = models.ForeignKey(TipoContratos, on_delete=models.CASCADE,db_column="tipo", related_name='contratos')
 
     class Meta:
         managed = False
         db_table = 'contratos'
-    
+

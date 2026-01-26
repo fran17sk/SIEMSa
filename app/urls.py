@@ -58,9 +58,15 @@ urlpatterns = [
     path('contratos/', views.contratos_view, name='contratos'),
     path('contratos-list/', views.lista_contratos, name='lista_contratos'),
     path('contratos-list/new', views.crear_contrato, name='create_new'),
+    path('contratos-list/<int:id>/editar/', views.edit_contrato, name='edit_contrato'),
     path('verificar-expediente/<str:nro>/', views.verificar_expediente, name='verificar_expediente'),
     path('contratos/serch', views.consultar_contratos_por_expediente, name='serch'),
-     path('consulta-expediente/', views.consulta_expediente_view, name='consulta_expediente'),
+    path('consulta-expediente/', views.consulta_expediente_view, name='consulta_expediente'),
+    path("tipos-contratos/", views.tipos_contratos_list, name="tipos_contratos_list"),
+    path("tipos-contratos/crear/", views.tipos_contratos_create, name="tipos_contratos_create"),
+    path("tipos-contratos/<int:pk>/editar/", views.tipos_contratos_update, name="tipos_contratos_update"),
+
+
 
     path('administration/', views.admin_home, name='administration'),
     path('ajax/check-username/', views.check_username, name='check_username'),

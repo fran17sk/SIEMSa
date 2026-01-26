@@ -3,454 +3,450 @@
 {% block head %}
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 <style>
-    .container {
+.container#cards {
     max-width: 1200px;
-    margin: 50px;
-    background: white;
-    padding: 2.5rem 3rem;
-    border-radius: 12px;
-    box-shadow: 0 12px 35px rgb(0 0 0 / 0.12);
-  }
-  .container.collapsed{
-    margin-left: 50px;
-    width: 90%;
+    margin: 40px auto;
+    background: #ffffff;
+    padding: 2.5rem;
+    border-radius: 14px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+}
 
-  }
-  h1 {
-    margin: 0;
+/* Título */
+.container#cards h1 {
+    margin-bottom: 2rem;
     font-weight: 700;
-    font-size: 1.5rem;
-    color: #222;
+    font-size: 1.8rem;
+    color: #111827;
     text-align: center;
-  }
+}
 
-  form {
+/* ==============================
+   ESTRUCTURA DE FILAS (PROLIJA)
+============================== */
+
+/* Usamos un selector específico para tus filas */
+.form-row {
     display: flex;
-    flex-wrap: wrap;
-    gap: 0.2rem 1.5rem; /* Menor espacio vertical entre filas */
-  }
+    flex-wrap: nowrap; /* Mantiene la distribución horizontal */
+    gap: 20px;
+    margin-bottom: 20px;
+    align-items: flex-end; /* Alinea etiquetas y campos por la base */
+    width: 100%;
+}
 
-  .form-group {
+/* Ajuste de ancho de columnas dentro de las filas */
+.form-row .form-group {
+    flex: 1; 
     display: flex;
     flex-direction: column;
-    flex: 1 1 48%;
-    min-width: 220px;
-  }
+    min-width: 0; /* Evita que el flexbox se desborde */
+}
 
-  .form-group.full-width {
-    flex-basis: 100%;
-    margin-top: -20px;
-  }
+/* Casos especiales de ancho */
+.form-row .form-group.full-width {
+    flex: 2;
+}
 
-  label {
+/* ==============================
+   ELEMENTOS DEL FORMULARIO
+============================== */
+
+.form-group label {
     font-weight: 600;
-    margin-bottom: 0.25rem;
-    color: #444;
-    user-select: none;
-  }
+    margin-bottom: 8px;
+    color: #4b5563;
+    font-size: 0.9rem;
+    white-space: nowrap;
+}
 
-  input, select, textarea {
-    padding: 0.38rem 0.6rem;
-    border: 1.3px solid #cbd5e1;
-    border-radius: 6px;
+/* Estandarización de altura para que todo esté alineado */
+.form-group input, 
+.form-group select, 
+.form-group textarea, 
+.form-group .empresa-selected {
+    height: 40px; 
+    padding: 8px 12px;
+    border: 1.5px solid #d1d5db;
+    border-radius: 8px;
     font-size: 0.95rem;
-    transition: border-color 0.3s ease;
-    outline-offset: 2px;
-  }
+    transition: all 0.2s ease;
+    background-color: #fff;
+    box-sizing: border-box; /* Fundamental para que el padding no sume al ancho */
+    width: 100%;
+}
 
-  input[readonly] {
-    background-color: #e0e0e0;
-    cursor: not-allowed;
-  }
+.form-group textarea {
+    height: auto;
+    min-height: 80px;
+}
 
-  input:focus, select:focus, textarea:focus {
+/* Estados de Focus y Deshabilitado */
+.form-group input:focus, 
+.form-group select:focus {
     border-color: #2563eb;
-    box-shadow: 0 0 5px rgba(37, 99, 235, 0.5);
-  }
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    outline: none;
+}
 
-  /* Agrupar pago canon, pago regalias y activo en una fila */
-  .form-group.row-group {
-    flex-basis: 100%;
+.form-group input:disabled, 
+.form-group select:disabled {
+    background-color: #f3f4f6;
+    color: #6b7280;
+    cursor: not-allowed;
+}
+
+/* ==============================
+   EXPEDIENTE CON ICONO (CORREGIDO)
+============================== */
+
+.input-with-icon {
     display: flex;
-    flex-flow: row;
-    gap: 1.6rem;
     align-items: center;
-  }
-  .form-group.row-group > .form-group {
-    min-width: auto;
-  }
-  .nro_expediente{
-    width: 100px;
-  }
+    border: 1.5px solid #d1d5db;
+    border-radius: 8px;
+    background: #fff;
+    height: 40px;
+    overflow: hidden;
+}
 
-  #contratoForm button[type="submit"] {
-    margin-top: 1.5rem;
-    padding: 0.7rem 1.6rem;
+.input-with-icon input {
+    border: none !important; /* Quita el borde interno */
+    height: 100% !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+}
+
+.estado-icon {
+    padding: 0 10px;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 35px;
+}
+
+/* ==============================
+   CHECKBOXES (ALINEACIÓN CENTRADA)
+============================== */
+
+.form-group .checkbox-label {
+    display: flex;
+    align-items: center;
+    height: 40px; /* Misma altura que los inputs para que se vea prolijo */
+    margin-bottom: 0;
+    cursor: pointer;
+    font-weight: 600;
+    color: #4b5563;
+}
+
+.form-group .checkbox-label input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    margin-right: 10px;
+    cursor: pointer;
+}
+
+/* ==============================
+   DROPDOWN EMPRESA (PROLIJO)
+============================== */
+
+.empresa-dropdown {
+    position: relative;
+    width: 100%;
+}
+
+.empresa-selected {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+}
+
+.empresa-panel {
+    display: none;
+    position: absolute;
+    top: 45px;
+    left: 0;
+    width: 100%;
+    background: white;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    z-index: 1000;
+    box-shadow: 0 10px 15px rgba(0,0,0,0.1);
+}
+
+.empresa-panel ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.empresa-panel li {
+    padding: 10px;
+    cursor: pointer;
+}
+
+.empresa-panel li:hover {
+    background: #f3f4f6;
+}
+
+/* ==============================
+   BOTÓN Y ERRORES
+============================== */
+
+button[type="submit"] {
+    display: block;
+    margin: 30px auto 0;
+    padding: 12px 40px;
     background: #2563eb;
     border: none;
     color: white;
     font-size: 1rem;
     font-weight: 700;
-    border-radius: 8px;
-    cursor: pointer;
-    align-self: center;
-    transition: background-color 0.3s ease;
-  }
-
-  button[type="submit"]:hover {
-    background: #1e40af;
-  }
-
-  .error {
-    margin-top: 0.18rem;
-    color: #dc2626;
-    font-size: 0.8rem;
-    min-height: 1.2em;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-  }
-
-  .error.visible {
-    opacity: 1;
-  }
-
-  #messages {
-    margin-bottom: 1rem;
-    font-weight: 600;
-    color: #16a34a;
-    text-align: center;
-    min-height: 1.4em;
-    user-select: none;
-  }
-
-  @media (max-width: 720px) {
-    form {
-      flex-direction: column;
-    }
-    .form-group, .form-group.row-group > .form-group {
-      flex-basis: 100% !important;
-      min-width: auto !important;
-    }
-    button[type="submit"] {
-      width: 100%;
-    }
-  }
-</style>
-
-<style>
-  .form-group.d-flex {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  #abrirModal {
-    height: 40px;
-    padding: 6px 12px;
-    cursor: pointer;
-    border: none;
-    background-color: #fff;
-    margin-top: 0px;
-    margin-left: -25px;
-  }
-  #relacion_id_concesionario{
-    width: 100%;
-  }
-  .modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0,0,0,0.6);
-    display: none;
-    justify-content: center;
-    align-items: center;
-    z-index: 999;
-  }
-
-  .modal-content {
-    background: white;
-    padding: 20px;
-    width: 90%;
-    max-width: 500px;
     border-radius: 10px;
-    position: relative;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-  }
-
-  .cerrar-modal {
-    position: absolute;
-    top: 10px;
-    right: 15px;
-    font-size: 24px;
     cursor: pointer;
-  }
-
-  #searchInput {
-    width: 90%;
-    padding: 10px;
-    margin: 10px 0 15px;
-    font-size: 16px;
-  }
-
-  .result-list {
-    list-style: none;
-    padding: 0;
-    max-height: 250px;
-    overflow-y: auto;
-    border: 1px solid #ccc;
-    border-radius: 6px;
-  }
-
-  .result-item {
-    display: flex;
-    justify-content: space-between;
-    padding: 8px 10px;
-    border-bottom: 1px solid #eee;
-    align-items: center;
-  }
-
-  .result-item:last-child {
-    border-bottom: none;
-  }
-
-  .elegir-btn {
-    background-color: #2196f3;
-    color: white;
-    border: none;
-    padding: 5px 10px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 14px;
-  }
-
-  .elegir-btn:hover {
-    background-color: #1976d2;
-  }
-  #estado_expediente{
-    margin: 5px 10px;
-  }
-  .nro_expediente{
-    width: 100px;
-  }
-
-
-  .nro-expediente-wrapper {
-  max-width: 400px;
-  margin: auto;
-  font-family: 'Segoe UI', sans-serif;
+    transition: background 0.2s;
 }
 
-label {
-  font-weight: 600;
-  margin-bottom: 5px;
-  display: block;
-  color: #333;
-}
-
-.input-with-icon {
-  display: flex;
-  align-items: center;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  background-color: #fff;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.input-with-icon input {
-  flex-grow: 1;
-  border: none;
-  outline: none;
-  font-size: 16px;
-}
-
-.estado-icon {
-  width: 20px;
-  height: 20px;
-  margin-left: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: transform 0.3s ease;
-}
-
-.estado-icon i {
-  font-size: 18px;
-}
-
-.nombre-expediente {
-  display: relative;
-  margin-top: 8px;
-  color: #555;
-  font-size: 14px;
+button[type="submit"]:hover {
+    background: #1e40af;
 }
 
 .error {
-  color: red;
-  margin-top: 5px;
-  font-size: 13px;
+    color: #dc2626;
+    font-size: 0.75rem;
+    margin-top: 4px;
+    height: 12px; /* Reserva el espacio para que no salte el layout */
 }
-.estado-group{
-  display: flex;
-  flex-flow: row;
+
+/* ==============================
+   RESPONSIVE
+============================== */
+
+@media (max-width: 992px) {
+    .form-row {
+        flex-wrap: wrap;
+    }
+    .form-row .form-group {
+        flex: 1 1 45%; /* Dos columnas en tablets */
+    }
 }
-.estado-group select{
-  border: none;
-  user-select: none;
-  appearance: none;           /* Firefox, Chrome */
-  -webkit-appearance: none;   /* Safari, Chrome */
-  -moz-appearance: none;      /* Firefox */
-  background: none; 
-  margin-top: -5px;
+
+@media (max-width: 600px) {
+    .form-row .form-group {
+        flex: 1 1 100%; /* Una columna en móviles */
+    }
+}
+/* ==============================
+   CARD DE INFO DE REGISTRO
+============================== */
+.registro-info {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    margin: 20px auto;
+    padding: 12px 20px;
+    background-color: #f8fafc; /* Azul grisáceo muy claro */
+    border: 1px dashed #cbd5e1;
+    border-radius: 10px;
+    max-width: fit-content; /* Se ajusta al contenido */
+}
+
+.info-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    color: #64748b;
+}
+
+.info-item i {
+    color: #2563eb;
+    font-size: 1rem;
+}
+
+.info-item strong {
+    color: #334155;
 }
 </style>
 {% endblock %}
 
 {% block content %}
-
 <div class="container" id="cards">
   <h1>Registrar Contrato</h1>
 
-  <div id="messages"></div>
+  <form id="contratoForm" method="post" action="{% url 'create_new' %}" novalidate>
+    {% csrf_token %}
+    
+    <div class="form-row">
+      <div class="form-group">
+        <label for="nro_expediente">Nro Expediente</label>
+        <div class="input-with-icon">
+          <input type="text" id="nro_expediente" placeholder="Ej. 12345" />
+          <span id="estado_expediente" class="estado-icon"></span>
+        </div>
+      </div>
 
-  <form id="contratoForm" method="post" novalidate action="{% url 'create_new' %}">
-  {% csrf_token %}
+      <div class="form-group">
+        <label for="EstadoMina">Estado Expediente</label>
+        <input id="EstadoMina" type="text" value="" disabled>
+      </div>
 
-  <div class="form-group row-group">
-    <div class="form-group nro_expediente">
-      <label for="{{ form.id_contrato.id_for_label }}">Nro Contrato</label>
-      <input type="text" value="*******" disabled>
-      <div class="error" id="error_id_contrato"></div>
-    </div>
+      <div class="form-group">
+        <label for="TipoMina">Tipo Expediente</label>
+        <input id="label_nro_expediente" type="text" value="" disabled>
+      </div>
 
-    <div class="form-group nro-expediente-wrapper">
-  <label id="label_nro_expediente" for="nro_expediente">Nro Expediente</label>
-  <div class="input-with-icon">
-    <input type="text" id="nro_expediente" placeholder="Ej. 12345" />
-    <span id="estado_expediente" class="estado-icon" title="Estado"></span>
-  </div>
-  <div class="expediente-info">
-    <span id="info_expediente" class="nombre-expediente"></span>
-    <div class="error" id="error_id_contrato"></div>
-  </div>
-</div>
-
-    <!-- Select con botón de búsqueda -->
-    <div class="form-group full-width">
-      <label for="concesionario">Relación Concesionario</label>
-      <select name="concesionario" id="relacion_id_concesionario">
-        <option value="0" selected>Seleccionar</option>
-        {% for concesionario in concesionarios %}
-          <option value="{{ concesionario.id }}">{{ concesionario.concesionario }}</option>
-        {% endfor %}
-      </select>
-    </div>
-    <button type="button" id="abrirModal">🔍</button>
-    <div class="error" id="error_relacion_id_concesionario"></div>
-
-    <!-- Modal -->
-    <div id="buscarModal" class="modal-overlay">
-      <div class="modal-content">
-        <span class="cerrar-modal" id="cerrarModal">&times;</span>
-        <h3>Buscar concesionario</h3>
-        <input type="text" id="searchInput" placeholder="Escribí para buscar...">
-        <ul id="resultados" class="result-list">
-          {% for concesionario in concesionarios %}
-            <li class="result-item" data-id="{{ concesionario.id }}">
-              {{ concesionario.concesionario }}
-              <div class="elegir-btn">Elegir</div>
-            </li>
-          {% endfor %}
-        </ul>
+      <div class="form-group">
+        <label for="NombreMina">Nombre Expediente</label>
+        <input id="info_expediente" type="text" value="" disabled>
       </div>
     </div>
-  </div>
-  <div class="form-group row-group">
+
+    <div class="form-row">
+      <div class="form-group full-width">
+        <label>Relación Concesionario</label>
+        <div class="empresa-dropdown" id="concesionarioDropdown">
+          <div class="empresa-selected" id="concesionarioSelected">
+            <span id="concesionarioText">Seleccione concesionario</span>
+            <i class="fa fa-caret-down"></i>
+          </div>
+          <div class="empresa-panel" id="concesionarioPanel">
+            <input type="text" id="concesionarioSearch" placeholder="Buscar..." autocomplete="off">
+            <ul id="concesionarioList">
+              {% for c in concesionarios %}
+              <li data-id="{{ c.id }}">{{ c.concesionario }}</li>
+              {% endfor %}
+            </ul>
+          </div>
+        </div>
+        <input type="hidden" id="relacion_id_concesionario">
+      </div>
+      
+      <div class="form-group">
+        <label for="tipo_contrato">Tipo de Contrato</label>
+        <select id="tipo_contrato" name="tipo_contrato" required>
+          <option value="">Seleccionar</option>
+          {% for tipo in tipos_contrato %}
+          <option value="{{ tipo.id }}">{{ tipo.contratos_nombre }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="{{ form.mineral_explotacion.id_for_label }}">Mineral Explotación</label>
+        {{ form.mineral_explotacion }}
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="checkbox-label">
+          <input type="checkbox" id="pago_canon" name="pago_canon">
+          Pago de Canon
+        </label>
+        <div class="error" id="error_pago_canon"></div>
+      </div>
+
+      <div class="form-group">
+        <label class="checkbox-label">
+          <input type="checkbox" id="opcion_compra" name="opcion_compra">
+          Opcion de Compra
+        </label>
+        <div class="error" id="error_opcion_compra"></div>
+      </div>
+      
+      <div class="form-group">
+        <label for="{{ form.fecha_ini.id_for_label }}">Fecha Inicio</label>
+        {{ form.fecha_ini }}
+      </div>
+
+      <div class="form-group">
+        <label for="{{ form.fecha_fin.id_for_label }}">Fecha Fin</label>
+        {{ form.fecha_fin }}
+      </div>
+
+      <div class="form-group">
+        <label for="activo">Estado Vigencia</label>
+        <select id="activo" name="activo" disabled>
+          <option value="si" selected>Vigente</option>
+          <option value="no">No Vigente</option>
+        </select>
+      </div>
+    </div>
+
     <div class="form-group">
-      <label for="pago_canon">
-        <input type="checkbox" id="pago_cano" name="pago_cano">
-        Pago de Canon
-      </label>
-      <div class="error" id="error_pago_cano"></div>
-    </div>
-<!--
-  <div class="form-group">
-    <label for="pago_regalias">
-      <input type="checkbox" id="pago_regalias" name="pago_regalias">
-      Pago de Regalías
-    </label>
-    <div class="error" id="error_pago_regalias"></div>
-  </div>
-    -->
-
-    <div class="form-group">
-      <label for="opcion_compra">
-        <input type="checkbox" id="opcion_compra" name="opcion_compra">
-        Opción de Compra
-      </label>
-      <div class="error" id="error_opcion_compra"></div>
-    </div>
-  </div>
-  <div class="form-group">
-    <label for="{{ form.mineral_explotacion.id_for_label }}">Mineral Explotación</label>
-    {{ form.mineral_explotacion }}
-    <div class="error" id="error_mineral_explotacion"></div>
-  </div>
-<!--
-  <div class="form-group">
-    <label for="{{ form.explotacion.id_for_label }}">Explotación</label>
-    {{ form.explotacion }}
-    <div class="error" id="error_explotacion"></div>
-  </div>
-
-  
-
-  <div class="form-group">
-    <label for="{{ form.exploracion.id_for_label }}">Exploración</label>
-    {{ form.exploracion }}
-    <div class="error" id="error_exploracion"></div>
-  </div>
-
-  <div class="form-group">
-    <label for="{{ form.iia.id_for_label }}">IIA</label>
-    {{ form.iia }}
-    <div class="error" id="error_iia"></div>
-  </div>
-  -->
-
-  <div class="form-group row-group">
-    <div class="form-group">
-      <label for="{{ form.fecha_ini.id_for_label }}">Fecha Inicio</label>
-      {{ form.fecha_ini }}
-      <div class="error" id="error_fecha_ini"></div>
+      <label for="observaciones">Observaciones</label>
+      <textarea id="observaciones" name="observaciones" rows="3" placeholder="Observaciones adicionales..."></textarea>
     </div>
 
-    <div class="form-group">
-      <label for="{{ form.fecha_fin.id_for_label }}">Fecha Fin</label>
-      {{ form.fecha_fin }}
-      <div class="error" id="error_fecha_fin"></div>
+    <div class="registro-info">
+      <div class="info-item">
+        <i class="fa fa-calendar"></i>
+        <span><strong>Fecha de registro:</strong> <span id="fecha-actual"></span></span>
+      </div>
+      <div class="info-item">
+        <i class="fa fa-user-circle"></i>
+        <span><strong>Creado por:</strong> {{ user.username|default:"Usuario Actual" }}</span>
+      </div>
     </div>
 
-    <div class="form-group estado-group">
-      <label for="activo">Estado: </label>
-      <select id="activo" name="activo" disabled>
-        <option value=""></option>
-        <option value="si" selected>Vigente</option>
-        <option value="no">No Vigente</option>
-      </select>
-      <div class="error" id="error_activo"></div>
+    <div class="button-container">
+      <button type="submit">Guardar Contrato</button>
     </div>
-  </div>
-
-  <button type="submit">Guardar Contrato</button>
-</form>
-
+  </form>
 </div>
-
 {% endblock %}
 
 {% block script %}
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const fechaSpan = document.getElementById('fecha-actual');
+    if (fechaSpan) {
+        const hoy = new Date();
+        const opciones = { year: 'numeric', month: 'long', day: 'numeric' };
+        fechaSpan.textContent = hoy.toLocaleDateString('es-ES', opciones);
+    }
+});
+  const dropdownC = document.getElementById('concesionarioDropdown');
+  const selectedC = document.getElementById('concesionarioSelected');
+  const panelC = document.getElementById('concesionarioPanel');
+  const searchC = document.getElementById('concesionarioSearch');
+  const listC = document.getElementById('concesionarioList');
+  const textC = document.getElementById('concesionarioText');
+  const hiddenC = document.getElementById('relacion_id_concesionario');
+
+  selectedC.addEventListener('click', () => {
+    panelC.style.display = panelC.style.display === 'block' ? 'none' : 'block';
+    searchC.value = '';
+    searchC.focus();
+    listC.querySelectorAll('li').forEach(li => li.style.display = '');
+  });
+
+  searchC.addEventListener('input', () => {
+    const q = searchC.value.toLowerCase();
+    listC.querySelectorAll('li').forEach(li => {
+      li.style.display = li.textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
+  });
+
+  listC.addEventListener('click', e => {
+    if (e.target.tagName === 'LI') {
+      textC.textContent = e.target.textContent;
+      hiddenC.value = e.target.dataset.id;
+      panelC.style.display = 'none';
+    }
+  });
+
+  document.addEventListener('click', e => {
+    if (!dropdownC.contains(e.target)) {
+      panelC.style.display = 'none';
+    }
+  });
+</script>
 <script>
   const abrirModalBtn = document.getElementById('abrirModal');
   const modal = document.getElementById('buscarModal');
@@ -530,20 +526,21 @@ label {
   fechaIniInput.addEventListener('change', actualizarEstado);
   fechaFinInput.addEventListener('change', actualizarEstado);
 
-    
-document.getElementById('contratoForm').addEventListener('submit', async function (e) {
-  e.preventDefault(); // Evita el envío tradicional
+
+  document.getElementById('contratoForm').addEventListener('submit', async function (e) {
+  e.preventDefault();
 
   const form = e.target;
 
-  // Obtenemos los valores
   const nroExpediente = document.getElementById('nro_expediente').value.trim();
-  const fechaIni = document.getElementById('id_fecha_ini').value.trim();
-  const fechaFin = document.getElementById('id_fecha_fin').value.trim();
-  let estado = document.getElementById('activo').value.trim();
-  const concesionario = document.getElementById('relacion_id_concesionario').value.trim();
+  const concesionarioText = document.getElementById('concesionarioText').textContent;
+  const tipoContratoText = document.getElementById('tipo_contrato').selectedOptions[0]?.text || '';
+  const fechaIni = document.getElementById('id_fecha_ini').value || '—';
+  const fechaFin = document.getElementById('id_fecha_fin').value || '—';
 
-  // Validaciones requeridas
+  const concesionario = document.getElementById('relacion_id_concesionario').value.trim();
+  let estado = document.getElementById('activo').value.trim();
+
   if (!nroExpediente || !concesionario) {
     Swal.fire({
       icon: 'warning',
@@ -553,24 +550,50 @@ document.getElementById('contratoForm').addEventListener('submit', async functio
     return;
   }
 
-  if (!fechaIni || !fechaFin ) {
-    estado = 'si'
+  if (!fechaIni || !fechaFin) {
+    estado = 'si';
   }
 
-  // Construimos los datos si pasa validación
+  /* ============================
+     CONFIRMACIÓN CON RESUMEN
+  ============================ */
+  const confirmacion = await Swal.fire({
+    title: '¿Confirmar creación del contrato?',
+    icon: 'question',
+    html: `
+      <div style="text-align:left; font-size:14px">
+        <p><strong>Expediente:</strong> ${nroExpediente}</p>
+        <p><strong>Concesionario:</strong> ${concesionarioText}</p>
+        <p><strong>Tipo de contrato:</strong> ${tipoContratoText}</p>
+        <p><strong>Fecha inicio:</strong> ${fechaIni}</p>
+        <p><strong>Fecha fin:</strong> ${fechaFin}</p>
+      </div>
+    `,
+    showCancelButton: true,
+    confirmButtonText: 'Sí, crear contrato',
+    cancelButtonText: 'Cancelar',
+    confirmButtonColor: '#2563eb',
+    cancelButtonColor: '#9ca3af'
+  });
+
+  if (!confirmacion.isConfirmed) {
+    return; // Usuario canceló
+  }
+
+  /* ============================
+     ENVÍO REAL DEL FORMULARIO
+  ============================ */
   const data = {
     relacion_id_concesionario: concesionario,
     nro_expediente: nroExpediente,
-    pago_cano: document.getElementById('pago_cano').checked,
-    //pago_regalias: document.getElementById('pago_regalias').checked,
-    opcion_compra : document.getElementById('opcion_compra').checked,
-    //explotacion: document.getElementById('id_explotacion').value,
+    tipo_contrato: document.getElementById('tipo_contrato').value,
+    pago_canon: document.getElementById('pago_canon').checked,
+    opcion_compra: document.getElementById('opcion_compra').checked,
     mineral_explotacion: document.getElementById('id_mineral_explotacion').value,
-    //exploracion: document.getElementById('id_exploracion').value,
-    //iia: document.getElementById('id_iia').value,
     activo: estado,
     fecha_ini: fechaIni,
-    fecha_fin: fechaFin
+    fecha_fin: fechaFin,
+    observaciones: document.getElementById('observaciones').value.trim()
   };
 
   try {
@@ -586,19 +609,33 @@ document.getElementById('contratoForm').addEventListener('submit', async functio
     const result = await response.json();
 
     if (response.ok) {
-      Swal.fire({
-        icon: 'success',
-        title: 'Contrato creado',
-        text: 'El contrato fue almacenado correctamente.'
-      });
-      form.reset();
+        // Notificación de Éxito tipo Toast
+        Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: 'success',
+            title: '¡Contrato creado con éxito!',
+            showConfirmButton: false,
+            timer: 4000,
+            timerProgressBar: true
+        });
+        form.reset();
+        // Opcional: limpiar iconos de validación y textos de expediente
+        document.getElementById('estado_expediente').innerHTML = '';
+        document.getElementById('info_expediente').value = '';
     } else {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Error al crear contrato',
-        text: result.error || 'Algo salió mal al guardar el contrato.'
-      });
+        // Notificación de Error tipo Toast
+        Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: 'warning',
+            title: 'Error',
+            text: result.error || 'Algo salió mal.',
+            showConfirmButton: false,
+            timer: 5000
+        });
     }
+
   } catch (error) {
     Swal.fire({
       icon: 'error',
@@ -608,76 +645,86 @@ document.getElementById('contratoForm').addEventListener('submit', async functio
   }
 });
 
-// Función para obtener el CSRF token desde la cookie
-function getCookie(name) {
-  let cookieValue = null;
-  if (document.cookie && document.cookie !== '') {
-    const cookies = document.cookie.split(';');
-    for (let cookie of cookies) {
-      cookie = cookie.trim();
-      if (cookie.startsWith(name + '=')) {
-        cookieValue = decodeURIComponent(cookie.slice(name.length + 1));
-        break;
+  // Función para obtener el CSRF token desde la cookie
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+      const cookies = document.cookie.split(';');
+      for (let cookie of cookies) {
+        cookie = cookie.trim();
+        if (cookie.startsWith(name + '=')) {
+          cookieValue = decodeURIComponent(cookie.slice(name.length + 1));
+          break;
+        }
       }
     }
+    return cookieValue;
   }
-  return cookieValue;
-}
 </script>
 
 
 <script>
-const nroExpedienteInput = document.getElementById('nro_expediente');
-const p = document.getElementById('estado_expediente');
-const info = document.getElementById('info_expediente');
-const tipo = document.getElementById('label_nro_expediente');
+  const nroExpedienteInput = document.getElementById('nro_expediente');
+  const p = document.getElementById('estado_expediente');
+  const pl = document.getElementById('EstadoMina');
+  const info = document.getElementById('info_expediente');
+  const tipo = document.getElementById('label_nro_expediente');
 
-nroExpedienteInput.addEventListener('input', async (e) => {
-  e.target.value = e.target.value.replace(/\D/g, '');
-  const nro = e.target.value;
+  nroExpedienteInput.addEventListener('input', async (e) => {
+    // 1. Limpiar caracteres no numéricos
+    e.target.value = e.target.value.replace(/\D/g, '');
+    const nro = e.target.value;
 
-  if (nro.length < 1) {
-    p.innerHTML = '';
-    p.title = '';
-    info.innerText = '';
-    tipo.innerText = 'Nro Expediente';
-    return;
-  }
-
-  try {
-    p.innerHTML = '<i class="fa fa-spinner fa-spin" style="color: #888;"></i>';
-    p.title = 'Verificando...';
-
-    const response = await fetch(`/verificar-expediente/${nro}/`);
-
-    if (response.status === 200 || response.status === 300) {
-      const expediente = await response.json();
-
-      if (response.status === 200) {
-        p.innerHTML = '<i class="fa fa-check-circle" style="color: green;"></i>';
-        p.title = 'Vigente';
-      } else {
-        p.innerHTML = '<i class="fa fa-archive" style="color: orange;"></i>';
-        p.title = 'Archivado';
-      }
-
-      info.innerText = `Nombre: ${expediente.nombre}`;
-      tipo.innerText = `Nro Expediente | ${expediente.tipo}`;
-
-    } else {
-      p.innerHTML = '<i class="fa fa-times-circle" style="color: red;"></i>';
-      p.title = 'No encontrado';
-      tipo.innerText = 'Nro Expediente | No existe';
+    // 2. Si está vacío, resetear TODO inmediatamente
+    if (nro.length < 1) {
+      p.innerHTML = '';
+      p.title = '-';
+      info.value = '';
+      pl.value = '';
+      tipo.value = 'Nro Expediente'; // Asumiendo que es un Label
+      return;
     }
 
-  } catch (error) {
-    console.error('Error en la consulta:', error);
-    p.innerHTML = '<i class="fa fa-exclamation-circle" style="color: red;"></i>';
-    p.title = 'Error de conexión';
-    tipo.innerText = 'Nro Expediente';
-    info.innerText = 'Error de conexión al servidor';
-  }
-});
+    try {
+      p.innerHTML = '<i class="fa fa-spinner fa-spin" style="color: #888;"></i>';
+      p.title = 'Verificando...';
+
+      const response = await fetch(`/verificar-expediente/${nro}/`);
+
+      if (response.status === 200 || response.status === 300) {
+        const expediente = await response.json();
+
+        // Determinar estado según el status code
+        if (response.status === 200) {
+          p.innerHTML = '<i class="fa fa-check-circle" style="color: green;"></i>';
+          p.title = 'Vigente';
+        } else {
+          p.innerHTML = '<i class="fa fa-archive" style="color: orange;"></i>';
+          p.title = 'Archivado';
+        }
+
+        // ACTUALIZACIÓN DE CAMPOS
+        info.value = expediente.nombre;
+        tipo.value = expediente.tipo; // Cambiado a innerText por seguridad
+        pl.value = p.title; // Aquí se asigna "Vigente" o "Archivado" al input oculto
+
+      } else {
+        // 3. Si el número no existe, limpiar los datos anteriores
+        p.innerHTML = '<i class="fa fa-times-circle" style="color: red;"></i>';
+        p.title = 'No encontrado';
+        tipo.value = 'No existe';
+        info.value = ' - ';
+        pl.value = 'No encontrado';
+      }
+
+    } catch (error) {
+      console.error('Error:', error);
+      p.innerHTML = '<i class="fa fa-exclamation-circle" style="color: red;"></i>';
+      p.title = 'Error de conexión';
+      info.value = 'Error al conectar';
+      pl.value = 'Error';
+    }
+  });
 </script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 

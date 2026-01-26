@@ -1,264 +1,816 @@
-{% extends 'contratos/home.html' %}
-  {% block head %}
-  <style>
-    
+{% extends "contratos/home.html" %}
+{% load static %}
+{% block head %}
+<style>
+  :root {
+    --sidebar-bg: #1f2937;
+    --sidebar-accent: #3b82f6;
+    --text-light: #f9fafb;
+    --text-muted: #9ca3af;
+    --hover-bg: rgba(59, 130, 246, 0.1);
+  }
 
-    .container {
-      max-width: 1200px;
-      width: 80%;
-      margin: 20px;
-      margin-left: 200px;
-      background: white;
-      padding: 2rem;
-      border-radius: 8px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    }
-    
-    .container.collapsed{
-      width: 90%;
-      margin-left: 50px;
-    }
-    h1 {
-      text-align: center;
-      margin-bottom: 1.5rem;
+  body {
+    margin: 0;
+    font-family: 'Segoe UI', sans-serif;
+    background: #f4f6f8;
+    display: flex;
+    height: 100vh;
+  }
+
+  .sidebar {
+    width: 250px;
+    background-color: var(--sidebar-bg);
+    color: var(--text-light);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: all 0.3s ease-in-out;
+    box-shadow: 2px 0 6px rgba(0, 0, 0, 0.1);
+  }
+
+  .sidebar .menu {
+    padding: 2rem 1rem;
+  }
+
+  .sidebar .menu .logo {
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin-bottom: 2.5rem;
+    text-align: center;
+    letter-spacing: 1px;
+    color: white;
+  }
+
+  .sidebar nav a {
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    color: var(--text-light);
+    padding: 0.75rem 1rem;
+    margin-bottom: 0.5rem;
+    border-radius: 8px;
+    transition: background 0.2s, color 0.2s;
+  }
+
+  .sidebar nav a:hover,
+  .sidebar nav a.active {
+    background-color: var(--hover-bg);
+    color: var(--sidebar-accent);
+  }
+
+  .sidebar nav a svg {
+    margin-right: 12px;
+    stroke-width: 1.8;
+  }
+
+  .user-footer {
+    padding: 1.2rem;
+    text-align: center;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    font-size: 0.95rem;
+    color: var(--text-muted);
+    background-color: #111827;
+  }
+
+  .main {
+    flex: 1;
+    padding: 2rem;
+    animation: fadeIn 0.4s ease;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
     }
 
-    input[type="text"] {
-      width: 100%;
-      padding: 0.6rem;
-      margin-bottom: 1rem;
-      border: 1px solid #ccc;
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @media (max-width: 768px) {
+    .sidebar {
+      position: fixed;
+      left: -100%;
+      height: 100vh;
+      z-index: 999;
+    }
+
+    .sidebar.open {
+      left: 0;
+    }
+
+    .toggle-btn {
+      position: fixed;
+      top: 1rem;
+      left: 1rem;
+      z-index: 1000;
+      background: var(--sidebar-accent);
+      color: white;
+      border: none;
+      padding: 0.6rem 1rem;
       border-radius: 6px;
+      cursor: pointer;
+      font-size: 1.2rem;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
     }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.9rem;
-    }
-
-    th, td {
-      padding: 0.75rem;
-      text-align: left;
-      border-bottom: 1px solid #ddd;
-    }
-
-    th {
-      background-color: #f2f2f2;
-      text-transform: uppercase;
-      font-weight: bold;
-    }
-
-    .true {
-      color: green;
-      font-weight: bold;
-    }
-
-    .false {
-      color: red;
-      font-weight: bold;
-    }
-
-    tr:hover {
-      background-color: #f5f5f5;
-    }
-    
-  
-   .detalle-row {
-    background-color: #f8f9fa;
   }
 
-  .detalle-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 10px;
-    padding: 10px;
-    font-size: 0.95em;
+  .table-container {
+    background: #fff;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+    transition: transform 0.3s ease;
   }
 
-  .detalle-grid div {
-    padding: 5px;
-    background-color: #ffffff;
-    border-radius: 6px;
-    box-shadow: 0 0 3px rgba(0, 0, 0, 0.1);
+  .table-container:hover {
+    transform: translateY(-3px);
   }
 
-  </style>
+  .table-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
 
-  <style>
-.pagination {
+  .table-header h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+  }
+
+  .add-btn {
+    background-color: #004080;
+    color: white;
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background 0.3s ease;
+  }
+
+  .add-btn:hover {
+    background-color: #002a55;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 0.5rem;
+  }
+
+  th,
+  td {
+    padding: 1rem;
+    font-size: 0.8rem;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+  }
+
+  th {
+    background-color: #f0f2f5;
+    font-weight: 600;
+  }
+  .actions {
   display: flex;
-  justify-content: center;
   align-items: center;
-  gap: 1rem;
-  margin-top: 1rem;
+  justify-content: flex-end;
+  gap: -1px;
+}
+  .actions button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.1rem;
+    color: #555;
+    transition: color 0.2s ease;
+  }
+  .actions button,
+.actions .tooltip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+}
+.actions i {
+  font-size: 1.1rem;
+  line-height: 1;
+}
+  .actions button:hover {
+    color: #004080;
+  }
+
+  .actions .fa-trash:hover {
+    color: #c0392b;
+  }
+
+  @media (max-width: 600px) {
+
+    th,
+    td {
+      padding: 0.6rem;
+    }
+  }
+
+  .pagination {
+    margin-top: 1.5rem;
+    text-align: center;
+  }
+
+  .pagination a,
+  .pagination span {
+    display: inline-block;
+    margin: 0 6px;
+    padding: 8px 12px;
+    border-radius: 4px;
+    color: #004080;
+    text-decoration: none;
+    border: 1px solid #ddd;
+  }
+
+  .pagination a:hover {
+    background-color: #e0ecff;
+  }
+
+  .pagination span {
+    background-color: #004080;
+    color: white;
+    font-weight: bold;
+  }
+
+  .no-data {
+    text-align: center;
+    color: #888;
+    padding: 20px;
+  }
+
+  .subtable {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+  }
+
+  .subtable th,
+  .subtable td {
+    padding: 5px;
+    border: 1px solid #ddd;
+    text-align: center;
+  }
+
+  .detail-row {
+    background-color: #f9f9f9;
+  }
+
+  a i {
+    color: #111827;
+  }
+
+  .btn-pdf {
+    display: inline-block;
+    padding: 10px 20px;
+    background-color: #003366;
+    /* azul oscuro */
+    color: white;
+    font-weight: bold;
+    border-radius: 6px;
+    text-decoration: none;
+    transition: background 0.3s ease;
+  }
+
+  .btn-pdf:hover {
+    background-color: #0055a5;
+  }
+  .detail-row {
+  animation: fadeIn 0.25s ease-in-out;
+}
+.detail-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  padding: 16px;
+  background-color: #f8fafc;
+  border-radius: 10px;
 }
 
-.pagination button {
-  padding: 5px 10px;
+.detail-field {
+  display: flex;
+  flex-direction: column;
 }
+
+.detail-field label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+}
+
+.detail-field input,
+.detail-field textarea {
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  background-color: #f1f5f9;
+  font-size: 0.85rem;
+  color: #111827;
+}
+
+.detail-field input:disabled,
+.detail-field textarea:disabled {
+  cursor: not-allowed;
+}
+
+.detail-field textarea {
+  resize: none;
+}
+
+/* observaciones ocupa todo el ancho */
+.detail-field.full-width {
+  grid-column: 1 / -1;
+}
+.modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(17, 24, 39, 0.6);
+  z-index: 2000;
+}
+
+.modal-content {
+  background: #fff;
+  margin: 2% auto;
+  border-radius: 12px;
+  max-width: 800px;
+  animation: fadeIn 0.3s ease;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.25);
+}
+
+.modal-lg {
+  width: 90%;
+}
+
+.modal-header {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 1.3rem;
+}
+
+.modal-header .close {
+  font-size: 1.6rem;
+  cursor: pointer;
+  color: #6b7280;
+}
+
+.modal-body {
+  padding: 1.5rem;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 18px;
+}
+
+.detail-item label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #6b7280;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+  display: block;
+}
+
+.detail-value {
+  padding: 8px 10px;
+  background: #f1f5f9;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  color: #111827;
+}
+
+.detail-box {
+  padding: 12px;
+  background: #f1f5f9;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  min-height: 80px;
+  white-space: pre-wrap;
+}
+
+.full-width {
+  grid-column: 1 / -1;
+}
+
+/* ICONOS BOOLEANOS */
+.status-true {
+  color: #16a34a;
+  font-weight: bold;
+}
+
+.status-false {
+  color: #dc2626;
+  font-weight: bold;
+}
+
+.warning-icon {
+  color: #f59e0b; /* amarillo ámbar */
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+.warning-icon:hover {
+  color: #d97706;
+}
+
+.tooltip {
+  position: relative;
+  display: inline-block;
+}
+
+.tooltip .tooltip-text {
+  visibility: hidden;
+  width: 260px;
+  background-color: #111827;
+  color: #f9fafb;
+  text-align: left;
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  position: absolute;
+  z-index: 3000;
+  bottom: 130%;
+  left: 50%;
+  transform: translateX(-50%);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+}
+
+.tooltip:hover .tooltip-text {
+  visibility: visible;
+  opacity: 1;
+}
+
+.tooltip-text ul {
+  padding-left: 18px;
+  margin: 0;
+}
+
+.tooltip-text li {
+  margin-bottom: 4px;
+}
+/* ==============================
+   CARD DE INFO DE REGISTRO
+============================== */
+.registro-info {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    margin: 20px auto;
+    padding: 12px 20px;
+    background-color: #f8fafc; /* Azul grisáceo muy claro */
+    border: 1px dashed #cbd5e1;
+    border-radius: 10px;
+    max-width: fit-content; /* Se ajusta al contenido */
+}
+
+.info-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    color: #64748b;
+}
+
+.info-item i {
+    color: #2563eb;
+    font-size: 1rem;
+}
+
+.info-item strong {
+    color: #334155;
+}
+
+.registro-info {
+    display: flex;
+    justify-content: space-around; /* Cambiado para distribuir mejor en el modal */
+    gap: 20px;
+    margin: 10px auto;
+    padding: 10px 15px;
+    background-color: #f8fafc;
+    border: 1px dashed #cbd5e1;
+    border-radius: 10px;
+    width: 100%; /* Que ocupe el ancho del modal */
+    box-sizing: border-box;
+}
+
 </style>
+
 {% endblock %}
 
+{% block content %}
 
+<aside class="main">
+  <div class="table-container">
 
+    <!-- HEADER -->
+    <div class="table-header">
+      <h2>Contratos</h2>
+      <a class="add-btn" href="{% url 'contratos' %}">
+        <i class="fa fa-plus"></i> Nuevo Contrato
+      </a>
+    </div>
 
-  {% block content %}
-      <div class="container" id="cards">
-          <h1>Lista de Contratos</h1>
+    <!-- TABLA -->
+    <table>
+      <thead>
+        <tr>
+          <th>Expediente</th>
+          <th>Nombre</th>
+          <th>Concesionario (Dueño)</th>
+          <th>Tipo de Contrato</th>
+          <th>Por Contrato</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in contratos %}
+        <tr>
+          <td>{{ c.expediente }}</td>
+          <td>{{ c.nombre_exp }}</td>
+          <td>{{ c.concesionario }}</td>
+          <td>
+            <strong>{{ c.tipo.contratos_nombre }}</strong>
+          </td>
+          <td>{{ c.concesionario_nombre }}</td>
+          <td class="text-center">
+            {% if c.activo %}
+              <span style="color: green; font-weight: bold;">✔</span>
+            {% else %}
+              <span style="color: red; font-weight: bold;">✖</span>
+            {% endif %}
+          </td>
+          <td class="actions">
+            {% if not c.mineral_explotacion or not c.fecha_ini or not c.fecha_fin %}
+    <span class="tooltip">
+      <i class="fa fa-exclamation-triangle warning-icon"></i>
+      <span class="tooltip-text">
+        <strong>Advertencias</strong>
+        <ul>
+          {% if not c.mineral_explotacion %}
+            <li>Falta mineral</li>
+          {% endif %}
+          {% if not c.fecha_ini %}
+            <li>Falta fecha de inicio</li>
+          {% endif %}
+          {% if not c.fecha_fin %}
+            <li>Falta fecha de caducidad</li>
+          {% endif %}
+        </ul>
+      </span>
+    </span>
+  {% endif %}
+            <button title="Ver detalles" onclick="openDetailModal(
+              '{{ c.expediente|escapejs }}',
+              '{{ c.nombre_exp|escapejs }}',
+              '{{ c.concesionario|escapejs }}',
+              '{{ c.concesionario_nombre|escapejs }}',
+              '{{ c.mineral_explotacion|escapejs }}',
+              '{{ c.fecha_ini|escapejs }}',
+              '{{ c.fecha_fin|escapejs }}',
+              '{{ c.tipo.contratos_nombre|escapejs }}',
+              {{ c.activo|yesno:"true,false" }},
+              {{ c.paga_canon|yesno:"true,false" }},
+              {{ c.opcion_compra|yesno:"true,false" }},
+              '{{ c.observaciones|default:""|escapejs }}',
+              '{{ c.createby|default:""|escapejs }}',
+              '{{ c.updateby|default:""|escapejs }}',
+              '{{ c.createdate|date:"d/m/Y" }}',
+              '{{ c.updatedate|date:"d/m/Y" }}'
+            )">
+              <i data-lucide="info">!</i>
+            </button>
+            <a title="Editar" href="{% url 'edit_contrato' c.id %}"
+                '{{ c.id }}',
+                '{{ c.expediente|escapejs }}',
+                '{{ c.tipo|escapejs }}'
+              )">
+              <i data-lucide="pencil"></i>
+            </a>
+            
+          </td>
           
-          <input type="text" id="searchInput" placeholder="Buscar por ID, concesionario, mineral...">
-          
-          <table id="contractsTable">
-              <thead>
-                  <tr>
-                      <th>ID</th>
-                      <th>Exp</th>
-                      <th>Nombre</th>
-                      <th>Tipo</th>
-                      <th>Concesionario</th>
-                      <th>Can</th>
-                      <th>Reg</th>
-                      <th>Comp</th>
-                      <th>activo</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for contrato in contratos %}
-                      <tr>
-                        <td>{{ contrato.id }}</td>
-                        <td>{{ contrato.nro_expediente }}</td>
-                        <td>{{ contrato.nro_expediente }}</td>
-                        <td>{{ contrato.nro_expediente }}</td>
-                        <td>{{ contrato.relacion_id_concesionario }}</td>
-                        <td class="{{ contrato.pago_cano|yesno:'true,false' }}">{{ contrato.pago_cano|yesno:'✔️,❌' }}</td>
-                        <td class="{{ contrato.pago_regalias|yesno:'true,false' }}">{{ contrato.pago_regalias|yesno:'✔️,❌' }}</td>
-                        <td class="{{ contrato.opcion_compra|yesno:'true,false' }}">{{ contrato.opcion_compra|yesno:'✔️,❌' }}</td>
-                        <td class="{{ contrato.activo|yesno:'true,false' }}">{{ contrato.activo|yesno:'✔️,❌' }}</td>
-                        <td>
-                          <button class="btn btn-sm btn-primary" onclick="toggleDetails({{ contrato.id }})">Detalles</button>
-                        </td>
-                      </tr>
+        </tr>
+    
+        {% empty %}
+        <tr>
+          <td colspan="6" class="no-data">
+            No hay contratos registrados
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
 
-                      <tr id="detalle-{{ contrato.id }}" class="detalle-row" style="display: none;">
-                      <td colspan="8">
-                        <div class="detalle-grid">
-                          <div><strong>Explotación:</strong> {{ contrato.explotacion }}</div>
-                          <div><strong>Mineral Explotación:</strong> {{ contrato.mineral_explotacion }}</div>
-                          <div><strong>Exploración:</strong> {{ contrato.exploracion }}</div>
-                          <div><strong>IIA:</strong> {{ contrato.iia }}</div>
-                          <div><strong>Fecha Inicio:</strong> {{ contrato.fecha_ini }}</div>
-                          <div><strong>Fecha Fin:</strong> {{ contrato.fecha_fin }}</div>
-                        </div>
-                      </td>
-                    </tr>
-                      {% empty %}
-                      <tr><td colspan="8">No hay contratos registrados.</td></tr>
-                      {% endfor %}
-                </tbody>
-            </table>
-            <div id="paginationControls" class="pagination">
-  <button onclick="cambiarPagina(-1)">Anterior</button>
-  <span id="currentPageInfo"></span>
-  <button onclick="cambiarPagina(1)">Siguiente</button>
-</div>
+  </div>
+</aside>
+<div id="detailModal" class="modal">
+  <div class="modal-content modal-lg">
+
+    <div class="modal-header">
+      <h3>Detalle del Contrato</h3>
+      <span class="close" onclick="closeDetailModal()">&times;</span>
+    </div>
+
+    <div class="modal-body">
+
+      <div class="detail-grid">
+
+        <div class="detail-item">
+          <label>Expediente</label>
+          <div class="detail-value" id="dExpediente"></div>
         </div>
+
+        <div class="detail-item">
+          <label>Nombre Mina</label>
+          <div class="detail-value" id="dNombre"></div>
+        </div>
+
+        <div class="detail-item">
+          <label>Concesionario (Dueño)</label>
+          <div class="detail-value" id="dConcesionario"></div>
+        </div>
+
+        <div class="detail-item">
+          <label>Tipo de Contrato</label>
+          <div class="detail-value" id="dTipo"></div>
+        </div>
+
+        <div class="detail-item">
+          <label>Concesionario (Por Contrato)</label>
+          <div class="detail-value" id="dConcesionario_nombre"></div>
+        </div>
+
+        <!-- BOOLEANO CON ICONOS -->
+        <div class="detail-item">
+          <label>Estado</label>
+          <div class="detail-value" id="dEstado"></div>
+        </div>
+
+        <div class="detail-item">
+          <label>Mineral</label>
+          <div class="detail-value" id="dMineral"></div>
+        </div>
+        
+        <div class="detail-item">
+          <label>Inicio</label>
+          <div class="detail-value" id="dFechaInicio"></div>
+        </div>
+
+        <div class="detail-item">
+          <label>Fin</label>
+          <div class="detail-value" id="dFechaFin"></div>
+        </div>
+
+        <div class="detail-item">
+          <label>Abona Canon</label>
+          <div class="detail-value" id="dCanon"></div>
+        </div>
+
+        <div class="detail-item">
+          <label>Opcion de Compra</label>
+          <div class="detail-value" id="dCompra"></div>
+        </div>
+
+        <!-- OBSERVACIONES FULL -->
+        <div class="detail-item full-width">
+          <label>Observaciones</label>
+          <div class="detail-box" id="dObservaciones"></div>
+        </div>
+        <div class="full-width">
+  <div class="registro-info" style="margin-bottom: 10px;">
+    <div class="info-item">
+      <i class="fa fa-user-plus"></i>
+      <span><strong>Creado por:</strong> <span id="dCreateBy"></span></span>
+    </div>
+    <div class="info-item">
+      <i class="fa fa-calendar-check-o"></i>
+      <span><strong>Fecha Creación:</strong> <span id="dCreateDate"></span></span>
+    </div>
+  </div>
+
+  <div class="registro-info" id="updateCard" style="display: none;">
+    <div class="info-item">
+      <i class="fa fa-pencil-square-o"></i>
+      <span><strong>Última mod.:</strong> <span id="dUpdateBy"></span></span>
+    </div>
+    <div class="info-item">
+      <i class="fa fa-calendar"></i>
+      <span><strong>Fecha mod.:</strong> <span id="dUpdateDate"></span></span>
+    </div>
+  </div>
+</div>
+
+      </div>
+
+    </div>
+  </div>
+</div>
+
 {% endblock %}
 
+{% block script %}
+<script>
+  function openDetailModal(expediente, nombre, concesionario, concesionario_nombre , mineral_explotacion  ,fecha_ini, fecha_fin, tipo, activo,  paga_canon , opcion_compra, observaciones, createby, updateby, createdate, updatedate) {
 
+    document.getElementById("dExpediente").innerText = expediente;
+    document.getElementById("dNombre").innerText = nombre;
+    document.getElementById("dConcesionario").innerText = concesionario;
+    document.getElementById("dConcesionario_nombre").innerText = concesionario_nombre;
+    document.getElementById("dMineral").innerText = mineral_explotacion || "Sin Especificar";
+    document.getElementById("dTipo").innerText = tipo || "Sin Especificar";
+    document.getElementById("dFechaInicio").innerText = fecha_ini || "Sin Especificar";
+    document.getElementById("dFechaFin").innerText = fecha_fin || "Sin Especificar";
 
-  {% block script %}
-  <script>
-let paginaActual = 1;
-let totalPaginas = 1;
+    // CORRECCIÓN: Evaluación estricta de booleanos
+    // Usamos el valor booleano directo que viene de {{ c.paga_canon|yesno:"true,false" }}
+    
+    document.getElementById("dCanon").innerHTML = (paga_canon === true || paga_canon === "true")
+        ? '<i class="fa fa-check-circle status-true"></i> Si Paga'
+        : '<i class="fa fa-times-circle status-false"></i> No Paga';
 
-function buscarContratos(pagina = 1) {
-  const query = document.getElementById('searchInput').value;
+    document.getElementById("dCompra").innerHTML = (opcion_compra === true || opcion_compra === "true")
+        ? '<i class="fa fa-check-circle status-true"></i> Si'
+        : '<i class="fa fa-times-circle status-false"></i> No';
 
-  fetch(`?q=${encodeURIComponent(query)}&page=${pagina}`, {
-    headers: {
-      'X-Requested-With': 'XMLHttpRequest'
-    }
-  })
-  .then(response => response.json())
-  .then(data => {
-    const tbody = document.getElementById('contractsBody');
-    tbody.innerHTML = '';
+    document.getElementById("dEstado").innerHTML = (activo === true || activo === "true")
+        ? '<i class="fa fa-check-circle status-true"></i> Activo'
+        : '<i class="fa fa-times-circle status-false"></i> Inactivo';
 
-    if (data.contratos.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="7">No se encontraron resultados.</td></tr>';
+    document.getElementById("dObservaciones").innerText = observaciones || "Sin observaciones";
+    document.getElementById("dCreateBy").innerText = createby || "Sistema";
+    document.getElementById("dCreateDate").innerText = createdate || "—";
+    
+    const updateCard = document.getElementById("updateCard");
+    if (updateby && updateby !== "Sin modificaciones" && updateby !== "None" && updateby !== "") {
+        document.getElementById("dUpdateBy").innerText = updateby;
+        document.getElementById("dUpdateDate").innerText = updatedate || "—";
+        updateCard.style.display = "flex";
     } else {
-      data.contratos.forEach(c => {
-        tbody.innerHTML += `
-          <tr>
-            <td>${c.id}</td>
-            <td>${c.nro_expediente}</td>
-            <td>${c.concesionario}</td>
-            <td>${c.pago_cano ? '✔️' : '❌'}</td>
-            <td>${c.pago_regalias ? '✔️' : '❌'}</td>
-            <td>${c.opcion_compra ? '✔️' : '❌'}</td>
-            <td>${c.activo ? '✔️' : '❌'}</td>
-          </tr>
-        `;
-      });
+        updateCard.style.display = "none";
     }
 
-    // Actualizar controles de paginación
-    paginaActual = data.current_page;
-    totalPaginas = data.num_pages;
-    actualizarControlesPaginacion();
-  });
-}
-
-function actualizarControlesPaginacion() {
-  const pageInfo = document.getElementById('currentPageInfo');
-  pageInfo.textContent = `Página ${paginaActual} de ${totalPaginas}`;
-
-  document.querySelector("#paginationControls button:first-child").disabled = (paginaActual === 1);
-  document.querySelector("#paginationControls button:last-child").disabled = (paginaActual === totalPaginas);
-}
-
-function cambiarPagina(offset) {
-  const nuevaPagina = paginaActual + offset;
-  if (nuevaPagina >= 1 && nuevaPagina <= totalPaginas) {
-    buscarContratos(nuevaPagina);
+    document.getElementById("detailModal").style.display = "block";
   }
-}
+  function closeDetailModal() {
+    document.getElementById("detailModal").style.display = "none";
+  }
 
-// Buscar automáticamente al cargar
-document.addEventListener('DOMContentLoaded', () => {
-  buscarContratos();
-});
-</script>
-  <script>
-  function toggleDetails(id) {
-    const row = document.getElementById('detalle-' + id);
-    if (row.style.display === 'none') {
-      row.style.display = 'table-row';
-    } else {
-      row.style.display = 'none';
+  window.onclick = function(e) {
+    if (e.target.id === "detailModal") {
+      closeDetailModal();
     }
   }
 </script>
-  <script>
-      const searchInput = document.getElementById("searchInput");
-      const tableRows = document.querySelectorAll("#contractsTable tbody tr:not(.detalle-row)");
-      
-      searchInput.addEventListener("keyup", function() {
-          const query = searchInput.value.toLowerCase();
-          tableRows.forEach(row => {
-    const text = row.textContent.toLowerCase();
-    const visible = text.includes(query);
-    row.style.display = visible ? "" : "none";
+<script>
+  /* CREATE */
+  function openCreateModal() {
+    document.getElementById("createModal").style.display = "block";
+  }
+  function closeCreateModal() {
+    document.getElementById("createModal").style.display = "none";
+  }
 
-    // Ocultar también su fila de detalle si existe
-    const detalleRow = document.getElementById(`detalle-${row.children[0]?.textContent.trim()}`);
-    if (detalleRow) {
-        detalleRow.style.display = visible ? "none" : "none";  // siempre ocultar al filtrar
+  /* EDIT */
+  function openEditModal(id, expediente, tipo) {
+    document.getElementById("editModal").style.display = "block";
+    document.getElementById("editExpediente").value = expediente;
+    document.getElementById("editTipo").value = tipo;
+    document.getElementById("editForm").action = `/contratos/${id}/editar/`;
+  }
+  function closeEditModal() {
+    document.getElementById("editModal").style.display = "none";
+  }
+
+  /* CLICK FUERA */
+  window.onclick = function (e) {
+    if (e.target.classList.contains("modal")) {
+      e.target.style.display = "none";
     }
-});
-        });
-        </script>
-
-
+  }
+</script>
 {% endblock %}

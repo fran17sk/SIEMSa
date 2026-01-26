@@ -7,6 +7,7 @@ from django.views.generic import ListView
 from django.contrib import messages
 from .forms import ContratosForm
 from django.http import JsonResponse
+import re
 from .models import *
 from .models_catastro import *
 from .models_simsa import *
@@ -1986,69 +1987,103 @@ def contratos_view(request):
         if request.user.es_asuntos_legales:
             raise PermissionDenied
         form = ContratosForm()
+        tipos_contrato = TipoContratos.objects.using('catastro')
         concesionarios = Concesionarios.objects.using('catastro').all().order_by('concesionario')
-        return render(request, 'contratos/new.html', {'form': form , 'concesionarios':concesionarios})
+        return render(request, 'contratos/new.html', {'form': form , 'concesionarios':concesionarios , 'tipos_contrato':tipos_contrato})
 
+
+
+def limpiar_texto(valor):
+    if not valor:
+        return valor
+
+    # elimina { } " '
+    valor = re.sub(r'[{}"\']', '', valor)
+
+    # colapsa espacios múltiples
+    valor = re.sub(r'\s+', ' ', valor).strip()
+
+    return valor
 def lista_contratos(request):
-    print('actualizando estados')
+    contratos = Contratos.objects.using('catastro').all().order_by('-createdate')
 
-    today = timezone.now().date()
+    # --- Catastro: Canteras / Cateos / Minas
+    canteras = {
+        c.expediente: c
+        for c in CanteraCateoMina.objects.using("catastro").all()
+    }
 
-    # Contratos vigentes → activo = True
-    Contratos.objects.using('catastro').filter(
-        fecha_ini__lte=today,
-        fecha_fin__gte=today
-    ).update(activo=True)
+    # --- Catastro: Grupos Mineros
+    grupos = {
+        g.expediente: g
+        for g in GrupoMinero.objects.using("catastro").all()
+    }
 
-    # Contratos no vigentes → activo = False
-    Contratos.objects.using('catastro').exclude(
-        fecha_ini__lte=today,
-        fecha_fin__gte=today
-    ).update(activo=False)
+    concesionarios = {
+        c.id: c.concesionario
+        for c in Concesionarios.objects.using("catastro").all()
+    }
+    
+    for c in contratos:
+        data = canteras.get(c.expediente)
 
-    search = request.GET.get('q', '').strip()
-    page_number = request.GET.get('page', 1)
+        if data:
+            c.nombre_exp = data.nombre
+            c.concesionario = limpiar_texto(data.concesionario)
+            c.tipo_exp = data.tipo or data.jerarquia
 
-    # Queryset base (AJUSTADO AL MODELO REAL)
-    contratos = Contratos.objects.using('catastro').all()
+        else:
+            grupo = grupos.get(c.expediente)
+            if grupo:
+                c.nombre_exp = grupo.nombre
+                c.concesionario = limpiar_texto(grupo.concesionario)
+                c.tipo_exp = "Grupo Minero"
+            else:
+                c.nombre_exp = "No encontrado"
+                c.concesionario = "-"
+                c.tipo_exp = "-"
+         # 🔹 CONCESIONARIO DESDE ID
+        if c.id_concesionario:
+            c.concesionario_nombre = limpiar_texto(
+                concesionarios.get(c.id_concesionario, "No encontrado")
+            )
+        else:
+            c.concesionario_nombre = "-"
+    return render(
+        request,
+        "contratos/list.html",
+        {"contratos": contratos}
+    )
 
-    # Búsqueda
-    if search:
-        contratos = contratos.filter(
-            Q(id_concesionario__icontains=search) |
-            Q(id__icontains=search) |
-            Q(expediente__icontains=search)
-        )
-
-    paginator = Paginator(contratos, 10)
-    page_obj = paginator.get_page(page_number)
-
-    # Respuesta AJAX
-    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-        data = []
-        for contrato in page_obj:
-            data.append({
-                'id': contrato.id,
-                'expediente': contrato.expediente or '',
-                'concesionario': contrato.id_concesionario,
-                'paga_canon': contrato.paga_canon,
-                'opcion_compra': contrato.opcion_compra,
-                'activo': contrato.activo,
-                'fecha_ini': contrato.fecha_ini.strftime('%Y-%m-%d') if contrato.fecha_ini else '',
-                'fecha_fin': contrato.fecha_fin.strftime('%Y-%m-%d') if contrato.fecha_fin else '',
-            })
-
-        return JsonResponse({
-            'contratos': data,
-            'num_pages': paginator.num_pages,
-            'current_page': page_obj.number,
-        })
-
-    # Render normal
-    return render(request, 'contratos/list.html', {
-        'contratos': page_obj,
-        'search': search,
+def tipos_contratos_list(request):
+    tipos = TipoContratos.objects.using('catastro').all()
+    return render(request, "contratos/tipos_contratos_list.html", {
+        "tipos": tipos
     })
+
+
+@require_POST
+def tipos_contratos_create(request):
+    nombre = request.POST.get("contratos_nombre")
+    if nombre:
+        TipoContratos.objects.using('catastro').create(contratos_nombre=nombre)
+    return redirect("tipos_contratos_list")
+
+
+@require_POST
+def tipos_contratos_update(request, pk):
+    tipo = get_object_or_404(
+        TipoContratos.objects.using('catastro'),
+        pk=pk
+    )
+
+    nombre = request.POST.get("contratos_nombre")
+
+    if nombre:
+        tipo.contratos_nombre = nombre
+        tipo.save(using='catastro')
+
+    return redirect("tipos_contratos_list")
 
 def str_to_bool(value):
     if isinstance(value, bool):
@@ -2058,33 +2093,108 @@ def str_to_bool(value):
     return False
 
 def crear_contrato(request):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+    try:
+        data = json.loads(request.body)
+
+        activo = str(data.get('activo', '')).lower() == 'si'
+
+        contrato = Contratos.objects.using('catastro').create(
+            # 🔴 OBLIGATORIO
+            id_concesionario=str(data.get('relacion_id_concesionario')),
+
+            expediente=int(data['nro_expediente']) if data.get('nro_expediente') else None,
+
+            # 🔴 FK
+            tipo_id=int(data['tipo_contrato']),
+
+            observaciones=data.get('observaciones', ''),
+
+            activo=activo,
+
+            fecha_ini=data.get('fecha_ini') or None,
+            fecha_fin=data.get('fecha_fin') or None,
+
+            # 🔴 BOOLEANO OBLIGATORIO
+            paga_canon=bool(data.get('pago_canon', False)),
+            opcion_compra=bool(data.get('opcion_compra', False)),
+
+            # 🔴 NO puede ser None
+            mineral_explotacion=data.get('mineral_explotacion', ''),
+
+            createby=request.user.username,
+            createdate=now().date()
+        )
+
+        return JsonResponse({
+            'message': 'Contrato creado correctamente',
+            'id': contrato.id
+        }, status=201)
+
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)
+    
+
+def edit_contrato(request, id):
+    # 1. Obtener el contrato base
+    contrato = get_object_or_404(Contratos.objects.using('catastro'), id=id)
+
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
-
-            # Manejo de booleano 'activo'
-            activo = str(data.get('activo', '')).lower() == 'si'
-
-            contrato = Contratos.objects.using('catastro').create(
-                expediente=data.get('nro_expediente'),
-                id_concesionario=data.get('relacion_id_concesionario'),
-                paga_canon=data.get('pago_cano', False),
-                opcion_compra=data.get('opcion_compra', False),
-                mineral_explotacion=data.get('mineral_explotacion'),
-                activo=activo,
-                fecha_ini=data.get('fecha_ini') or None,
-                fecha_fin=data.get('fecha_fin') or None,
-                createby=data.get('createby', 'Cargador'),  # se setea "a mano"
-                createdate=data.get('createdate') or timezone.now().date()  # se setea "a mano"
-            )
-
-            return JsonResponse({'message': 'Contrato creado correctamente', 'id': contrato.id}, status=201)
-
+            # Actualizar campos
+            contrato.id_concesionario = data.get('relacion_id_concesionario')
+            contrato.tipo_id = data.get('tipo_contrato')
+            contrato.paga_canon = data.get('paga_canon')
+            contrato.opcion_compra = data.get('opcion_compra')
+            contrato.mineral_explotacion = data.get('mineral_explotacion')
+            contrato.activo = True if data.get('activo') == 'si' else False
+            contrato.fecha_ini = data.get('fecha_ini') if data.get('fecha_ini') else None
+            contrato.fecha_fin = data.get('fecha_fin') if data.get('fecha_fin') else None
+            contrato.observaciones = data.get('observaciones')
+            contrato.updateby = request.user.username
+            contrato.updatedate = now().date()
+            
+            # Guardar (especificando la base de datos)
+            contrato.save(using='catastro')
+            return JsonResponse({'status': 'success'})
         except Exception as e:
-            return JsonResponse({'error': str(e)}, status=400)
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
 
-    return JsonResponse({'error': 'Método no permitido'}, status=405)
+    # 2. Lógica para obtener datos del expediente (igual que en tu lista)
+    data_exp = CanteraCateoMina.objects.using("catastro").filter(expediente=contrato.expediente).first()
+    
+    if data_exp:
+        contrato.nombre_exp = data_exp.nombre
+        contrato.tipo_exp = data_exp.tipo 
+    else:
+        grupo = GrupoMinero.objects.using("catastro").filter(expediente=contrato.expediente).first()
+        
+        if grupo:
+            contrato.nombre_exp = grupo.nombre
+            contrato.tipo_exp = "Grupo Minero"
+        else:
+            contrato.nombre_exp = "No encontrado"
+            contrato.tipo_exp = "-"
 
+    # 3. Obtener el nombre del concesionario relacionado por ID
+    if contrato.id_concesionario:
+        conc = Concesionarios.objects.using("catastro").filter(id=contrato.id_concesionario).first()
+        contrato.concesionario_nombre = conc.concesionario if conc else "No encontrado"
+    else:
+        contrato.concesionario_nombre = "Seleccione concesionario"
+
+    # 4. Datos para los selects
+    tipos_contrato = TipoContratos.objects.using('catastro').all()
+    todos_concesionarios = Concesionarios.objects.using('catastro').all()
+
+    return render(request, "contratos/edit_contrato.html", {
+        "contrato": contrato,
+        "tipos_contrato": tipos_contrato,
+        "concesionarios": todos_concesionarios
+    })
 
 def consultar_contratos_por_expediente(request):
     expediente = request.GET.get('expediente', '').strip()

@@ -344,29 +344,29 @@
       </a>
       {% if request.user.groups.first.name == "Administrador" or request.user.groups.first.name == "Publicador" %}
         {% endif %}
-        <a href="{% url 'exportacion' %}"
-          class="{% if request.resolver_match.url_name == 'exportaciones' %}active{% endif %}" title="Exportaciones">
-          <i data-lucide="truck"></i> <span>Exportaciones</span>
-        </a>
         
         
         <a href="{% url 'contratos' %}" class="{% if request.resolver_match.url_name == 'contratos' %}active{% endif %}"
-        title="Minerales">
-        <i data-lucide="handshake"></i> <span>Contratos</span>
+        title="Nuevo Contrato">
+         <i data-lucide="plus"></i><span>Nuevo Contrato</span>
       </a>
-      <a href="{% url 'proveedores' %}" class="{% if request.resolver_match.url_name == 'proveedores' %}active{% endif %}"
+
+
+
+      <a href="{% url 'lista_contratos' %}"
+          class="{% if request.resolver_match.url_name == 'lista_contratos' %}active{% endif %}" title="Lista de Contratos">
+          <i data-lucide="handshake"></i> <span>Lista de Contratos</span>
+        </a>
         
-        title="Minerales">
-        <i data-lucide="truck"></i> <span>Proveedores</span>
+        <a href="{% url 'tipos_contratos_list' %}" class="{% if request.resolver_match.url_name == 'tipos_contratos_list' %}active{% endif %}"
+        title="Tipos Contratos">
+         <i data-lucide="list"></i><span>Tipos Contratos</span>
       </a>
+      
       {% if request.user.groups.first.name == "Administrador" or request.user.groups.first.name == "Publicador" %}
         {% endif %}
         <!-- Nueva sección Administración -->
         {% if request.user.groups.first.name == "Administrador" %}
-        <a href="{% url 'administration' %}"
-        class="{% if request.resolver_match.url_name == 'administration' %}active{% endif %}" title="Administración">
-        <i data-lucide="settings"></i> <span>Administración</span>
-      </a>
       
       {% endif %}
       
@@ -383,7 +383,7 @@
     </div>
   </aside>
 
-  <div style="flex: 1;">
+<main class="main">
     
     
     
@@ -391,7 +391,7 @@
   {% endblock %}
 
 
-  </div>
+</main>
   
 <script>
   function toggleSidebar() {

@@ -12,6 +12,12 @@
       font-weight: 700;
       color: #1a202c;
     }
+    .main {
+      flex: 1;
+      padding: 2rem;
+      overflow-y: auto;
+      animation: fadeIn 0.4s ease;
+    }
 
     /* Contenedor de las cards */
     .card-container {
@@ -131,7 +137,6 @@
       background: #f4f6f8;
       display: flex;
       height: 100vh;
-      overflow: hidden;
     }
 
     .sidebar {
@@ -263,7 +268,6 @@
     .sidebar.collapsed .logo {
       font-size: 0;
       height: 40px;
-      overflow: hidden;
       margin-bottom: 2rem;
     }
 
@@ -383,7 +387,7 @@
     </div>
   </aside>
 
-  <div style="flex: 1;">
+  <main style="flex: 1;">
     
     
     
@@ -391,7 +395,7 @@
   {% endblock %}
 
 
-  </div>
+  </main>
   
 <script>
   function toggleSidebar() {

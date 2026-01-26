@@ -1,0 +1,226 @@
+{% extends 'contratos/home.html' %}
+  {% load static %}
+
+{% block head %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+<style>
+/* ====== reutiliza estética exportaciones ====== */
+
+.table-container {
+  background: #fff;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+}
+
+.table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.add-btn {
+  background-color: #004080;
+  color: white;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.add-btn:hover {
+  background-color: #002a55;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th, td {
+  padding: 0.9rem;
+  font-size: 0.85rem;
+  border-bottom: 1px solid #eee;
+}
+
+th {
+  background-color: #f0f2f5;
+  font-weight: 600;
+}
+
+.actions i {
+  cursor: pointer;
+  margin-right: 0.6rem;
+  color: #333;
+}
+
+.actions i:hover {
+  color: #004080;
+}
+
+/* ====== MODAL ====== */
+
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 999;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.45);
+}
+
+.modal-content {
+  background: #fff;
+  width: 420px;
+  margin: 10% auto;
+  padding: 20px;
+  border-radius: 10px;
+  animation: fadeIn 0.25s ease;
+}
+
+.modal-content h3 {
+  margin-bottom: 1rem;
+}
+
+.modal-content input {
+  width: 100%;
+  padding: 0.6rem;
+  margin-bottom: 1rem;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.btn-secondary {
+  background: #ccc;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+}
+
+.btn-success {
+  background: #004080;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+</style>
+{% endblock %}
+
+
+
+
+ {% block content %}
+<div class="main">
+  <div class="table-container">
+
+    <div class="table-header">
+      <h2>Tipos de Contrato</h2>
+      <button class="add-btn" onclick="openCreateModal()">
+        <i class="fa fa-plus"></i> Nuevo
+      </button>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Nombre</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for tipo in tipos %}
+        <tr>
+          <td>{{ tipo.id }}</td>
+          <td>{{ tipo.contratos_nombre }}</td>
+          <td class="actions">
+            <i class="fa fa-pencil" 
+               onclick="openEditModal('{{ tipo.id }}', '{{ tipo.contratos_nombre|escapejs }}')"></i>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="3" style="text-align:center; color:#999;">
+            No hay tipos de contrato cargados.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+  </div>
+</div>
+
+<!-- MODAL CREAR -->
+<div id="modalCreate" class="modal">
+  <div class="modal-content">
+    <h3>Nuevo Tipo de Contrato</h3>
+    <form method="post" action="{% url 'tipos_contratos_create' %}">
+      {% csrf_token %}
+      <input type="text" name="contratos_nombre" placeholder="Nombre del contrato" required>
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" onclick="closeModal()">Cancelar</button>
+        <button class="btn-success">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL EDITAR -->
+<div id="modalEdit" class="modal">
+  <div class="modal-content">
+    <h3>Editar Tipo de Contrato</h3>
+    <form method="post" id="editForm">
+      {% csrf_token %}
+      <input type="text" name="contratos_nombre" id="editNombre" required>
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" onclick="closeModal()">Cancelar</button>
+        <button class="btn-success">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+
+{% block script %}
+<script>
+function openCreateModal() {
+  document.getElementById("modalCreate").style.display = "block";
+}
+
+function openEditModal(id, nombre) {
+  document.getElementById("modalEdit").style.display = "block";
+  document.getElementById("editNombre").value = nombre;
+  document.getElementById("editForm").action = `/tipos-contratos/${id}/editar/`;
+}
+
+function closeModal() {
+  document.getElementById("modalCreate").style.display = "none";
+  document.getElementById("modalEdit").style.display = "none";
+}
+
+window.onclick = function(e) {
+  if (e.target.classList.contains("modal")) {
+    closeModal();
+  }
+}
+</script>
+{% endblock %}
