@@ -2147,7 +2147,7 @@ def edit_contrato(request, id):
             # Actualizar campos
             contrato.id_concesionario = data.get('relacion_id_concesionario')
             contrato.tipo_id = data.get('tipo_contrato')
-            contrato.paga_canon = data.get('paga_canon')
+            contrato.paga_canon = data.get('pago_canon')
             contrato.opcion_compra = data.get('opcion_compra')
             contrato.mineral_explotacion = data.get('mineral_explotacion')
             contrato.activo = True if data.get('activo') == 'si' else False
