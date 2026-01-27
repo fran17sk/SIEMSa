@@ -584,7 +584,7 @@
       </span>
     </span>
   {% endif %}
-            <button title="Ver detalles" onclick="openDetailModal(
+            <button title="Ver detalles" style="color: black;" onclick="openDetailModal(
               '{{ c.expediente|escapejs }}',
               '{{ c.nombre_exp|escapejs }}',
               '{{ c.concesionario|escapejs }}',
@@ -600,11 +600,12 @@
               '{{ c.createby|default:""|escapejs }}',
               '{{ c.updateby|default:""|escapejs }}',
               '{{ c.createdate|date:"d/m/Y" }}',
-              '{{ c.updatedate|date:"d/m/Y" }}'
+              '{{ c.updatedate|date:"d/m/Y" }}',
+              '{{ c.id }}'
             )">
               <i data-lucide="info">!</i>
             </button>
-            <a title="Editar" href="{% url 'edit_contrato' c.id %}"
+            <a title="Editar" style="color: black;" href="{% url 'edit_contrato' c.id %}"
                 '{{ c.id }}',
                 '{{ c.expediente|escapejs }}',
                 '{{ c.tipo|escapejs }}'
@@ -725,6 +726,11 @@
   </div>
 </div>
 
+<div class="detail-item" id="fileContainer">
+  <label>Documento Adjunto</label>
+  <div id="dArchivo">
+     </div>
+</div>
       </div>
 
     </div>
@@ -735,7 +741,7 @@
 
 {% block script %}
 <script>
-  function openDetailModal(expediente, nombre, concesionario, concesionario_nombre , mineral_explotacion  ,fecha_ini, fecha_fin, tipo, activo,  paga_canon , opcion_compra, observaciones, createby, updateby, createdate, updatedate) {
+  function openDetailModal(expediente, nombre, concesionario, concesionario_nombre , mineral_explotacion  ,fecha_ini, fecha_fin, tipo, activo,  paga_canon , opcion_compra, observaciones, createby, updateby, createdate, updatedate,archivoUrl) {
 
     document.getElementById("dExpediente").innerText = expediente;
     document.getElementById("dNombre").innerText = nombre;
@@ -773,7 +779,15 @@
     } else {
         updateCard.style.display = "none";
     }
-
+    const dArchivo = document.getElementById("dArchivo");
+    if (archivoUrl && archivoUrl !== "" && archivoUrl !== "None") {
+        dArchivo.innerHTML = `
+            <a href="/ver-contrato-pdf/${archivoUrl}/" target="_blank" class="btn-pdf" style="padding: 5px 10px; font-size: 0.8rem; color:white">
+                <i class="fa fa-file-pdf-o"></i> Ver Contrato
+            </a>`;
+    } else {
+        dArchivo.innerHTML = '<span class="status-false" style="font-size:0.8rem;">Sin archivo adjunto</span>';
+    }
     document.getElementById("detailModal").style.display = "block";
   }
   function closeDetailModal() {

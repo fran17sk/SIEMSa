@@ -65,6 +65,7 @@ urlpatterns = [
     path("tipos-contratos/", views.tipos_contratos_list, name="tipos_contratos_list"),
     path("tipos-contratos/crear/", views.tipos_contratos_create, name="tipos_contratos_create"),
     path("tipos-contratos/<int:pk>/editar/", views.tipos_contratos_update, name="tipos_contratos_update"),
+    path('ver-contrato-pdf/<int:contrato_id>/', views.ver_contrato_pdf, name='ver_contrato'),
 
 
 

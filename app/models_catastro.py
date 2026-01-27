@@ -1,5 +1,19 @@
 
 from django.db import models
+import os
+from django.utils.text import slugify
+def path_contratos_por_empresa(instance, filename):
+    # Como es un CharField, instance.id_concesionario es solo el ID (ej: "123")
+    try:
+        # Buscamos manualmente el nombre de la empresa usando el ID
+        # Nota: Usamos .using('catastro') porque tus modelos están en esa BD
+        empresa = Concesionarios.objects.using('catastro').get(id=instance.id_concesionario)
+        nombre_carpeta = slugify(empresa.concesionario)
+    except:
+        # Si algo falla (empresa no encontrada), lo manda a una carpeta genérica
+        nombre_carpeta = "desconocido"
+    
+    return os.path.join('Contratos', nombre_carpeta, filename)
 
 class AnotacionesLineas(models.Model):
     geom = models.TextField(blank=True, null=True)  # This field type is a guess.
@@ -2253,6 +2267,7 @@ class Contratos(models.Model):
     deletedate = models.DateField(blank=True, null=True)
     observaciones = models.TextField(blank=True, null=True)
     tipo = models.ForeignKey(TipoContratos, on_delete=models.CASCADE,db_column="tipo", related_name='contratos')
+    file = models.FileField(upload_to=path_contratos_por_empresa, null=True, blank=True)
 
     class Meta:
         managed = False

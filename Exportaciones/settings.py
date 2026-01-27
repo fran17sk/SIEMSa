@@ -1,6 +1,7 @@
 
 import os
 from pathlib import Path
+import platform
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -27,6 +28,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'storages',
     'app',
 ]
 
@@ -140,8 +142,7 @@ LOGIN_REDIRECT_URL = '/home'
 
 STATIC_URL = '/static/'
 LOGIN_URL = '/login/'  # Asegúrate de que esta URL exista
-STATIC_ROOT = BASE_DIR / "staticfiles"
-MEDIA_ROOT = BASE_DIR / "media"
+
 # Ruta absoluta donde Django buscará archivos estáticos si hacés collectstatic
 #STATICFILES_DIRS = [
 #    os.path.join(BASE_DIR, 'static'),  # Para una carpeta global opcional
@@ -172,3 +173,12 @@ DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 SITE_URL = "http://192.168.0.233/home"
 ORGANISMO = "Secretaría de Minería y Energía"
+
+# Si estás en Windows (Desarrollo)
+if platform.system() == 'Windows':
+    MEDIA_ROOT = 'Z:/media/' 
+# Si estás en Linux (Servidor Real)
+else:
+    MEDIA_ROOT = '/mnt/servidor_nas/media/'
+
+MEDIA_URL = '/media/'

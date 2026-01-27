@@ -5,9 +5,9 @@
 <style>
 .container#cards {
     max-width: 1200px;
-    margin: 40px auto;
+    margin:  auto;
     background: #ffffff;
-    padding: 2.5rem;
+    padding: 2rem;
     border-radius: 14px;
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
 }
@@ -271,6 +271,70 @@ button[type="submit"]:hover {
 .info-item strong {
     color: #334155;
 }
+
+/* ==============================
+   ESTILO PARA ADJUNTAR ARCHIVO
+============================== */
+.file-upload-wrapper {
+    position: relative;
+    width: 100%;
+    margin-top: 8px;
+}
+
+/* Ocultamos el input real pero lo mantenemos funcional */
+.file-upload-wrapper input[type="file"] {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+    z-index: 2;
+}
+
+/* La "caja" visual */
+.file-upload-design {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 12px;
+    border: 2px dashed #d1d5db;
+    border-radius: 10px;
+    background-color: #f9fafb;
+    transition: all 0.3s ease;
+    text-align: center;
+}
+
+.file-upload-design i {
+    font-size: 1.4rem;
+    color: #2563eb;
+}
+
+.file-upload-text {
+    font-size: 0.9rem;
+    color: #6b7280;
+    font-weight: 500;
+}
+
+.file-name-display {
+    display: block;
+    margin-top: 8px;
+    font-size: 0.85rem;
+    color: #2563eb;
+    font-weight: 600;
+    font-style: italic;
+}
+
+/* Efectos al pasar el mouse o arrastrar archivo */
+.file-upload-wrapper:hover .file-upload-design {
+    border-color: #2563eb;
+    background-color: #eff6ff;
+}
+
+.file-upload-wrapper input[type="file"]:focus + .file-upload-design {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
 </style>
 {% endblock %}
 
@@ -278,7 +342,7 @@ button[type="submit"]:hover {
 <div class="container" id="cards">
   <h1>Registrar Contrato</h1>
 
-  <form id="contratoForm" method="post" action="{% url 'create_new' %}" novalidate>
+  <form id="contratoForm" method="post" action="{% url 'create_new' %}" novalidate enctype="multipart/form-data">
     {% csrf_token %}
     
     <div class="form-row">
@@ -382,7 +446,19 @@ button[type="submit"]:hover {
       <label for="observaciones">Observaciones</label>
       <textarea id="observaciones" name="observaciones" rows="3" placeholder="Observaciones adicionales..."></textarea>
     </div>
-
+  
+    <div class="form-group full-width" style="margin-bottom: 25px;">
+    <label for="file">Documento del Contrato</label>
+    <div class="file-upload-wrapper">
+        <input type="file" id="file" name="file" accept=".pdf,image/*" onchange="updateFileName(this)">
+        <div class="file-upload-design">
+            <i class="fa fa-cloud-upload"></i>
+            <span class="file-upload-text" id="upload-label">Haga clic aquí o arrastre el archivo (PDF o Imagen)</span>
+        </div>
+    </div>
+    <span id="file-name" class="file-name-display"></span>
+    <div class="error" id="error_file"></div>
+</div>
     <div class="registro-info">
       <div class="info-item">
         <i class="fa fa-calendar"></i>
@@ -403,6 +479,27 @@ button[type="submit"]:hover {
 
 {% block script %}
 <script>
+function updateFileName(input) {
+    const fileNameDisplay = document.getElementById('file-name');
+    const uploadLabel = document.getElementById('upload-label');
+    
+    if (input.files && input.files.length > 0) {
+        const name = input.files[0].name;
+        fileNameDisplay.textContent = "Archivo seleccionado: " + name;
+        uploadLabel.textContent = "Cambiar archivo";
+        
+        // Cambiar estilo visual a éxito
+        input.nextElementSibling.style.borderColor = "#10b981"; // Verde esmeralda
+        input.nextElementSibling.style.backgroundColor = "#ecfdf5";
+    } else {
+        fileNameDisplay.textContent = "";
+        uploadLabel.textContent = "Haga clic aquí o arrastre el archivo (PDF o Imagen)";
+        input.nextElementSibling.style.borderColor = "#d1d5db";
+        input.nextElementSibling.style.backgroundColor = "#f9fafb";
+    }
+}
+
+
   document.addEventListener('DOMContentLoaded', () => {
     const fechaSpan = document.getElementById('fecha-actual');
     if (fechaSpan) {
@@ -583,27 +680,35 @@ button[type="submit"]:hover {
   /* ============================
      ENVÍO REAL DEL FORMULARIO
   ============================ */
-  const data = {
-    relacion_id_concesionario: concesionario,
-    nro_expediente: nroExpediente,
-    tipo_contrato: document.getElementById('tipo_contrato').value,
-    pago_canon: document.getElementById('pago_canon').checked,
-    opcion_compra: document.getElementById('opcion_compra').checked,
-    mineral_explotacion: document.getElementById('id_mineral_explotacion').value,
-    activo: estado,
-    fecha_ini: fechaIni,
-    fecha_fin: fechaFin,
-    observaciones: document.getElementById('observaciones').value.trim()
-  };
+  const formData = new FormData();
 
-  try {
+// 2. Agregamos los campos de texto
+formData.append('relacion_id_concesionario', concesionario);
+formData.append('nro_expediente', nroExpediente);
+formData.append('tipo_contrato', document.getElementById('tipo_contrato').value);
+formData.append('pago_canon', document.getElementById('pago_canon').checked);
+formData.append('opcion_compra', document.getElementById('opcion_compra').checked);
+formData.append('mineral_explotacion', document.getElementById('id_mineral_explotacion').value);
+formData.append('activo', estado);
+formData.append('fecha_ini', fechaIni);
+formData.append('fecha_fin', fechaFin);
+formData.append('observaciones', document.getElementById('observaciones').value.trim());
+
+// 3. AGREGAMOS EL ARCHIVO
+const fileInput = document.getElementById('file');
+if (fileInput.files.length > 0) {
+    formData.append('file', fileInput.files[0]);
+}
+
+try {
     const response = await fetch(form.action, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRFToken': getCookie('csrftoken')
-      },
-      body: JSON.stringify(data)
+        method: 'POST',
+        headers: {
+            // IMPORTANTE: Al usar FormData, NO debes poner 'Content-Type': 'application/json'
+            // El navegador lo pondrá automáticamente con el "boundary" correcto.
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: formData // Enviamos el objeto FormData directamente
     });
 
     const result = await response.json();

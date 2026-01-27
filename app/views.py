@@ -66,6 +66,9 @@ from reportlab.lib.enums import TA_CENTER
 from reportlab.pdfgen import canvas
 import xlsxwriter
 
+import os
+from django.http import FileResponse, Http404
+
 # Matplotlib - Gráficos
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
@@ -2092,38 +2095,47 @@ def str_to_bool(value):
         return value.strip().lower() in ['sí', 'si', 'true', '1']
     return False
 
+
+
 def crear_contrato(request):
     if request.method != 'POST':
         return JsonResponse({'error': 'Método no permitido'}, status=405)
 
     try:
-        data = json.loads(request.body)
+        # 1. YA NO USAMOS json.loads(request.body)
+        # Los datos de texto ahora están en request.POST
+        data = request.POST 
 
-        activo = str(data.get('activo', '')).lower() == 'si'
+        # 2. CAPTURAMOS EL ARCHIVO físicamente desde request.FILES
+        archivo = request.FILES.get('file')
+
+        # 3. Procesamos los datos (considerando que vienen como strings desde el formulario)
+        activo_str = str(data.get('activo', '')).lower()
+        es_activo = activo_str == 'si' or activo_str == 'true'
 
         contrato = Contratos.objects.using('catastro').create(
-            # 🔴 OBLIGATORIO
-            id_concesionario=str(data.get('relacion_id_concesionario')),
-
+            # Datos obligatorios
+            id_concesionario=data.get('relacion_id_concesionario'),
             expediente=int(data['nro_expediente']) if data.get('nro_expediente') else None,
 
-            # 🔴 FK
-            tipo_id=int(data['tipo_contrato']),
+            # Foreign Key (tipo_id)
+            tipo_id=int(data['tipo_contrato']) if data.get('tipo_contrato') else None,
 
             observaciones=data.get('observaciones', ''),
-
-            activo=activo,
+            activo=es_activo,
 
             fecha_ini=data.get('fecha_ini') or None,
             fecha_fin=data.get('fecha_fin') or None,
 
-            # 🔴 BOOLEANO OBLIGATORIO
-            paga_canon=bool(data.get('pago_canon', False)),
-            opcion_compra=bool(data.get('opcion_compra', False)),
+            # Los booleanos en FormData llegan como strings 'true'/'false'
+            paga_canon=data.get('pago_canon') == 'true',
+            opcion_compra=data.get('opcion_compra') == 'true',
 
-            # 🔴 NO puede ser None
             mineral_explotacion=data.get('mineral_explotacion', ''),
-
+            
+            # EL ARCHIVO: Django se encarga de subirlo al NAS aquí
+            file=archivo, 
+            
             createby=request.user.username,
             createdate=now().date()
         )
@@ -2134,6 +2146,8 @@ def crear_contrato(request):
         }, status=201)
 
     except Exception as e:
+        # Esto te ayudará a debuguear qué campo exacto falla
+        print(f"Error creando contrato: {e}") 
         return JsonResponse({'error': str(e)}, status=400)
     
 
@@ -2195,6 +2209,28 @@ def edit_contrato(request, id):
         "tipos_contrato": tipos_contrato,
         "concesionarios": todos_concesionarios
     })
+
+def ver_contrato_pdf(request, contrato_id):
+    # 1. Buscar el contrato
+    contrato = get_object_or_404(Contratos.objects.using('catastro'), id=contrato_id)
+    
+    if not contrato.file:
+        raise Http404("El contrato no tiene un archivo adjunto.")
+
+    try:
+        # 2. Obtener la ruta del archivo (Django ya sabe que está en MEDIA_ROOT)
+        # FileResponse se encarga de abrir el archivo desde el NAS montado
+        file_handle = contrato.file.open()
+        
+        # 3. Determinar si se descarga o se ve (inline = ver en navegador)
+        response = FileResponse(file_handle, content_type='application/pdf')
+        
+        # Si quieres que se descargue directamente, cambia 'inline' por 'attachment'
+        response['Content-Disposition'] = f'inline; filename="Contrato_{contrato.expediente}.pdf"'
+        
+        return response
+    except FileNotFoundError:
+        raise Http404("El archivo físico no se encuentra en el servidor NAS.")
 
 def consultar_contratos_por_expediente(request):
     expediente = request.GET.get('expediente', '').strip()
