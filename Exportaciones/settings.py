@@ -169,7 +169,7 @@ EMAIL_HOST_PASSWORD = 'coja wtju azwh kaxv'  # Contraseña de aplicación (segur
 #EMAIL_HOST_PASSWORD = "rkfw qytu qntg auua"
 EMAIL_USE_TLS = True
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
-
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 SITE_URL = "http://192.168.0.233/home"
 ORGANISMO = "Secretaría de Minería y Energía"
 
