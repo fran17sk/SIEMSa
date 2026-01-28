@@ -201,9 +201,29 @@
             </div>
 
             <div class="form-group">
-                <label for="mineral_explotacion">Mineral Explotación</label>
-                <input type="text" id="mineral_explotacion" name="mineral_explotacion" value="{{ contrato.mineral_explotacion|default:'' }}">
-            </div>
+    <label>Mineral Explotación</label>
+    <div class="empresa-dropdown" id="mineralDropdown">
+        <div class="empresa-selected" id="mineralSelected">
+            <span id="mineralText">
+                {{ contrato.mineral_explotacion|default:"Seleccione mineral" }}
+            </span>
+            <i class="fa fa-caret-down"></i>
+        </div>
+        <div class="empresa-panel" id="mineralPanel">
+            <input type="text" id="mineralSearch" placeholder="Buscar mineral..." autocomplete="off" 
+                   style="width: 100%; border: none; border-bottom: 1px solid #ddd; border-radius: 0; padding: 10px;">
+            <ul id="mineralList">
+                {% for m in minerales %}
+                <li data-value="{{ m.mineral }}">{{ m.mindet }} <small style="color: #9ca3af;">({{ m.mineral }})</small></li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+    <input type="hidden" id="id_mineral_explotacion" name="mineral_explotacion" value="{{ contrato.mineral_explotacion|default:'' }}">
+</div>
+
+            
+
         </div>
 
         <div class="form-row">
@@ -284,7 +304,44 @@
             panelC.style.display = 'none';
         }
     });
+// --- LÓGICA DROPDOWN MINERALES (EDICIÓN) ---
+const dropdownM = document.getElementById('mineralDropdown');
+const selectedM = document.getElementById('mineralSelected');
+const panelM = document.getElementById('mineralPanel');
+const searchM = document.getElementById('mineralSearch');
+const listM = document.getElementById('mineralList');
+const textM = document.getElementById('mineralText');
+const hiddenM = document.getElementById('id_mineral_explotacion');
 
+selectedM.addEventListener('click', () => {
+    panelM.style.display = panelM.style.display === 'block' ? 'none' : 'block';
+    searchM.value = '';
+    searchM.focus();
+    listM.querySelectorAll('li').forEach(li => li.style.display = '');
+});
+
+searchM.addEventListener('input', () => {
+    const q = searchM.value.toLowerCase();
+    listM.querySelectorAll('li').forEach(li => {
+        const text = li.textContent.toLowerCase();
+        li.style.display = text.includes(q) ? '' : 'none';
+    });
+});
+
+listM.addEventListener('click', e => {
+    const li = e.target.closest('li');
+    if (li) {
+        textM.textContent = li.dataset.value; // Guardamos el nombre del mineral
+        hiddenM.value = li.dataset.value;     // Valor para el input hidden
+        panelM.style.display = 'none';
+    }
+});
+
+// Actualizar el cierre global de dropdowns
+document.addEventListener('click', e => {
+    if (!dropdownC.contains(e.target)) panelC.style.display = 'none';
+    if (!dropdownM.contains(e.target)) panelM.style.display = 'none';
+});
     // Envío del Formulario con SweetAlert
     document.getElementById('editForm').addEventListener('submit', async function (e) {
         e.preventDefault();

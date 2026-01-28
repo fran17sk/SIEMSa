@@ -528,11 +528,19 @@
 
     <!-- HEADER -->
     <div class="table-header">
-      <h2>Contratos</h2>
-      <a class="add-btn" href="{% url 'contratos' %}">
-        <i class="fa fa-plus"></i> Nuevo Contrato
-      </a>
+  <h2>Contratos</h2>
+  <div style="display: flex; gap: 10px; align-items: center;">
+    <div style="position: relative;">
+      <input type="text" id="tableSearch" placeholder="Buscar contrato..." 
+             style="padding: 8px 12px 8px 35px; border-radius: 8px; border: 1px solid #ddd; width: 250px;">
+      <i class="fa fa-search" style="position: absolute; left: 12px; top: 11px; color: #9ca3af;"></i>
     </div>
+    
+    <a class="add-btn" href="{% url 'contratos' %}">
+      <i class="fa fa-plus"></i> Nuevo Contrato
+    </a>
+  </div>
+</div>
 
     <!-- TABLA -->
     <table>
@@ -741,6 +749,26 @@
 
 {% block script %}
 <script>
+
+
+document.getElementById('tableSearch').addEventListener('keyup', function() {
+    const searchTerm = this.value.toLowerCase();
+    const tableRows = document.querySelectorAll('table tbody tr');
+
+    tableRows.forEach(row => {
+        // No filtramos la fila si es la de "No hay datos"
+        if (row.classList.contains('no-data')) return;
+
+        const text = row.innerText.toLowerCase();
+        
+        // Si el texto del buscador está en el texto de la fila, se muestra, si no se oculta
+        if (text.includes(searchTerm)) {
+            row.style.display = "";
+        } else {
+            row.style.display = "none";
+        }
+    });
+});
   function openDetailModal(expediente, nombre, concesionario, concesionario_nombre , mineral_explotacion  ,fecha_ini, fecha_fin, tipo, activo,  paga_canon , opcion_compra, observaciones, createby, updateby, createdate, updatedate,archivoUrl) {
 
     document.getElementById("dExpediente").innerText = expediente;

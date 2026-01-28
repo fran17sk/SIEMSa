@@ -354,6 +354,10 @@
           title="SIMSA">
           <i data-lucide="flame"></i> <span>SIMSa</span>
         </a>
+        <a href="{% url 'contratos' %}" class="{% if request.resolver_match.url_name == 'contratos' %}active{% endif %}"
+          title="Contratos">
+          <i data-lucide="handshake"></i> <span>Contratos</span>
+        </a>
         {% else %}
         <a href="{% url 'exportacion' %}"
           class="{% if request.resolver_match.url_name == 'exportacion' %}active{% endif %}" title="Exportaciones">
@@ -467,6 +471,14 @@
           Información relacionada con plataforma del SIMSa.
         </div>
         <a href="{% url 'consulta_deudas_expedientes' %}" class="card-btn">INGRESAR</a>
+      </div>
+      <div class="card">
+        <div class="card-icon">🤝</div>
+        <div class="card-title">Contratos</div>
+        <div class="card-desc">
+          Registro de Contratos
+        </div>
+        <a href="{% url 'contratos' %}" class="card-btn">INGRESAR</a>
       </div>
       {% else %}
 

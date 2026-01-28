@@ -1987,12 +1987,11 @@ def contratos_view(request):
                 return JsonResponse({'success': False, 'errors': form.errors})
             messages.error(request, 'Por favor corrige los errores en el formulario.')
     else:
-        if request.user.es_asuntos_legales:
-            raise PermissionDenied
         form = ContratosForm()
         tipos_contrato = TipoContratos.objects.using('catastro')
+        minerales = Minerales.objects.using('catastro').all()
         concesionarios = Concesionarios.objects.using('catastro').all().order_by('concesionario')
-        return render(request, 'contratos/new.html', {'form': form , 'concesionarios':concesionarios , 'tipos_contrato':tipos_contrato})
+        return render(request, 'contratos/new.html', {'form': form , 'concesionarios':concesionarios , 'tipos_contrato':tipos_contrato ,'minerales':minerales})
 
 
 
@@ -2203,11 +2202,12 @@ def edit_contrato(request, id):
     # 4. Datos para los selects
     tipos_contrato = TipoContratos.objects.using('catastro').all()
     todos_concesionarios = Concesionarios.objects.using('catastro').all()
-
+    minerales = Minerales.objects.using('catastro').all()
     return render(request, "contratos/edit_contrato.html", {
         "contrato": contrato,
         "tipos_contrato": tipos_contrato,
-        "concesionarios": todos_concesionarios
+        "concesionarios": todos_concesionarios,
+        "minerales":minerales
     })
 
 def ver_contrato_pdf(request, contrato_id):

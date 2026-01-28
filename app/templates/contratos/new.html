@@ -401,9 +401,24 @@ button[type="submit"]:hover {
       </div>
 
       <div class="form-group">
-        <label for="{{ form.mineral_explotacion.id_for_label }}">Mineral Explotación</label>
-        {{ form.mineral_explotacion }}
-      </div>
+    <label>Mineral Explotación</label>
+    <div class="empresa-dropdown" id="mineralDropdown">
+        <div class="empresa-selected" id="mineralSelected">
+            <span id="mineralText">Seleccione mineral</span>
+            <i class="fa fa-caret-down"></i>
+        </div>
+        <div class="empresa-panel" id="mineralPanel">
+            <input type="text" id="mineralSearch" placeholder="Buscar mineral..." autocomplete="off" 
+                   style="width: 100%; border: none; border-bottom: 1px solid #ddd; border-radius: 0;">
+            <ul id="mineralList">
+                {% for m in minerales %}
+                <li data-value="{{ m.mineral }}">{{ m.mindet }} <small style="color: #9ca3af;">({{ m.mineral }})</small></li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+    <input type="hidden" id="id_mineral_explotacion" name="mineral_explotacion">
+</div>
     </div>
 
     <div class="form-row">
@@ -543,6 +558,46 @@ function updateFileName(input) {
       panelC.style.display = 'none';
     }
   });
+
+  const dropdownM = document.getElementById('mineralDropdown');
+const selectedM = document.getElementById('mineralSelected');
+const panelM = document.getElementById('mineralPanel');
+const searchM = document.getElementById('mineralSearch');
+const listM = document.getElementById('mineralList');
+const textM = document.getElementById('mineralText');
+const hiddenM = document.getElementById('id_mineral_explotacion');
+
+// Abrir/Cerrar panel
+selectedM.addEventListener('click', () => {
+    panelM.style.display = panelM.style.display === 'block' ? 'none' : 'block';
+    searchM.value = '';
+    searchM.focus();
+    listM.querySelectorAll('li').forEach(li => li.style.display = '');
+});
+
+// Filtrado en tiempo real
+searchM.addEventListener('input', () => {
+    const q = searchM.value.toLowerCase();
+    listM.querySelectorAll('li').forEach(li => {
+        li.style.display = li.textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
+});
+
+// Selección de elemento
+listM.addEventListener('click', e => {
+    const li = e.target.closest('li'); // Usa closest por si hacen clic en el <small>
+    if (li) {
+        textM.textContent = li.dataset.value;
+        hiddenM.value = li.dataset.value;
+        panelM.style.display = 'none';
+    }
+});
+
+// Cerrar si se hace clic fuera (Generalizado)
+document.addEventListener('click', e => {
+    if (!dropdownM.contains(e.target)) panelM.style.display = 'none';
+    if (!dropdownC.contains(e.target)) panelC.style.display = 'none'; // Concesionario
+});
 </script>
 <script>
   const abrirModalBtn = document.getElementById('abrirModal');
@@ -774,6 +829,7 @@ try {
   const pl = document.getElementById('EstadoMina');
   const info = document.getElementById('info_expediente');
   const tipo = document.getElementById('label_nro_expediente');
+  //const minerales = document.getElementById('minerals_declarated');
 
   nroExpedienteInput.addEventListener('input', async (e) => {
     // 1. Limpiar caracteres no numéricos
@@ -812,6 +868,7 @@ try {
         info.value = expediente.nombre;
         tipo.value = expediente.tipo; // Cambiado a innerText por seguridad
         pl.value = p.title; // Aquí se asigna "Vigente" o "Archivado" al input oculto
+        //minerales.value = expediente.minerales
 
       } else {
         // 3. Si el número no existe, limpiar los datos anteriores
