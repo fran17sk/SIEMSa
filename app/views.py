@@ -7,6 +7,8 @@ from django.views.generic import ListView
 from django.contrib import messages
 from .forms import ContratosForm
 from django.http import JsonResponse
+import mimetypes
+from django.http import Http404, FileResponse
 import re
 from .models import *
 from .models_catastro import *
@@ -2210,27 +2212,40 @@ def edit_contrato(request, id):
         "minerales":minerales
     })
 
-def ver_contrato_pdf(request, contrato_id):
-    # 1. Buscar el contrato
+def ver_archivo_contrato(request, contrato_id):
+    # 1. Buscar el contrato en la base de datos 'catastro'
     contrato = get_object_or_404(Contratos.objects.using('catastro'), id=contrato_id)
     
+    # Validar que exista el registro del archivo
     if not contrato.file:
         raise Http404("El contrato no tiene un archivo adjunto.")
 
     try:
-        # 2. Obtener la ruta del archivo (Django ya sabe que está en MEDIA_ROOT)
-        # FileResponse se encarga de abrir el archivo desde el NAS montado
+        # 2. Abrir el archivo desde el storage (NAS/Local)
         file_handle = contrato.file.open()
         
-        # 3. Determinar si se descarga o se ve (inline = ver en navegador)
-        response = FileResponse(file_handle, content_type='application/pdf')
+        # 3. Detectar el tipo de contenido (MIME type) automáticamente
+        # Esto detectará si es 'application/pdf', 'image/jpeg', 'image/png', etc.
+        content_type, encoding = mimetypes.guess_type(contrato.file.name)
         
-        # Si quieres que se descargue directamente, cambia 'inline' por 'attachment'
-        response['Content-Disposition'] = f'inline; filename="Contrato_{contrato.expediente}.pdf"'
+        # Fallback por si no se reconoce la extensión
+        if not content_type:
+            content_type = 'application/octet-stream'
+
+        # 4. Crear la respuesta
+        response = FileResponse(file_handle, content_type=content_type)
+        
+        # 'inline' permite que el navegador lo renderice si sabe cómo (PDFs e Imágenes)
+        nombre_archivo = f"Archivo_{contrato.expediente}"
+        response['Content-Disposition'] = f'inline; filename="{nombre_archivo}"'
         
         return response
+
     except FileNotFoundError:
-        raise Http404("El archivo físico no se encuentra en el servidor NAS.")
+        raise Http404("El archivo físico no se encuentra en el servidor de almacenamiento.")
+    except Exception as e:
+        # Opcional: podrías loguear el error aquí
+        raise Http404(f"Error al intentar acceder al archivo: {str(e)}")
 
 def consultar_contratos_por_expediente(request):
     expediente = request.GET.get('expediente', '').strip()
