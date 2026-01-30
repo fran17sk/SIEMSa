@@ -2,219 +2,297 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Iniciar Sesión - SIEMSa</title>
-<style>
-  /* Reset básico */
-  * {
-    margin: 0; padding: 0; box-sizing: border-box;
-  }
-  html, body {
-    height: 100%;
-    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-  }
-  body {
-    display: flex;
-    height: 100vh;
-    color: #222;
-  }
-  html, body {
-    height: 100%;
-    overflow: hidden;
-    position: relative;
-}
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Acceso Corporativo | SIEMSa</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary: #0f172a; /* Slate 900 */
+            --accent: #2563eb;  /* Blue 600 */
+            --bg-body: #f8fafc;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --input-border: #e2e8f0;
+            --radius-lg: 12px;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
 
-  /* Izquierda con fondo y logo */
-  .left-panel {
-    position: relative;
-    width: 70%;
-    background: url("{% static 'app/img/bg.jpg' %}") no-repeat center center;
-    background-size: cover;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  /* Logo encima, centrado y sin filtro */
-  .left-panel img {
-    position: absolute;
-    max-width: 60%;
-    z-index: 2;
-    user-select: none;
-}
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
-  /* Contenedor para centrar el logo sin que se vea oscuro */
-  .left-panel::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: transparent;
-    z-index: 1;
-  }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            height: 100vh;
+            display: flex;
+            overflow: hidden;
+        }
 
-  /* Derecha con formulario, sin fondo, centrado vertical y con padding */
-  .right-panel {
-    width: 35%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 3rem 4rem;
-  }
+        /* --- Panel Visual (Izquierda) --- */
+        .visual-panel {
+            flex: 1.2;
+            position: relative;
+            background: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
 
-  form {
-    width: 100%;
-    max-width: 380px;
-  }
+        .bg-image {
+            position: absolute;
+            inset: 0;
+            background: url("{% static 'app/img/bg.jpg' %}") no-repeat center center;
+            background-size: cover;
+            opacity: 0.7;
+            filter: saturate(1.2);
+            transition: transform 10s ease-out;
+        }
 
-  .login-title {
-    font-size: 2.8rem;
-    font-weight: 700;
-    color: #000000;
-    margin-bottom: 0.4rem;
-    user-select: none;
-  }
+        .visual-panel:hover .bg-image { transform: scale(1.05); }
 
-  .login-label {
-    display: block;
-    font-weight: 600;
-    margin-bottom: 0.4rem;
-    color: #333;
-  }
+        .brand-overlay {
+            position: relative;
+            z-index: 10;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            padding: 3rem;
+            border-radius: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+        }
 
-  .login-input {
-    width: 100%;
-    padding: 0.7rem 1rem;
-    font-size: 1rem;
-    border: 1.5px solid #bbb;
-    border-radius: 8px;
-    margin-bottom: 1.5rem;
-    transition: border-color 0.3s ease;
-  }
+        .brand-overlay img {
+            max-width: 280px;
+            height: auto;
+            filter: drop-shadow(0 4px 10px rgba(0,0,0,0.3));
+        }
 
-  .login-input:focus {
-    border-color: #1f2225;
-    outline: none;
-    box-shadow: 0 0 6px rgba(0, 64, 128, 0.4);
-  }
+        /* --- Panel de Formulario (Derecha) --- */
+        .auth-panel {
+            flex: 0.8;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 4rem;
+            box-shadow: -10px 0 50px rgba(0,0,0,0.02);
+            z-index: 20;
+        }
 
-  .login-button {
-    width: 100%;
-    padding: 0.9rem;
-    font-weight: 700;
-    font-size: 1.1rem;
-    color: #fff;
-    background-color: #272b30;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-  }
+        .auth-card {
+            width: 100%;
+            max-width: 420px;
+        }
 
-  .login-button:hover,
-  .login-button:focus {
-    background-color: #002a55;
-    outline: none;
-  }
+        .auth-header { margin-bottom: 2.5rem; }
 
-  .alert {
-    padding: 1rem;
-    margin-bottom: 1rem;
-    border-radius: 8px;
-    font-weight: 600;
-    font-size: 0.9rem;
-  }
+        .auth-header h1 {
+            font-size: 1.875rem;
+            font-weight: 700;
+            letter-spacing: -0.025em;
+            margin-bottom: 0.75rem;
+        }
 
-  .alert-error {
-    background-color: #f8d7da;
-    color: #842029;
-    border: 1px solid #f5c2c7;
-  }
+        .auth-header p {
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
 
-  /* Responsive */
-  @media (max-width: 768px) {
-    body {
-      flex-direction: column;
-    }
-    .left-panel, .right-panel {
-      width: 100%;
-      height: 50vh;
-    }
-    .left-panel img {
-      max-width: 40%;
-    }
-    .right-panel {
-      padding: 2rem 1.5rem;
-      height: auto;
-    }
-  }
-</style>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+        /* --- Estética de Inputs --- */
+        .form-group { margin-bottom: 1.5rem; }
+
+        .form-label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            color: var(--text-main);
+        }
+
+        .input-control {
+            width: 100%;
+            height: 48px;
+            padding: 0 1rem;
+            font-family: inherit;
+            font-size: 0.95rem;
+            border: 1.5px solid var(--input-border);
+            border-radius: var(--radius-lg);
+            background: var(--bg-body);
+            transition: var(--transition);
+        }
+
+        .input-control:focus {
+            outline: none;
+            border-color: var(--accent);
+            background: white;
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+        }
+
+        /* --- Botón de Acción --- */
+        .btn-login {
+            width: 100%;
+            height: 52px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: var(--radius-lg);
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 2rem;
+        }
+
+        .btn-login:hover {
+            background: #1e293b;
+            transform: translateY(-1px);
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+        }
+
+        .btn-login:active { transform: translateY(0); }
+
+        /* Loader animado */
+        .spinner {
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            display: none;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* --- Footer Sutil --- */
+        .auth-footer {
+            margin-top: 3rem;
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        /* --- Responsive --- */
+        @media (max-width: 1100px) {
+            .visual-panel { flex: 0.8; }
+            .auth-panel { flex: 1.2; }
+        }
+
+        @media (max-width: 850px) {
+            body { flex-direction: column; overflow: auto; }
+            .visual-panel { display: none; } /* En móviles priorizamos el form */
+            .auth-panel { width: 100%; min-height: 100vh; padding: 2rem; }
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body>
-  <div class="left-panel" aria-label="Logo SIMSa y fondo">
-    <img src="{% static 'app/img/siemsa.svg' %}" alt="Logo SIMSa" />
-  </div>
-  <div class="right-panel" role="main" aria-label="Formulario de inicio de sesión">
-    
-    <form id="login-form" method="post" novalidate>
-        {% csrf_token %}
-        
-        <h1 class="login-title">Iniciar Sesión</h1>
-        <label for="id_username" class="login-label">Usuario</label>
-        <input type="text" name="username" id="id_username" class="login-input" placeholder="Ingrese su usuario" required autofocus autocomplete="username" />
-        
-        <label for="id_password" class="login-label">Contraseña</label>
-        <input type="password" name="password" id="id_password" class="login-input" placeholder="Ingrese su contraseña" required autocomplete="current-password" />
-        
-        <button type="submit" class="login-button">Iniciar Sesión</button>
-    </form>
-  </div>
 
-  <script>
-document.getElementById('login-form').addEventListener('submit', function(e) {
-    e.preventDefault();
+    <section class="visual-panel">
+        <div class="bg-image"></div>
+        <div class="brand-overlay">
+            <img src="{% static 'app/img/siemsa.svg' %}" alt="SIEMSa Logo">
+        </div>
+    </section>
 
-    const formData = new FormData(this);
+    <main class="auth-panel">
+        <div class="auth-card">
+            <header class="auth-header">
+                <h1>Iniciar sesión</h1>
+                <p>Bienvenido de nuevo. Por favor ingresa tus credenciales para continuar.</p>
+            </header>
 
-    fetch("", {
-        method: "POST",
-        headers: {
-            "X-CSRFToken": document.querySelector('[name=csrfmiddlewaretoken]').value
-        },
-        body: formData
-    })
-    .then(response => {
-        if (!response.ok) {
-            // Si status no es 200-299, leer json para mensaje de error
-            return response.json().then(data => {
-                throw new Error(data.error || 'Error del servidor');
-            });
-        }
-        return response.json();
-    })
-    .then(data => {
-        if (data.success) {
-            window.location.href = data.redirect_url;
-        } else {
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: data.error || 'Error al iniciar sesión',
-                scrollbarPadding: false,
-                heightAuto: false
-            });
-        }
-    })
-    .catch(error => {
-        Swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: error.message || 'Error del servidor',
-            scrollbarPadding: false,
-            heightAuto: false
+            <form id="login-form" method="post" novalidate>
+                {% csrf_token %}
+                
+                <div class="form-group">
+                    <label for="id_username" class="form-label">Usuario o Email</label>
+                    <input type="text" name="username" id="id_username" 
+                           class="input-control" placeholder="nombre@siemsa.com" 
+                           required autofocus autocomplete="username">
+                </div>
+
+                <div class="form-group">
+                    <label for="id_password" class="form-label">Contraseña</label>
+                    <input type="password" name="password" id="id_password" 
+                           class="input-control" placeholder="••••••••" 
+                           required autocomplete="current-password">
+                </div>
+
+                <button type="submit" id="btn-submit" class="btn-login">
+                    <span id="btn-text">Entrar al sistema</span>
+                    <div class="spinner" id="btn-spinner"></div>
+                </button>
+            </form>
+
+            <footer class="auth-footer">
+                &copy; 2024 SIEMSa. Todos los derechos reservados.
+            </footer>
+        </div>
+    </main>
+
+    <script>
+        const loginForm = document.getElementById('login-form');
+        const btnSubmit = document.getElementById('btn-submit');
+        const btnSpinner = document.getElementById('btn-spinner');
+        const btnText = document.getElementById('btn-text');
+
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            // UI Feedback: Estado de carga
+            btnSubmit.disabled = true;
+            btnText.innerText = 'Verificando...';
+            btnSpinner.style.display = 'block';
+
+            const formData = new FormData(loginForm);
+
+            try {
+                const response = await fetch("", {
+                    method: "POST",
+                    headers: {
+                        "X-CSRFToken": document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    // Éxito: Animación de salida opcional
+                    window.location.href = data.redirect_url;
+                } else {
+                    throw new Error(data.error || 'Credenciales inválidas');
+                }
+
+            } catch (error) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error de acceso',
+                    text: error.message,
+                    confirmButtonColor: '#0f172a',
+                    padding: '2em',
+                    customClass: {
+                        popup: 'swal2-modern'
+                    }
+                });
+
+                // Revertir UI
+                btnSubmit.disabled = false;
+                btnText.innerText = 'Entrar al sistema';
+                btnSpinner.style.display = 'none';
+            }
         });
-    });
-});
-</script>
+    </script>
 </body>
 </html>

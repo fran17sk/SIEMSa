@@ -2,6 +2,7 @@
 from django.db import models
 import os
 from django.utils.text import slugify
+
 def path_contratos_por_empresa(instance, filename):
     # Como es un CharField, instance.id_concesionario es solo el ID (ej: "123")
     try:

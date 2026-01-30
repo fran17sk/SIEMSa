@@ -4560,3 +4560,4 @@ class RoyaltyProductionResume(models.Model):
         db_table = 'view_royaltypresentationsproduction'
         verbose_name = 'Resumen Producción Regalías'
         verbose_name_plural = 'Resumen Producción Regalías'
+    

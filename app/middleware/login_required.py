@@ -6,6 +6,7 @@ EXEMPT_URLS = [  # Agrega aquí tus rutas públicas
     '/login/',
     '/logout/',
     '/admin/',
+    
 ]
 
 class LoginRequiredMiddleware:
