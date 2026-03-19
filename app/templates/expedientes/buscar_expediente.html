@@ -1,18 +1,378 @@
 {% extends "expedientes/base.html" %}
 
 {% block head %}
-  
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+<style>
+:root {
+    --primary: #0f172a;
+    --accent: #3b82f6;
+    --bg-body: #f1f5f9;
+    --border: #e2e8f0;
+    --text-main: #1e293b;
+    --text-muted: #64748b;
+    --white: #ffffff;
+}
+
+body { 
+    background-color: var(--bg-body); 
+    margin: 0;
+}
+
+/* --- Contenedor Principal --- */
+.search-container {
+    margin: 0 10px;
+    background: var(--white);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05);
+    overflow: hidden;
+}
+
+/* Header */
+.header-area {
+    padding: 20px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border);
+}
+
+.header-area h2 { 
+    margin: 0; 
+    font-size: 1.25rem; 
+    font-weight: 700; 
+    color: var(--primary);
+}
+
+/* --- Barra de Filtros (Grid de una sola línea) --- */
+.filter-bar {
+    background: #f8fafc;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
+}
+
+.filter-form {
+    display: grid;
+    grid-template-columns: 2fr 1fr auto; /* Distribución de espacio */
+    gap: 20px;
+    align-items: end;
+}
+
+.input-group { display: flex; flex-direction: column; gap: 8px; }
+
+.input-group label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+.input-field {
+    height: 42px;
+    padding: 0 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.input-field:focus { border-color: var(--accent); }
+
+/* --- Custom Dropdown --- */
+.custom-select-wrapper { position: relative; }
+.select-box {
+    height: 42px;
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 12px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.select-panel {
+    display: none;
+    position: absolute;
+    top: 50px;
+    left: 0;
+    right: 0;
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    z-index: 100;
+    padding: 10px;
+}
+
+.select-panel ul { list-style: none; padding: 0; margin: 0; max-height: 200px; overflow-y: auto; }
+.select-panel li { padding: 10px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+.select-panel li:hover { background: #f1f5f9; color: var(--accent); }
+
+/* --- Tabla --- */
+.table-wrapper { width: 100%; overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; text-align: left; }
+
+th {
+    background: #f8fafc;
+    padding: 12px 24px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--border);
+}
+
+td { padding: 16px 24px; border-bottom: 1px solid var(--border); font-size: 14px; }
+tr:hover { background-color: #fcfdfe; }
+
+/* Badges */
+.badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-weight: 700;
+    font-size: 11px;
+}
+.badge-id { background: #f1f5f9; color: var(--primary); font-family: monospace; border: 1px solid var(--border); }
+.type-minero { background: #dcfce7; color: #166534; }
+.type-grupo { background: #fef9c3; color: #854d0e; }
+
+/* --- Botón --- */
+.btn-submit {
+    height: 42px;
+    padding: 0 24px;
+    background: var(--primary);
+    color: var(--white);
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+.btn-submit:hover { opacity: 0.9; }
+
+/* --- Paginación --- */
+.pagination-bar {
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+    border-top: 1px solid var(--border);
+}
+
+.page-list { display: flex; gap: 6px; list-style: none; padding: 0; margin: 0; }
+.page-link {
+    text-decoration: none;
+    color: var(--text-muted);
+    padding: 8px 14px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    background: var(--white);
+}
+
+.page-link:hover { border-color: var(--accent); color: var(--accent); }
+.active-page .page-link { background: var(--primary); color: var(--white); border-color: var(--primary); }
+.disabled-page .page-link { opacity: 0.5; cursor: not-allowed; }
+/* Contenedor de concesionarios */
+.concesionarios-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+/* Cada ítem individual */
+.concesionario-item {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--primary);
+    padding: 2px 0;
+}
+
+/* Opcional: una línea divisoria si hay más de uno */
+.concesionario-item:not(:last-child) {
+    border-bottom: 1px dashed var(--border);
+    padding-bottom: 4px;
+}
+</style>
 {% endblock %}
 
 {% block content %}
+<div class="search-container">
+    <div class="header-area">
+        <h2>Catastro Minero Salta</h2>
+        <span class="badge badge-id">{{ page_obj.paginator.count }} Registros</span>
+    </div>
 
+    <div class="filter-bar">
+        <form method="GET" action="." id="filterForm" class="filter-form">
+            <div class="input-group">
+                <label>Expediente o Proyecto</label>
+                <input type="text" name="q" class="input-field" placeholder="Ej: 10245..." value="{{ query_general }}">
+            </div>
 
+            <div class="input-group">
+                <label>Concesionario</label>
+                <div class="custom-select-wrapper" id="concesionarioDropdown">
+                    <div class="select-box" id="concesionarioSelected">
+                        <span id="concesionarioText" class="text-truncate">
+                            {% if empresa_id %}{{ empresa_id }}{% else %}Todos{% endif %}
+                        </span>
+                        <i class="fa fa-chevron-down" style="font-size: 10px; color: #94a3b8;"></i>
+                    </div>
+                    <div class="select-panel" id="concesionarioPanel">
+                        <input type="text" id="concesionarioSearch" class="input-field" style="width: 100%; margin-bottom: 10px; height: 32px;" placeholder="Filtrar lista...">
+                        <ul id="concesionarioList">
+                            <li data-id="">Todos los concesionarios</li>
+                            {% for c in concesionarios %}
+                            <li data-id="{{ c.concesionario }}">{{ c.concesionario }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+                <input type="hidden" name="empresa" id="relacion_id_concesionario" value="{{ empresa_id }}">
+            </div>
+
+            <button type="submit" class="btn-submit">
+                FILTRAR
+            </button>
+        </form>
+    </div>
+
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>Expediente</th>
+                    <th>Nombre</th>
+                    <th>Estado</th>
+                    <th>Titular / Concesionario</th>
+                    <th style="text-align: right;">Acción</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for exp in page_obj %}
+                <tr>
+                    <td style="width: 150px;">
+                        <span class="badge badge-id">{{ exp.expediente }}</span><br>
+                        <span class="badge {% if exp.tipo_exp == 'Minero' %}type-minero{% else %}type-grupo{% endif %}" style="margin-top: 5px;">
+                            {{ exp.tipo|upper }}
+                        </span>
+                    </td>
+                    <td>
+                        <div style="font-weight: 700; color: var(--primary);">{{ exp.nombre }}</div>
+                    </td>
+                    <td>
+                        <div style="font-weight: 500; color: var(--primary);">{{ exp.estado }}</div>
+                    </td>
+                    <td>
+    <div class="concesionarios-list">
+        {% if exp.concesionarios_lista %}
+            {% for nombre in exp.concesionarios_lista %}
+                <span class="concesionario-item" style="display: block; margin-bottom: 4px; border-bottom: 1px dashed var(--border); padding-bottom: 4px;">
+                    <i class="fa fa-building me-1" style="font-size: 10px; color: var(--text-muted);"></i>
+                    {{ nombre }}
+                </span>
+            {% endfor %}
+        {% else %}
+            {{ exp.concesionario|cut:"{"|cut:"}" }}
+        {% endif %}
+    </div>
+</td>
+                    <td style="text-align: right;">
+                        <a href="#" style="color: var(--accent); text-decoration: none; font-weight: 700; font-size: 13px;"><i data-lucide="info"></i></a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                        No se encontraron expedientes.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="pagination-bar">
+        <ul class="page-list">
+            {% if page_obj.has_previous %}
+                <li><a href="?page={{ page_obj.previous_page_number }}&q={{ query_general }}&empresa={{ empresa_id }}" class="page-link">&larr;</a></li>
+            {% else %}
+                <li class="disabled-page"><span class="page-link">&larr;</span></li>
+            {% endif %}
+
+            {% for i in page_obj.paginator.page_range %}
+                {% if page_obj.number == i %}
+                    <li class="active-page"><span class="page-link">{{ i }}</span></li>
+                {% elif i > page_obj.number|add:'-3' and i < page_obj.number|add:'3' %}
+                    <li><a href="?page={{ i }}&q={{ query_general }}&empresa={{ empresa_id }}" class="page-link">{{ i }}</a></li>
+                {% endif %}
+            {% endfor %}
+
+            {% if page_obj.has_next %}
+                <li><a href="?page={{ page_obj.next_page_number }}&q={{ query_general }}&empresa={{ empresa_id }}" class="page-link">&rarr;</a></li>
+            {% else %}
+                <li class="disabled-page"><span class="page-link">&rarr;</span></li>
+            {% endif %}
+        </ul>
+    </div>
+</div>
 {% endblock %}
-
 {% block script %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const selected = document.getElementById('concesionarioSelected');
+    const panel = document.getElementById('concesionarioPanel');
+    const searchInput = document.getElementById('concesionarioSearch');
+    const listItems = document.querySelectorAll('#concesionarioList li');
+    const hiddenInput = document.getElementById('relacion_id_concesionario');
+    const textDisplay = document.getElementById('concesionarioText');
 
+    // Toggle Panel
+    selected.addEventListener('click', (e) => {
+        const isVisible = panel.style.display === 'block';
+        panel.style.display = isVisible ? 'none' : 'block';
+        if(!isVisible) searchInput.focus();
+        e.stopPropagation();
+    });
+
+    // Filtro de búsqueda interno
+    searchInput.addEventListener('input', function() {
+        const filter = this.value.toLowerCase();
+        listItems.forEach(item => {
+            const text = item.textContent.toLowerCase();
+            item.style.display = text.includes(filter) ? '' : 'none';
+        });
+    });
+
+    // Selección de Concesionario
+    listItems.forEach(item => {
+        item.addEventListener('click', function() {
+            const val = this.getAttribute('data-id');
+            const name = this.textContent;
+            
+            hiddenInput.value = val;
+            textDisplay.textContent = name;
+            panel.style.display = 'none';
+            // Opcional: Enviar formulario automáticamente al seleccionar
+            // document.getElementById('filterForm').submit();
+        });
+    });
+
+    // Cerrar al hacer click fuera
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('#concesionarioDropdown')) {
+            panel.style.display = 'none';
+        }
+    });
+});
+</script>
 {% endblock %}
-
-
-
-

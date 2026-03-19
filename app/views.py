@@ -67,6 +67,7 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_CENTER
 from reportlab.pdfgen import canvas
 import xlsxwriter
+from django.db.models import Q, Value, CharField
 
 import os
 from django.http import FileResponse, Http404
@@ -4718,8 +4719,9 @@ def generar_informe_proveedores(request):
 
     try:
         with connections['simsa'].cursor() as cursor:
-            query = f'''
-            select 
+            # Usamos condiciones que aceptan 'all' para ignorar el filtro si es necesario
+            query = '''
+            SELECT 
                 c."Cuit",
                 c."BusinessName",
                 c."RegistrationNumber",
@@ -4731,40 +4733,59 @@ def generar_informe_proveedores(request):
                 cm."Name" as "ContractorMode",
                 p2."Name" as "Project",
                 c3."Name" as "Company"
-            from "Contractors" c
-            left join "Ciius" c2 on c2."Id" = c."Id"
-            left join "Areas" a on a."Id" = c."AreaId"
-            left join "Zones" z on z."Id" = c."ZoneId"
-            left join "NativeCommunities" nc on nc."Id" = c."NativeCommunityId"
-            left join "ContractorModes" cm on cm."Id" = c."ContractorModeId"
-            left join "PresentationContractors" pc on pc."ContractorId" = c."Id"
-            left join "Presentations" p on p."Id" = pc."PresentationId"
-            left join "Periods" p3 on p."PeriodId" = p3."Id"
-            left join "PresentationStates" ps on ps."Id" = p."PresentationStateId"
-            left join "Projects" p2 on p."ProjectId" = p2."Id"
-            left join "CompanyProjects" cp on cp."ProjectId" = p2."Id"
-            left join "Companies" c3 on c3."Id" = cp."CompanyId"
-            where p."IsDeleted" = false
-              and c3."Id" = %s
-              and p2."Id" = %s
-              and ps."Name" = 'Presentado'
-              and p3."Id" = %s
-              and p."IsRectification" = false
-              and p2."IsDeleted" = false
-              and c3."IsDeleted" = false
-              and cp."IsDeleted" = false
+            FROM "Contractors" c
+            LEFT JOIN "Ciius" c2 ON c2."Id" = c."Id"
+            LEFT JOIN "Areas" a ON a."Id" = c."AreaId"
+            LEFT JOIN "Zones" z ON z."Id" = c."ZoneId"
+            LEFT JOIN "NativeCommunities" nc ON nc."Id" = c."NativeCommunityId"
+            LEFT JOIN "ContractorModes" cm ON cm."Id" = c."ContractorModeId"
+            LEFT JOIN "PresentationContractors" pc ON pc."ContractorId" = c."Id"
+            LEFT JOIN "Presentations" p ON p."Id" = pc."PresentationId"
+            LEFT JOIN "Periods" p3 ON p."PeriodId" = p3."Id"
+            LEFT JOIN "PresentationStates" ps ON ps."Id" = p."PresentationStateId"
+            LEFT JOIN "Projects" p2 ON p."ProjectId" = p2."Id"
+            LEFT JOIN "CompanyProjects" cp ON cp."ProjectId" = p2."Id"
+            LEFT JOIN "Companies" c3 ON c3."Id" = cp."CompanyId"
+            WHERE p."IsDeleted" = false
+              AND (%s = 'all' OR c3."Id"::text = %s)
+              AND (%s = 'all' OR p2."Id"::text = %s)
+              AND (%s = 'all' OR p3."Id"::text = %s)
+              AND ps."Name" = 'Presentado'
+              AND p."IsRectification" = false
+              AND p2."IsDeleted" = false
+              AND c3."IsDeleted" = false
+              AND cp."IsDeleted" = false
             '''
-            cursor.execute(query, [concesionario, proyecto, periodo])
+            
+            # Pasamos cada parámetro dos veces para cubrir el (X = 'all' OR campo = X)
+            params = [
+                concesionario, concesionario, 
+                proyecto, proyecto, 
+                periodo, periodo
+            ]
+            
+            cursor.execute(query, params)
             data = cursor.fetchall()
             columns = [desc[0] for desc in cursor.description]
 
         if not data:
-            return JsonResponse({"error": "No se encontraron registros"}, status=404)
+            return JsonResponse({"error": "No se encontraron registros con los filtros seleccionados"}, status=404)
 
         # Crear Excel
         df = pd.DataFrame(data, columns=columns)
         output = io.BytesIO()
-        df.to_excel(output, index=False, sheet_name="Informe Proveedores")
+        
+        # Opcional: Ajustar nombres de columnas para que se vean mejor en el Excel
+        df.columns = [col.replace('"', '') for col in df.columns]
+        
+        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+            df.to_excel(writer, index=False, sheet_name="Informe Proveedores")
+            # Auto-ajuste de columnas (opcional pero profesional)
+            worksheet = writer.sheets['Informe Proveedores']
+            for i, col in enumerate(df.columns):
+                column_len = max(df[col].astype(str).map(len).max(), len(col)) + 2
+                worksheet.set_column(i, i, column_len)
+
         output.seek(0)
 
         response = HttpResponse(
@@ -4777,6 +4798,7 @@ def generar_informe_proveedores(request):
     except Exception as e:
         import traceback
         return JsonResponse({"error": str(e), "trace": traceback.format_exc()}, status=500)
+    
 def reportes_home(request):
     """
     Página principal para la generación de reportes.
@@ -4784,7 +4806,7 @@ def reportes_home(request):
 
     """
 
-    concesionarios = Companies.objects.using('simsa').all()
+    concesionarios = Companies.objects.using('simsa').all().order_by('name')
     
 
     context = {
@@ -4904,13 +4926,53 @@ def pgypm(request):
 
 #################################################EXPEDIENTES##############################################################
 def expedientes(request):
-    return render(request, 'expedientes/buscar_expediente.html')
+    query_general = request.GET.get('q', '')
+    empresa_id = request.GET.get('empresa', '')
+
+    # 1. Definimos los filtros comunes para aplicar a ambos
+    filtro_q = Q()
+    if query_general:
+        filtro_q &= (Q(expediente__icontains=query_general) | Q(nombre__icontains=query_general))
+    
+    if empresa_id:
+        # Usamos el campo concesionario que mencionaste
+        filtro_q &= Q(concesionario__icontains=empresa_id)
+
+    # 2. Aplicamos el filtro ANTES de la unión en CanteraCateoMina
+    qs_minas = CanteraCateoMina.objects.using('catastro').filter(filtro_q).values('id', 'expediente', 'nombre', 'estado' ,'concesionario', 'tipo')
+
+    # 3. Aplicamos el filtro ANTES de la unión en GrupoMinero
+    qs_grupos = GrupoMinero.objects.using('catastro').filter(filtro_q).annotate(
+        tipo=Value('Grupo', output_field=CharField())
+    ).values('id', 'expediente', 'nombre', 'estado' ,'concesionario', 'tipo')
+
+    # 4. Ahora sí, unimos los resultados ya filtrados
+    expedientes_unificados = qs_minas.union(qs_grupos).order_by('-expediente')
+    
+
+    # 5. Paginación
+    paginator = Paginator(expedientes_unificados, 15)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    # 6. Obtener lista de concesionarios para el buscador (Dropdown)
+    # Lo ideal es traerlos de la tabla que tenga la lista maestra, 
+    # pero si no existe, los sacamos de CanteraCateoMina:
+    concesionarios = Concesionarios.objects.using('catastro').all().order_by('concesionario')
+
+    context = {
+        'page_obj': page_obj,
+        'concesionarios': concesionarios,
+        'query_general': query_general,
+        'empresa_id': empresa_id,
+    }
+    return render(request, 'expedientes/buscar_expediente.html', context)
 
 ################################################SIRGEN######################################################
 @login_required
 def sirgen_view(request):
 
-    expedientes_queryset = Expediente.objects.filter(expedientedlt=False)
+    expedientes_queryset = CanteraCateoMina.objects.using('catastro').all()
 
     nro_exp = request.GET.get("nro_exp")
     anio = request.GET.get("anio")
@@ -4919,7 +4981,7 @@ def sirgen_view(request):
     concesionario = request.GET.get("concesionario")
 
     if nro_exp:
-        expedientes_queryset = expedientes_queryset.filter(expedienteid=nro_exp)
+        expedientes_queryset = expedientes_queryset.filter(expediente=nro_exp)
 
     if anio:
         expedientes_queryset = expedientes_queryset.filter(expedienteanio=anio)

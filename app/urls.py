@@ -120,7 +120,7 @@ urlpatterns = [
     #######################################################PGYPM##########################################################
     path('pgypm/',views.pgypm,name='pgypm'),
     ###################################################expedientes##########################################################
-    path('expedientes/',views.expedientes,name='buscar_expediente'),
+    path('expedientes/',views.expedientes,name='expedientes'),
 
 
     path('sirgen/',views.sirgen_view,name='sirgen'),

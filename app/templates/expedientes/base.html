@@ -226,7 +226,7 @@
       {% if request.user.groups.first.name == "Administrador" or request.user.groups.first.name == "Publicador"   %}
   {% endif %}
   <a href="{% url 'exportacion' %}" class="{% if request.resolver_match.url_name == 'exportacion' %}active{% endif %}" title="Exportacion">
-    <i data-lucide="plus"></i> <span>Nueva</span>
+    <i data-lucide="search"></i> <span>Buscar Expediente</span>
   </a>
   <a href="{% url 'exportaciones' %}" class="{% if request.resolver_match.url_name == 'exportaciones' %}active{% endif %}" title="Exportaciones">
     <i data-lucide="truck"></i> <span>Exportaciones</span>

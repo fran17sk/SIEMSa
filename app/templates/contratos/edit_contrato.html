@@ -31,7 +31,7 @@
     }
 
     .form-row .form-group {
-        flex: 1; 
+        flex: 1;
         display: flex;
         flex-direction: column;
         min-width: 0;
@@ -48,11 +48,11 @@
         font-size: 0.9rem;
     }
 
-    .form-group input, 
-    .form-group select, 
-    .form-group textarea, 
+    .form-group input,
+    .form-group select,
+    .form-group textarea,
     .form-group .empresa-selected {
-        height: 40px; 
+        height: 40px;
         padding: 8px 12px;
         border: 1.5px solid #d1d5db;
         border-radius: 8px;
@@ -74,7 +74,8 @@
         align-items: center;
         border: 1.5px solid #d1d5db;
         border-radius: 8px;
-        background: #f3f4f6; /* Indica que es lectura */
+        background: #f3f4f6;
+        /* Indica que es lectura */
         height: 40px;
     }
 
@@ -83,7 +84,9 @@
         background: transparent !important;
     }
 
-    .estado-icon { padding: 0 10px; }
+    .estado-icon {
+        padding: 0 10px;
+    }
 
     .checkbox-label {
         display: flex;
@@ -93,8 +96,18 @@
         font-weight: 600;
     }
 
-    .empresa-dropdown { position: relative; width: 100%; }
-    .empresa-selected { cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+    .empresa-dropdown {
+        position: relative;
+        width: 100%;
+    }
+
+    .empresa-selected {
+        cursor: pointer;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
     .empresa-panel {
         display: none;
         position: absolute;
@@ -104,17 +117,32 @@
         border: 1px solid #d1d5db;
         border-radius: 8px;
         z-index: 1000;
-        box-shadow: 0 10px 15px rgba(0,0,0,0.1);
+        box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
     }
-    .empresa-panel ul { list-style: none; padding: 0; margin: 0; max-height: 200px; overflow-y: auto; }
-    .empresa-panel li { padding: 10px; cursor: pointer; }
-    .empresa-panel li:hover { background: #f3f4f6; }
+
+    .empresa-panel ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        max-height: 200px;
+        overflow-y: auto;
+    }
+
+    .empresa-panel li {
+        padding: 10px;
+        cursor: pointer;
+    }
+
+    .empresa-panel li:hover {
+        background: #f3f4f6;
+    }
 
     button[type="submit"] {
         display: block;
         margin: 30px auto 0;
         padding: 12px 40px;
-        background: #059669; /* Verde para diferenciar de creación */
+        background: #059669;
+        /* Verde para diferenciar de creación */
         border: none;
         color: white;
         font-weight: 700;
@@ -130,12 +158,13 @@
 
     <form id="editForm" method="post" action="{% url 'edit_contrato' contrato.id %}" novalidate>
         {% csrf_token %}
-        
+
         <div class="form-row">
             <div class="form-group">
                 <label for="nro_expediente">Nro Expediente (No editable)</label>
                 <div class="input-with-icon">
-                    <input type="text" disabled id="nro_expediente" name="nro_expediente" value="{{ contrato.expediente }}" readonly />
+                    <input type="text" disabled id="nro_expediente" name="nro_expediente"
+                        value="{{ contrato.expediente }}" readonly />
                     <span id="estado_expediente" class="estado-icon">
                         <i class="fa fa-check-circle" style="color: green;"></i>
                     </span>
@@ -150,79 +179,82 @@
             <div class="form-group">
                 <label for="label_nro_expediente">Tipo Expediente</label>
                 {% if contrato.tipo_exp == 'minas' %}
-                    <input id="label_nro_expediente" disabled name="tipo_expediente" type="text" value="Mina" readonly>
+                <input id="label_nro_expediente" disabled name="tipo_expediente" type="text" value="Mina" readonly>
                 {% elif contrato.tipo_exp == 'canteras' %}
-                    <input id="label_nro_expediente" disabled name="tipo_expediente" type="text" value="Cantera" readonly>
+                <input id="label_nro_expediente" disabled name="tipo_expediente" type="text" value="Cantera" readonly>
                 {% else %}
-                    <input id="label_nro_expediente" disabled name="tipo_expediente" type="text" value="{{ contrato.tipo_exp}}" readonly>
+                <input id="label_nro_expediente" disabled name="tipo_expediente" type="text"
+                    value="{{ contrato.tipo_exp}}" readonly>
                 {% endif %}
 
             </div>
 
             <div class="form-group">
                 <label for="info_expediente">Nombre Expediente</label>
-                <input id="info_expediente" disabled name="nombre_exp" type="text" value="{{ contrato.nombre_exp }}" readonly>
+                <input id="info_expediente" disabled name="nombre_exp" type="text" value="{{ contrato.nombre_exp }}"
+                    readonly>
             </div>
         </div>
 
         <div class="form-row">
             <div class="form-group full-width">
-    <label>Relación Concesionario</label>
-    <div class="empresa-dropdown" id="concesionarioDropdown">
-        <div class="empresa-selected" id="concesionarioSelected">
-            <span id="concesionarioText">
-                {{ contrato.concesionario_nombre|default:"Seleccione concesionario" }}
-            </span>
-            <i class="fa fa-caret-down"></i>
-        </div>
-        <div class="empresa-panel" id="concesionarioPanel">
-            <input type="text" id="concesionarioSearch" placeholder="Buscar..." autocomplete="off">
-            <ul id="concesionarioList">
-                {% for c in concesionarios %}
-                <li data-id="{{ c.id }}">{{ c.concesionario }}</li>
-                {% endfor %}
-            </ul>
-        </div>
-    </div>
-    <input type="hidden" id="relacion_id_concesionario" name="relacion_id_concesionario" value="{{ contrato.id_concesionario }}">
-</div>
-            
-            <div class="form-group">
-                <label for="tipo_contrato">Tipo de Contrato</label>
-                <select id="tipo_contrato" name="tipo_contrato" required>
-    <option value="">Seleccionar tipo...</option>
-    {% for tipo in tipos_contrato %}
-        <option value="{{ tipo.id }}" 
-            {% if contrato.tipo and tipo.id == contrato.tipo.id %}selected{% endif %}>
-            {{ tipo.contratos_nombre }}
-        </option>
-    {% endfor %}
-</select>
+                <label>Relación Concesionario</label>
+                <div class="empresa-dropdown" id="concesionarioDropdown">
+                    <div class="empresa-selected" id="concesionarioSelected">
+                        <span id="concesionarioText">
+                            {{ contrato.concesionario_nombre|default:"Seleccione concesionario" }}
+                        </span>
+                        <i class="fa fa-caret-down"></i>
+                    </div>
+                    <div class="empresa-panel" id="concesionarioPanel">
+                        <input type="text" id="concesionarioSearch" placeholder="Buscar..." autocomplete="off">
+                        <ul id="concesionarioList">
+                            {% for c in concesionarios %}
+                            <li data-id="{{ c.id }}">{{ c.concesionario }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+                <input type="hidden" id="relacion_id_concesionario" name="relacion_id_concesionario"
+                    value="{{ contrato.id_concesionario }}">
             </div>
 
             <div class="form-group">
-    <label>Mineral Explotación</label>
-    <div class="empresa-dropdown" id="mineralDropdown">
-        <div class="empresa-selected" id="mineralSelected">
-            <span id="mineralText">
-                {{ contrato.mineral_explotacion|default:"Seleccione mineral" }}
-            </span>
-            <i class="fa fa-caret-down"></i>
-        </div>
-        <div class="empresa-panel" id="mineralPanel">
-            <input type="text" id="mineralSearch" placeholder="Buscar mineral..." autocomplete="off" 
-                   style="width: 100%; border: none; border-bottom: 1px solid #ddd; border-radius: 0; padding: 10px;">
-            <ul id="mineralList">
-                {% for m in minerales %}
-                <li data-value="{{ m.mineral }}">{{ m.mindet }} <small style="color: #9ca3af;">({{ m.mineral }})</small></li>
-                {% endfor %}
-            </ul>
-        </div>
-    </div>
-    <input type="hidden" id="id_mineral_explotacion" name="mineral_explotacion" value="{{ contrato.mineral_explotacion|default:'' }}">
-</div>
+                <label for="tipo_contrato">Tipo de Contrato</label>
+                <select id="tipo_contrato" name="tipo_contrato" required>
+                    <option value="">Seleccionar tipo...</option>
+                    {% for tipo in tipos_contrato %}
+                    <option value="{{ tipo.id }}" {% if contrato.tipo and tipo.id == contrato.tipo.id %}selected{% endif %}>
+                        {{ tipo.contratos_nombre }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
 
-            
+            <div class="form-group">
+                <label>Mineral Explotación</label>
+                <div class="empresa-dropdown" id="mineralDropdown">
+                    <div class="empresa-selected" id="mineralSelected">
+                        <span id="mineralText">
+                            {{ contrato.mineral_explotacion|default:"Seleccione mineral" }}
+                        </span>
+                        <i class="fa fa-caret-down"></i>
+                    </div>
+                    <div class="empresa-panel" id="mineralPanel">
+                        <input type="text" id="mineralSearch" placeholder="Buscar mineral..." autocomplete="off"
+                            style="width: 100%; border: none; border-bottom: 1px solid #ddd; border-radius: 0; padding: 10px;">
+                        <ul id="mineralList">
+                            {% for m in minerales %}
+                            <li data-value="{{ m.mineral }}">{{ m.mindet }} <small style="color: #494949;">({{ m.mineral }})</small></li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+                <input type="hidden" id="id_mineral_explotacion" name="mineral_explotacion"
+                    value="{{ contrato.mineral_explotacion|default:'' }}">
+            </div>
+
+
 
         </div>
 
@@ -240,7 +272,7 @@
                     Opcion de Compra
                 </label>
             </div>
-            
+
             <div class="form-group">
                 <label for="fecha_ini">Fecha Inicio</label>
                 <input type="date" id="fecha_ini" name="fecha_ini" value="{{ contrato.fecha_ini|date:'Y-m-d' }}">
@@ -262,12 +294,14 @@
 
         <div class="form-group">
             <label for="observaciones">Observaciones</label>
-            <textarea id="observaciones" name="observaciones" rows="3">{{ contrato.observaciones | default:'' }}</textarea>
+            <textarea id="observaciones" name="observaciones"
+                rows="3">{{ contrato.observaciones | default:'' }}</textarea>
         </div>
 
         <div class="button-container">
             <button type="submit">Actualizar Contrato</button>
-            <a href="{% url 'lista_contratos' %}" style="display:block; text-align:center; margin-top:10px; color:#6b7280; text-decoration:none;">Cancelar</a>
+            <a href="{% url 'lista_contratos' %}"
+                style="display:block; text-align:center; margin-top:10px; color:#6b7280; text-decoration:none;">Cancelar</a>
         </div>
     </form>
 </div>
@@ -304,48 +338,48 @@
             panelC.style.display = 'none';
         }
     });
-// --- LÓGICA DROPDOWN MINERALES (EDICIÓN) ---
-const dropdownM = document.getElementById('mineralDropdown');
-const selectedM = document.getElementById('mineralSelected');
-const panelM = document.getElementById('mineralPanel');
-const searchM = document.getElementById('mineralSearch');
-const listM = document.getElementById('mineralList');
-const textM = document.getElementById('mineralText');
-const hiddenM = document.getElementById('id_mineral_explotacion');
+    // --- LÓGICA DROPDOWN MINERALES (EDICIÓN) ---
+    const dropdownM = document.getElementById('mineralDropdown');
+    const selectedM = document.getElementById('mineralSelected');
+    const panelM = document.getElementById('mineralPanel');
+    const searchM = document.getElementById('mineralSearch');
+    const listM = document.getElementById('mineralList');
+    const textM = document.getElementById('mineralText');
+    const hiddenM = document.getElementById('id_mineral_explotacion');
 
-selectedM.addEventListener('click', () => {
-    panelM.style.display = panelM.style.display === 'block' ? 'none' : 'block';
-    searchM.value = '';
-    searchM.focus();
-    listM.querySelectorAll('li').forEach(li => li.style.display = '');
-});
-
-searchM.addEventListener('input', () => {
-    const q = searchM.value.toLowerCase();
-    listM.querySelectorAll('li').forEach(li => {
-        const text = li.textContent.toLowerCase();
-        li.style.display = text.includes(q) ? '' : 'none';
+    selectedM.addEventListener('click', () => {
+        panelM.style.display = panelM.style.display === 'block' ? 'none' : 'block';
+        searchM.value = '';
+        searchM.focus();
+        listM.querySelectorAll('li').forEach(li => li.style.display = '');
     });
-});
 
-listM.addEventListener('click', e => {
-    const li = e.target.closest('li');
-    if (li) {
-        textM.textContent = li.dataset.value; // Guardamos el nombre del mineral
-        hiddenM.value = li.dataset.value;     // Valor para el input hidden
-        panelM.style.display = 'none';
-    }
-});
+    searchM.addEventListener('input', () => {
+        const q = searchM.value.toLowerCase();
+        listM.querySelectorAll('li').forEach(li => {
+            const text = li.textContent.toLowerCase();
+            li.style.display = text.includes(q) ? '' : 'none';
+        });
+    });
 
-// Actualizar el cierre global de dropdowns
-document.addEventListener('click', e => {
-    if (!dropdownC.contains(e.target)) panelC.style.display = 'none';
-    if (!dropdownM.contains(e.target)) panelM.style.display = 'none';
-});
+    listM.addEventListener('click', e => {
+        const li = e.target.closest('li');
+        if (li) {
+            textM.textContent = li.dataset.value; // Guardamos el nombre del mineral
+            hiddenM.value = li.dataset.value;     // Valor para el input hidden
+            panelM.style.display = 'none';
+        }
+    });
+
+    // Actualizar el cierre global de dropdowns
+    document.addEventListener('click', e => {
+        if (!dropdownC.contains(e.target)) panelC.style.display = 'none';
+        if (!dropdownM.contains(e.target)) panelM.style.display = 'none';
+    });
     // Envío del Formulario con SweetAlert
     document.getElementById('editForm').addEventListener('submit', async function (e) {
         e.preventDefault();
-        
+
         const result = await Swal.fire({
             title: '¿Guardar cambios?',
             text: "Se actualizará la información del contrato",
@@ -364,7 +398,7 @@ document.addEventListener('click', e => {
                 tipo_contrato: document.getElementById('tipo_contrato').value,
                 pago_canon: document.getElementById('pago_canon').checked,
                 opcion_compra: document.getElementById('opcion_compra').checked,
-                mineral_explotacion: document.getElementById('mineral_explotacion').value,
+                mineral_explotacion: document.getElementById('mineralSearch').value.toUpperCase(),
                 activo: document.getElementById('activo').value,
                 fecha_ini: document.getElementById('fecha_ini').value,
                 fecha_fin: document.getElementById('fecha_fin').value,
@@ -400,60 +434,60 @@ document.addEventListener('click', e => {
 </script>
 <script>
     const fechaIniInput = document.getElementById('fecha_ini');
-const fechaFinInput = document.getElementById('fecha_fin');
-const estadoSelect = document.getElementById('activo');
-const statusMsg = document.getElementById('status-msg');
+    const fechaFinInput = document.getElementById('fecha_fin');
+    const estadoSelect = document.getElementById('activo');
+    const statusMsg = document.getElementById('status-msg');
 
-function calcularVigencia() {
-    const fIniVal = fechaIniInput.value;
-    const fFinVal = fechaFinInput.value;
-    
-    // Obtenemos "Hoy" sin horas para una comparación exacta de fechas
-    const hoy = new Date();
-    hoy.setHours(0, 0, 0, 0);
+    function calcularVigencia() {
+        const fIniVal = fechaIniInput.value;
+        const fFinVal = fechaFinInput.value;
 
-    if (fIniVal && fFinVal) {
-        // SI HAY AMBAS FECHAS: Bloqueamos y calculamos automáticamente
-        const fIni = new Date(fIniVal + 'T00:00:00');
-        const fFin = new Date(fFinVal + 'T00:00:00');
+        // Obtenemos "Hoy" sin horas para una comparación exacta de fechas
+        const hoy = new Date();
+        hoy.setHours(0, 0, 0, 0);
 
-        estadoSelect.disabled = true; // No se puede setear a mano
-        
-        if (hoy >= fIni && hoy <= fFin) {
-            estadoSelect.value = "si";
-            statusMsg.textContent = "Calculado automáticamente: Vigente";
+        if (fIniVal && fFinVal) {
+            // SI HAY AMBAS FECHAS: Bloqueamos y calculamos automáticamente
+            const fIni = new Date(fIniVal + 'T00:00:00');
+            const fFin = new Date(fFinVal + 'T00:00:00');
+
+            estadoSelect.disabled = true; // No se puede setear a mano
+
+            if (hoy >= fIni && hoy <= fFin) {
+                estadoSelect.value = "si";
+                statusMsg.textContent = "Calculado automáticamente: Vigente";
+            } else {
+                estadoSelect.value = "no";
+                statusMsg.textContent = "Calculado automáticamente: No Vigente";
+            }
         } else {
-            estadoSelect.value = "no";
-            statusMsg.textContent = "Calculado automáticamente: No Vigente";
-        }
-    } else {
-        // SI FALTA ALGUNA FECHA: Permitimos cambio manual y por defecto Vigente
-        estadoSelect.disabled = false;
-        statusMsg.textContent = "Sin fecha de fin: Ajuste manual permitido";
-        
-        // Si el usuario acaba de borrar la fecha y el campo estaba vacío:
-        if (!fFinVal && estadoSelect.dataset.lastAuto === "true") {
-            estadoSelect.value = "si";
+            // SI FALTA ALGUNA FECHA: Permitimos cambio manual y por defecto Vigente
+            estadoSelect.disabled = false;
+            statusMsg.textContent = "Sin fecha de fin: Ajuste manual permitido";
+
+            // Si el usuario acaba de borrar la fecha y el campo estaba vacío:
+            if (!fFinVal && estadoSelect.dataset.lastAuto === "true") {
+                estadoSelect.value = "si";
+            }
         }
     }
-}
 
-// Escuchar cambios en las fechas
-fechaIniInput.addEventListener('change', () => {
-    estadoSelect.dataset.lastAuto = "true";
-    calcularVigencia();
-});
+    // Escuchar cambios en las fechas
+    fechaIniInput.addEventListener('change', () => {
+        estadoSelect.dataset.lastAuto = "true";
+        calcularVigencia();
+    });
 
-fechaFinInput.addEventListener('change', () => {
-    estadoSelect.dataset.lastAuto = "true";
-    calcularVigencia();
-});
+    fechaFinInput.addEventListener('change', () => {
+        estadoSelect.dataset.lastAuto = "true";
+        calcularVigencia();
+    });
 
-// Ejecutar al cargar la página para setear el estado inicial
-document.addEventListener('DOMContentLoaded', calcularVigencia);
+    // Ejecutar al cargar la página para setear el estado inicial
+    document.addEventListener('DOMContentLoaded', calcularVigencia);
 
-// IMPORTANTE: Modificar el envío del formulario
-// Como el select 'disabled' no envía su valor, debemos habilitarlo un milisegundo 
-// antes de capturar los datos o simplemente leer el valor aunque esté disabled.
+    // IMPORTANTE: Modificar el envío del formulario
+    // Como el select 'disabled' no envía su valor, debemos habilitarlo un milisegundo
+    // antes de capturar los datos o simplemente leer el valor aunque esté disabled.
 </script>
 {% endblock %}

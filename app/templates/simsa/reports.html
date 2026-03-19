@@ -11,7 +11,7 @@
     }
 
     .report-card {
-        background-color: #f8f9fa;
+        background-color: #f6f7f8;
         border-radius: 12px;
         width: 300px;
         display: flex;
@@ -125,17 +125,151 @@
     background-color: #10472d;
 }
 
+
+
+
+    .report-card h3 {
+        margin-bottom: 15px;
+        font-size: 1.2em;
+        text-align: center;
+        color: #1f2937;
+    }
+
+    /* Estilos Dropdown con Búsqueda */
+    .empresa-field {
+        width: 100%;
+        margin-bottom: 15px;
+    }
+
+    .empresa-label {
+        display: block;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #4b5563;
+        margin-bottom: 6px;
+    }
+
+    .empresa-dropdown {
+        position: relative;
+        width: 100%;
+    }
+
+    .empresa-selected {
+        background: #fff;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        padding: 10px 14px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        cursor: pointer;
+        font-size: 0.95rem;
+        color: #374151;
+    }
+
+    .empresa-panel {
+        display: none;
+        position: absolute;
+        top: 105%;
+        left: 0;
+        width: 100%;
+        background: #fff;
+        border-radius: 10px;
+        box-shadow: 0 10px 25px rgba(0,0,0,.15);
+        z-index: 999;
+        overflow: hidden;
+        border: 1px solid #e5e7eb;
+    }
+
+    .empresa-panel input {
+        width: 100%;
+        padding: 10px;
+        border: none;
+        border-bottom: 1px solid #e5e7eb;
+        outline: none;
+        font-size: 0.9rem;
+    }
+
+    .empresa-panel ul {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        max-height: 200px;
+        overflow-y: auto;
+    }
+
+    .empresa-panel li {
+        padding: 10px 14px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        transition: background 0.2s;
+    }
+
+    .empresa-panel li:hover {
+        background: #f3f4f6;
+        color: #158824;
+    }
+
+    /* Selects Estándar (Año, Proyecto) */
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        margin-bottom: 12px;
+    }
+
+    select {
+        padding: 10px;
+        border-radius: 8px;
+        border: 1px solid #cbd5e1;
+        font-size: 0.9rem;
+        background-color: #fff;
+    }
+
+    /* Botones */
+    .report-buttons {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        margin-top: 10px;
+    }
+
+    .btn-action {
+        background-color: #158824;
+        color: white;
+        padding: 10px 15px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-size: 0.9em;
+        font-weight: 600;
+        text-align: center;
+        flex: 1;
+        transition: background 0.2s;
+    }
+
+    .btn-action:hover {
+        background-color: #10472d;
+    }
+
+    .pdf-btn { background-color: #d9534f; }
+    .pdf-btn:hover { background-color: #b52b27; }
+
+    .icon-img { width: 24px; height: 24px; vertical-align: middle; }
+
 </style>
 
 {% endblock %}
 
 {% block content %}
+
+<div class="main">
+
+
 <h1>Generación de Reportes</h1>
 
 <div class="report-container">
     <!-- Card de Usuarios -->
     <div class="report-card">
-        <h3>Usuarios Admin de Empresas</h3>
+        <h3>Usuarios Empresas</h3>
         <p style="text-align:center;">Genera un PDF o Excel con los usuarios administradores empresas</p>
         <div class="report-buttons">
             <a href="{% url 'usuarios_pdf' %}" target="_blank" class="pdf-btn">
@@ -179,7 +313,7 @@
     <!-- Card de Empresas sin Presentations -->
     <div class="report-card">
         <h3>Empresas sin DDJJ</h3>
-        <p style="text-align:center;">Genera un PDF o Excel con las empresas que tienen usuario, tienen por lo menos un proyecto pero no realizaron la Presentacion de por lo menos una DDJJ</p>
+        <p style="text-align:center;">Genera un PDF o Excel con las empresas que no realizaron la Presentacion de ninguna DDJJ</p>
         <div class="report-buttons">
             <a href="{% url 'reporte_empresas_sin_presentacion_pdf' %}" target="_blank" class="pdf-btn">
                 <i class="fa fa-file-pdf-o"></i> <img src="https://upload.wikimedia.org/wikipedia/commons/8/87/PDF_file_icon.svg" style="width: 40px; height: 40px;" alt="">
@@ -190,6 +324,21 @@
         </div>
     </div>
 
+        <!-- Card de Empresas sin proyecto -->
+    <div class="report-card">
+        <h3>Empresas con DDJJ Vencida</h3>
+        <p style="text-align:center;">Genera un PDF o Excel con las empresas que tienen DDJJ vencidas</p>
+        <div class="report-buttons">
+            <a href="{% url 'reporte_empresas_sin_proyecto_pdf' %}" target="_blank" class="pdf-btn">
+                <i class="fa fa-file-pdf-o"></i> <img src="https://upload.wikimedia.org/wikipedia/commons/8/87/PDF_file_icon.svg" style="width: 40px; height: 40px;" alt="">
+            </a>
+            <a href="{% url 'reporte_empresas_sin_proyecto_excel' %}" target="_blank">
+                <i class="fa fa-file-excel-o"></i> <img src="https://upload.wikimedia.org/wikipedia/commons/7/73/Microsoft_Excel_2013-2019_logo.svg" style="width: 40px; height: 40px;" alt="">
+            </a>
+        </div>
+    </div>
+
+
     <div class="report-card">
         <h3>Reporte de Deudas</h3>
         <p style="text-align:center;">Listado de Empresas que poseen muchas deudas de canon</p>
@@ -198,134 +347,302 @@
             </a>
         </div>
     </div>
-    <!-- Card de Reporte de Proveedores -->
-<!-- Card de Reporte de Proveedores -->
+
 <div class="report-card">
-    <h3>Reporte de Proveedores</h3>
-    <p style="text-align:center;">Seleccione los filtros para generar el reporte de proveedores</p>
-
-    <form id="reporte-proveedores-form" action="" method="get" target="_blank">
-        <div class="form-group">
-            <label for="concesionario">Concesionario:</label>
-            <select id="concesionario">
-                {% for c in concesionarios %}
-                    <option value="{{ c.id }}">{{ c.name }}</option>
-                {% endfor %}
-            </select>
-        </div>
-
-        <div class="form-group">
-            <label for="proyecto">Proyecto:</label>
-            <select name="proyecto" id="proyecto" required disabled>
-                <option value="">Seleccione un concesionario primero</option>
-            </select>
-        </div>
-
-        <div class="form-group">
-            <label for="periodo">Periodo:</label>
-            <select id="periodo-select">
-            <option value="">Seleccione un periodo</option>
-            </select>
-        </div>
-
-        <div class="report-buttons" id="btn-generar-informe">
-            <a href="">Generar Informe</a>
+            <h3>Sostenibilidad Social</h3>
+            <p style="text-align:center; font-size: 0.85em;">Reporte de impacto social anual</p>
             
+            <div class="empresa-field">
+                <label class="empresa-label">EMPRESA</label>
+                <div class="empresa-dropdown" id="dropdown-social">
+                    <div class="empresa-selected">
+                        <span class="selected-text">Todos</span>
+                        <svg width="14" height="14" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z" fill="currentColor"/></svg>
+                    </div>
+                    <div class="empresa-panel">
+                        <input type="text" placeholder="Buscar empresa..." autocomplete="off">
+                        <ul>
+                            <li data-id="all">Todos</li>
+                            {% for c in concesionarios %}
+                                <li data-id="{{ c.id }}">{{ c.name }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    <input type="hidden" id="id-social" value="all" class="hidden-id">
+                </div>
+            </div>
 
+            <div class="form-group">
+                <label>AÑO</label>
+                <select id="anio-social">
+                    <option value="2024">2024</option>
+                    <option value="2025">2025</option>
+                    <option value="2026">2026</option>
+                </select>
+            </div>
+
+            <div class="report-buttons">
+                <button class="btn-action btn-generar" data-type="social">Generar Informe</button>
+            </div>
         </div>
-    </form>
-</div>
+<div class="report-card">
+            <h3>Reporte de Empleo</h3>
+            <p style="text-align:center; font-size: 0.85em;">Estadísticas de mano de obra</p>
+            
+            <div class="empresa-field">
+                <label class="empresa-label">EMPRESA</label>
+                <div class="empresa-dropdown" id="dropdown-empleo">
+                    <div class="empresa-selected">
+                        <span class="selected-text">Todos</span>
+                        <svg width="14" height="14" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z" fill="currentColor"/></svg>
+                    </div>
+                    <div class="empresa-panel">
+                        <input type="text" placeholder="Buscar empresa..." autocomplete="off">
+                        <ul>
+                            <li data-id="all">Todos</li>
+                            {% for c in concesionarios %}
+                                <li data-id="{{ c.id }}">{{ c.name }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    <input type="hidden" id="id-empleo" value="all" class="hidden-id">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>AÑO</label>
+                <select id="anio-empleo">
+                    <option value="2024">2024</option>
+                    <option value="2025">2025</option>
+                    <option value="2026">2026</option>
+                </select>
+            </div>
+
+            <div class="report-buttons">
+                <button class="btn-action btn-generar" data-type="empleo">Generar Informe</button>
+            </div>
+        </div>
+
+        <div class="report-card">
+            <h3>Reporte de Proveedores</h3>
+            <p style="text-align:center; font-size: 0.85em;">Detalle de contrataciones locales</p>
+            
+            <div class="empresa-field">
+                <label class="empresa-label">CONCESIONARIO</label>
+                <div class="empresa-dropdown" id="dropdown-prov">
+                    <div class="empresa-selected">
+                        <span class="selected-text">Todos</span>
+                        <svg width="14" height="14" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z" fill="currentColor"/></svg>
+                    </div>
+                    <div class="empresa-panel">
+                        <input type="text" placeholder="Buscar..." autocomplete="off">
+                        <ul>
+                            <li data-id="all">Todos</li>
+                            {% for c in concesionarios %}
+                                <li data-id="{{ c.id }}">{{ c.name }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    <input type="hidden" id="id-prov" value="all" class="hidden-id">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>PROYECTO</label>
+                <select id="select-proyecto-prov" disabled>
+                    <option value="">(Seleccione empresa)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>PERIODO</label>
+                <select id="select-periodo-prov" disabled>
+                    <option value="">(Seleccione proyecto)</option>
+                </select>
+            </div>
+
+            <div class="report-buttons">
+                <button class="btn-action btn-generar" data-type="prov">Generar Informe</button>
+            </div>
+        </div>
+
+    </div>
 
 </div>
-
+</div>
 
 <script>
-const concesionarioSelect = document.getElementById("concesionario");
-const proyectoSelect = document.getElementById("proyecto");
+document.addEventListener('DOMContentLoaded', function() {
+    
+    // === 1. LÓGICA DE DROPDOWNS PERSONALIZADOS (BUSCADOR) ===
+    // Esta función inicializa todos los dropdowns de empresa de la página
+    const initCompanyDropdowns = () => {
+        document.querySelectorAll('.empresa-dropdown').forEach(dropdown => {
+            const selected = dropdown.querySelector('.empresa-selected');
+            const panel = dropdown.querySelector('.empresa-panel');
+            const searchInput = dropdown.querySelector('input[type="text"]');
+            const list = dropdown.querySelector('ul');
+            const textSpan = dropdown.querySelector('.selected-text');
+            const hiddenInput = dropdown.querySelector('.hidden-id');
 
-concesionarioSelect.addEventListener("change", function () {
-    const id = this.value;
-    proyectoSelect.innerHTML = "";
-
-    if (!id) {
-        proyectoSelect.innerHTML = '<option value="">Seleccione un concesionario primero</option>';
-        proyectoSelect.disabled = true;
-        return;
-    }
-
-    proyectoSelect.disabled = true;
-    proyectoSelect.innerHTML = '<option value="">Cargando...</option>';
-
-    fetch("{% url 'api_proyectos_por_concesionario' %}?company_id=" + id)
-        .then(resp => resp.json())
-        .then(data => {
-            proyectoSelect.innerHTML = '';
-            if (!data.proyectos || data.proyectos.length === 0) {
-                proyectoSelect.innerHTML = '<option value="">Sin proyectos disponibles</option>';
-                proyectoSelect.disabled = true;
-                return;
-            }
-            proyectoSelect.disabled = false;
-            proyectoSelect.innerHTML = '<option value="">Seleccione...</option>';
-            data.proyectos.forEach(p => {
-                const o = document.createElement('option');
-                o.value = p.id;
-                o.textContent = p.nombre;
-                proyectoSelect.appendChild(o);
+            // Abrir/Cerrar panel
+            selected.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const isVisible = panel.style.display === 'block';
+                // Cerrar otros que puedan estar abiertos
+                document.querySelectorAll('.empresa-panel').forEach(p => p.style.display = 'none');
+                panel.style.display = isVisible ? 'none' : 'block';
+                if (!isVisible) {
+                    searchInput.value = '';
+                    searchInput.focus();
+                    list.querySelectorAll('li').forEach(li => li.style.display = '');
+                }
             });
-        })
-        .catch(err => {
-            console.error(err);
-            proyectoSelect.innerHTML = '<option value="">Error al cargar proyectos</option>';
-            proyectoSelect.disabled = true;
+
+            // Evitar que el click en el buscador cierre el panel
+            panel.addEventListener('click', e => e.stopPropagation());
+
+            // Filtro de búsqueda
+            searchInput.addEventListener('input', () => {
+                const q = searchInput.value.toLowerCase();
+                list.querySelectorAll('li').forEach(li => {
+                    const text = li.textContent.toLowerCase();
+                    li.style.display = text.includes(q) ? '' : 'none';
+                });
+            });
+
+            // Selección de item
+            list.addEventListener('click', e => {
+                if (e.target.tagName === 'LI') {
+                    const id = e.target.dataset.id;
+                    const nombre = e.target.textContent;
+                    
+                    textSpan.textContent = nombre;
+                    hiddenInput.value = id;
+                    panel.style.display = 'none';
+                    
+                    // Disparamos evento manual para que la lógica de cascada se entere
+                    hiddenInput.dispatchEvent(new Event('change'));
+                }
+            });
         });
-});
-</script>
-<script>
-document.getElementById("proyecto").addEventListener("change", function() {
-  const projectId = this.value;
-  const periodoSelect = document.getElementById("periodo-select");
-  periodoSelect.innerHTML = '<option value="">Cargando...</option>';
+    };
 
-  if (projectId) {
-    fetch(`/api/periodos_por_proyecto?project_id=${projectId}`)
-      .then(response => response.json())
-      .then(data => {
-        periodoSelect.innerHTML = '<option value="">Seleccione un periodo</option>';
-        data.periodos.forEach(periodo => {
-          const opt = document.createElement("option");
-          opt.value = periodo.id;
-          console.log(periodo.id)
-          opt.textContent = periodo.nombre;
-          periodoSelect.appendChild(opt);
+    // Cerrar dropdowns al hacer click fuera
+    document.addEventListener('click', () => {
+        document.querySelectorAll('.empresa-panel').forEach(p => p.style.display = 'none');
+    });
+
+
+    // === 2. LÓGICA DE CASCADA (PROVEEDORES) ===
+    const idProvInput = document.getElementById('id-prov');
+    const selectProy = document.getElementById('select-proyecto-prov');
+    const selectPeri = document.getElementById('select-periodo-prov');
+
+    // Cuando cambia la empresa en Proveedores -> Cargar Proyectos
+    if (idProvInput) {
+        idProvInput.addEventListener('change', function() {
+            const companyId = this.value;
+            
+            // Reset de los selectores hijos
+            selectProy.innerHTML = '<option value="all">Todos los proyectos</option>';
+            selectPeri.innerHTML = '<option value="all">Todos los periodos</option>';
+            
+            if (companyId === 'all' || !companyId) return;
+
+            selectProy.disabled = true;
+            selectProy.innerHTML = '<option value="">Cargando proyectos...</option>';
+
+            fetch("{% url 'api_proyectos_por_concesionario' %}?company_id=" + companyId)
+                .then(r => r.json())
+                .then(data => {
+                    selectProy.innerHTML = '<option value="all">Todos los proyectos</option>';
+                    if (data.proyectos && data.proyectos.length > 0) {
+                        data.proyectos.forEach(p => {
+                            let opt = document.createElement('option');
+                            opt.value = p.id;
+                            opt.textContent = p.nombre;
+                            selectProy.appendChild(opt);
+                        });
+                    }
+                    selectProy.disabled = false;
+                })
+                .catch(err => {
+                    console.error("Error proyectos:", err);
+                    selectProy.innerHTML = '<option value="all">Error al cargar</option>';
+                });
         });
-
-        if (data.periodos.length === 0) {
-          periodoSelect.innerHTML = '<option value="">Sin periodos presentados</option>';
-        }
-      })
-      .catch(() => {
-        periodoSelect.innerHTML = '<option value="">Error al cargar periodos</option>';
-      });
-  } else {
-    periodoSelect.innerHTML = '<option value="">Seleccione un proyecto primero</option>';
-  }
-});
-</script>
-<script>
-document.getElementById("btn-generar-informe").addEventListener("click", function() {
-    const concesionario = document.getElementById("concesionario").value;
-    const proyecto = document.getElementById("proyecto").value;
-    const periodo = document.getElementById("periodo-select").value; // ⚡ Ojo aquí, antes no se estaba tomando
-
-    if (!concesionario || !proyecto || !periodo) {
-        alert("Seleccione concesionario, proyecto y periodo");
-        return;
     }
 
-    const url = `/reportes/generar_proveedores/?concesionario=${encodeURIComponent(concesionario)}&proyecto=${encodeURIComponent(proyecto)}&periodo=${encodeURIComponent(periodo)}`;
+    // Cuando cambia el proyecto en Proveedores -> Cargar Periodos
+    if (selectProy) {
+        selectProy.addEventListener('change', function() {
+            const projectId = this.value;
+            
+            selectPeri.innerHTML = '<option value="all">Todos los periodos</option>';
+            
+            if (projectId === 'all' || !projectId) return;
 
-    window.open(url);  // descarga en nueva pestaña
+            selectPeri.disabled = true;
+            selectPeri.innerHTML = '<option value="">Cargando periodos...</option>';
+
+            fetch(`/api/periodos_por_proyecto?project_id=${projectId}`)
+                .then(r => r.json())
+                .then(data => {
+                    selectPeri.innerHTML = '<option value="all">Todos los periodos</option>';
+                    if (data.periodos && data.periodos.length > 0) {
+                        data.periodos.forEach(p => {
+                            let opt = document.createElement('option');
+                            opt.value = p.id;
+                            opt.textContent = p.nombre;
+                            selectPeri.appendChild(opt);
+                        });
+                    }
+                    selectPeri.disabled = false;
+                })
+                .catch(err => {
+                    console.error("Error periodos:", err);
+                    selectPeri.innerHTML = '<option value="all">Error al cargar</option>';
+                });
+        });
+    }
+
+
+    // === 3. BOTÓN GENERAR (Maneja todos los tipos) ===
+    document.querySelectorAll('.btn-generar').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const type = this.dataset.type; // 'social', 'empleo' o 'prov'
+            const companyId = document.getElementById(`id-${type}`).value;
+            let url = "";
+
+            if (type === 'social') {
+                const anio = document.getElementById('anio-social').value;
+                url = `/reportes/sostenibilidad/?empresa=${companyId}&anio=${anio}`;
+            } 
+            else if (type === 'empleo') {
+                const anio = document.getElementById('anio-empleo').value;
+                url = `/reportes/empleo/?empresa=${companyId}&anio=${anio}`;
+            } 
+            else if (type === 'prov') {
+                const proy = selectProy.value;
+                const peri = selectPeri.value;
+                
+                // Validación básica para proveedores
+                if (!companyId) {
+                    alert("Seleccione una empresa");
+                    return;
+                }
+                url = `/reportes/generar_proveedores/?concesionario=${companyId}&proyecto=${proy}&periodo=${peri}`;
+            }
+
+            if (url) {
+                window.open(url, '_blank');
+            }
+        });
+    });
+
+    // Inicializar dropdowns al cargar
+    initCompanyDropdowns();
 });
 </script>
 {% endblock %}
