@@ -140,6 +140,14 @@ LOGIN_REDIRECT_URL = '/home'
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = '/static/'
+
+STATICFILES_DIRS = [
+    BASE_DIR / "static",
+]
+
+# 3. La carpeta donde Django COPIARÁ todos los archivos al ejecutar collectstatic
+# (Esta carpeta no debe estar dentro de tus archivos de código fuente habitualmente)
+STATIC_ROOT = BASE_DIR / "staticfiles"
 LOGIN_URL = '/login/'  # Asegúrate de que esta URL exista
 
 # Ruta absoluta donde Django buscará archivos estáticos si hacés collectstatic
