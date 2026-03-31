@@ -1,418 +1,366 @@
-{% extends "simsa/home.html" %}
+{% extends "base.html" %}
+
+{% block nav %}
+{% include 'simsa/navbar.html' %}
+{% endblock %}
 
 {% block content %}
-<div class="main">
-    <div class="filters">
-    <div class="filter-group">
-        <label>Fecha inicio</label>
-        <input type="date" id="fechaInicio">
+<div class="dashboard-wrapper">
+    <!--
+    <div class="stats-row">
+        <div class="stat-card">
+            <span class="stat-label">Total Recaudado</span>
+            <h3 id="total-monto-kpi">$ 0,00</h3>
+        </div>
+        <div class="stat-card">
+            <span class="stat-label">VEPs Procesados</span>
+            <h3 id="total-veps-kpi">0</h3>
+        </div>
+        <div class="stat-card">
+            <span class="stat-label">Última Actualización</span>
+            <h3 id="last-update-kpi">--/--/--</h3>
+        </div>
+    </div>
+    -->
+    <div class="filters-bar">
+        <div class="filter-inputs">
+            <div class="input-field">
+                <i data-lucide="calendar"></i>
+                <input type="date" id="fechaInicio" placeholder="Desde">
+            </div>
+            <div class="input-field">
+                <i data-lucide="calendar"></i>
+                <input type="date" id="fechaFin" placeholder="Hasta">
+            </div>
+            <div class="input-field flex-grow">
+                <i data-lucide="search"></i>
+                <input type="text" id="empresaFiltro" placeholder="Buscar empresa o VEP...">
+            </div>
+            <div class="input-field">
+                <i data-lucide="credit-card"></i>
+                <select id="medioFiltro">
+                    <option value="">Todos los medios</option>
+                </select>
+            </div>
+        </div>
+        <div class="filter-actions">
+            <button class="btn-primary" onclick="aplicarFiltros()">
+                <i data-lucide="filter"></i>
+            </button>
+            <button class="btn-ghost" onclick="limpiarFiltros()">
+                <i data-lucide="rotate-ccw"></i>
+            </button>
+        </div>
     </div>
 
-    <div class="filter-group">
-        <label>Fecha fin</label>
-        <input type="date" id="fechaFin">
-    </div>
-
-    <div class="filter-group">
-        <label>Empresa</label>
-        <input type="text" id="empresaFiltro" placeholder="Nombre empresa">
-    </div>
-
-    <div class="filter-group">
-        <label>Método de pago</label>
-        <select id="medioFiltro">
-            <option value="">Todos</option>
-        </select>
-    </div>
-
-    <div class="filter-group">
-        <button class="add-btn" onclick="aplicarFiltros()">Filtrar</button>
-        <button class="add-btn" style="background:#6b7280" onclick="limpiarFiltros()">Limpiar</button>
-    </div>
-</div>
-    <div class="table-container">
-
+    <div class="table-container shadow-sm">
         <div class="table-header">
-            <h2>Pagos Interbanking - MacroClick - Pagos Manuales</h2>
-            <button class="add-btn" onclick="imprimirTabla()">
-                🖨️ Imprimir
+            <div class="title-group">
+                <h2>Historial de Pagos Centralizado</h2>
+                <p>Interbanking • MacroClick • Pagos Manuales</p>
+            </div>
+            <button class="btn-outline" onclick="imprimirTabla()">
+                <i data-lucide="printer"></i> Exportar / Imprimir
             </button>
         </div>
 
-        <table>
-            <thead>
-                <tr>
-                    <th></th>
-                    <th>VEP</th>
-                    <th>Empresa</th>
-                    <th>Medio</th>
-                    <th>Estado VEP</th>
-                    <th>Registros</th>
-                    <th>Fecha de Pago</th>
-                    <th>Total Abonado</th>
-                </tr>
-            </thead>
-            <tbody id="vep-body">
-                <tr>
-                    <td colspan="8" class="no-data">Cargando datos…</td>
-                </tr>
-            </tbody>
-        </table>
-
+        <div class="table-responsive">
+            <table class="modern-table">
+                <thead>
+                    <tr>
+                        <th width="40"></th>
+                        <th>VEP</th>
+                        <th>Empresa / Contribuyente</th>
+                        <th>Medio de Pago</th>
+                        <th>Estado</th>
+                        <th class="text-center">Items</th>
+                        <th>Fecha Pago</th>
+                        <th class="text-right">Total Abonado</th>
+                    </tr>
+                </thead>
+                <tbody id="vep-body">
+                    <tr>
+                        <td colspan="8" class="loading-state">
+                            <div class="loader-inline"></div> Cargando registros...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 
 <style>
-    .filters {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    margin-bottom: 1.2rem;
-    background: #f8fafc;
-    padding: 1rem;
-    border-radius: 10px;
-    width: 100%;
-}
-
-.filter-group {
-    display: flex;
-    flex-direction: column;
-    font-size: 0.75rem;
-    width: 200px;
-}
-
-.filter-group label {
-    font-weight: 600;
-    margin-bottom: 4px;
-    color: #374151;
-}
-
-.filter-group input,
-.filter-group select {
-    padding: 6px 8px;
-    border-radius: 6px;
-    border: 1px solid #d1d5db;
-    font-size: 0.8rem;
-}
-    .toggle {
-        cursor: pointer;
-        font-size: 1.2rem;
-        text-align: center;
-        width: 30px;
-        color: #003366;
-    }
-
-    .toggle:hover {
-        color: #0055a5;
-    }
-
-    .detail-row {
-        display: none;
-        background-color: #f9f9f9;
-    }
-
     :root {
-        --sidebar-bg: #1f2937;
-        --sidebar-accent: #3b82f6;
-        --text-light: #f9fafb;
-        --text-muted: #9ca3af;
-        --hover-bg: rgba(59, 130, 246, 0.1);
+        --primary: #2563eb;
+        --primary-dark: #1e40af;
+        --text-muted: #64748b;
+        --border: #e2e8f0;
+        --success: #10b981;
     }
 
-    body {
-        margin: 0;
-        font-family: 'Segoe UI', sans-serif;
-        background: #f4f6f8;
+    .dashboard-wrapper {
+        padding: .5rem;
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+
+    /* Stats Cards */
+    .stats-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        background: var(--card-bg);
+        padding: 1.5rem;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .stat-label {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .stat-card h3 {
+        font-size: 1.5rem;
+        margin-top: 0.5rem;
+        color: var(--text-ligth);
+    }
+
+    /* Filters Bar */
+    .filters-bar {
+        background: var(--card-bg);
+        padding: 1rem;
+        border-radius: 12px;
         display: flex;
-        height: 100vh;
+        gap: 1rem;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        border: 1px solid var(--border);
+    }
+
+    .filter-inputs {
+        display: flex;
+        gap: 0.75rem;
+        flex-grow: 1;
+        flex-wrap: wrap;
+    }
+
+    .input-field {
+        display: flex;
+        align-items: center;
+        background: var(--bg-main);
+        border-radius: 8px;
+        padding: 0 10px;
+        border: 1px solid transparent;
+        transition: 0.3s;
+    }
+
+    .input-field:focus-within {
+        border-color: var(--primary);
+        background: var(--card-bg);
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    .input-field i {
+        width: 16px;
+        color: var(--text-muted);
+    }
+
+    .input-field input,
+    .input-field select {
+        background: transparent;
+        border: none;
+        padding: 10px;
+        font-size: 0.9rem;
+        color: var(--text-ligth);
+        outline: none;
+    }
+
+    .flex-grow {
+        flex-grow: 1;
+    }
+
+    /* Buttons */
+    .btn-primary {
+        background: var(--primary);
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 500;
+    }
+
+    .btn-primary:hover {
+        background: var(--primary-dark);
+    }
+
+    .btn-ghost {
+        background: transparent;
+        border: 1px solid var(--border);
+        padding: 10px 20px;
+        border-radius: 8px;
+        cursor: pointer;
+        color: var(--text-muted);
+    }
+
+    .btn-outline {
+        background: #fff;
+        border: 1px solid var(--border);
+        padding: 8px 16px;
+        border-radius: 8px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.9rem;
+    }
+
+    /* Table Styles */
+    .table-container {
+        background: var(--card-bg);
+        border-radius: 12px;
+        border: 1px solid var(--border);
         overflow: hidden;
     }
 
-    .sidebar {
-        width: 250px;
-        background-color: var(--sidebar-bg);
-        color: var(--text-light);
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-        transition: all 0.3s ease-in-out;
-        box-shadow: 2px 0 6px rgba(0, 0, 0, 0.1);
-    }
-
-    .sidebar .menu {
-        padding: 2rem 1rem;
-    }
-
-    .sidebar .menu .logo {
-        font-size: 1.5rem;
-        font-weight: bold;
-        margin-bottom: 2.5rem;
-        text-align: center;
-        letter-spacing: 1px;
-        color: white;
-    }
-
-    .sidebar nav a {
-        display: flex;
-        align-items: center;
-        text-decoration: none;
-        color: var(--text-light);
-        padding: 0.75rem 1rem;
-        margin-bottom: 0.5rem;
-        border-radius: 8px;
-        transition: background 0.2s, color 0.2s;
-    }
-
-    .sidebar nav a:hover,
-    .sidebar nav a.active {
-        background-color: var(--hover-bg);
-        color: var(--sidebar-accent);
-    }
-
-    .sidebar nav a svg {
-        margin-right: 12px;
-        stroke-width: 1.8;
-    }
-
-    .user-footer {
-        padding: 1.2rem;
-        text-align: center;
-        border-top: 1px solid rgba(255, 255, 255, 0.1);
-        font-size: 0.95rem;
-        color: var(--text-muted);
-        background-color: #111827;
-    }
-
-    .main {
-        flex: 1;
-        padding: 2rem;
-        overflow-y: auto;
-        animation: fadeIn 0.4s ease;
-    }
-
-    @keyframes fadeIn {
-        from {
-            opacity: 0;
-            transform: translateY(10px);
-        }
-
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-
-    @media (max-width: 768px) {
-        .sidebar {
-            position: fixed;
-            left: -100%;
-            height: 100vh;
-            z-index: 999;
-        }
-
-        .sidebar.open {
-            left: 0;
-        }
-
-        .toggle-btn {
-            position: fixed;
-            top: 1rem;
-            left: 1rem;
-            z-index: 1000;
-            background: var(--sidebar-accent);
-            color: white;
-            border: none;
-            padding: 0.6rem 1rem;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 1.2rem;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-        }
-    }
-
-    .table-container {
-        background: #fff;
-        border-radius: 12px;
-        padding: 1.5rem;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
-        transition: transform 0.3s ease;
-    }
-
-    .table-container:hover {
-        transform: translateY(-3px);
-    }
-
     .table-header {
+        padding: 1.5rem;
+        border-bottom: 1px solid var(--border);
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 1rem;
     }
 
-    .table-header h2 {
-        font-size: 1.5rem;
-        font-weight: 600;
+    .title-group h2 {
+        font-size: 1.25rem;
+        color: var(--text-ligth);
     }
 
-    .add-btn {
-        background-color: #004080;
-        color: white;
-        padding: 0.5rem 1rem;
-        border: none;
-        border-radius: 8px;
-        cursor: pointer;
-        font-weight: 600;
-        transition: background 0.3s ease;
-        width: 100px;
+    .title-group p {
+        font-size: 0.85rem;
+        color: var(--text-muted);
     }
 
-    .add-btn:hover {
-        background-color: #002a55;
-    }
-
-    table {
+    .modern-table {
         width: 100%;
         border-collapse: collapse;
-        margin-top: 0.5rem;
     }
 
-    th,
-    td {
-        padding: 1rem;
-        font-size: 0.8rem;
+    .modern-table th {
+        background: var(--bg-main);
+        padding: 12px 16px;
         text-align: left;
-        border-bottom: 1px solid #eee;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        font-weight: 700;
+        border-bottom: 1px solid var(--border);
     }
 
-    th {
-        background-color: #f0f2f5;
+    .modern-table td {
+        padding: 16px;
+        font-size: 0.9rem;
+        border-bottom: 1px solid var(--border);
+        color: var(--text-ligth);
+    }
+
+    .modern-table tr:hover {
+        background: var(--bg-main);
+    }
+
+    /* Status Badges */
+    .badge {
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 0.75rem;
         font-weight: 600;
     }
 
-    .actions button {
-        background: none;
-        border: none;
-        cursor: pointer;
-        margin-right: 0.6rem;
-        font-size: 1.1rem;
-        color: #555;
-        transition: color 0.2s ease;
+    .badge-success {
+        background: #dcfce7;
+        color: #166534;
     }
 
-    .actions button:hover {
-        color: #004080;
+    .badge-warning {
+        background: #fef9c3;
+        color: #854d0e;
     }
 
-    .actions .fa-trash:hover {
-        color: #c0392b;
+    /* Subtable Detail */
+    .detail-row {
+        display: none;
+        background: var(--bg-main);
     }
 
-    @media (max-width: 600px) {
-
-        th,
-        td {
-            padding: 0.6rem;
-        }
-    }
-
-    .pagination {
-        margin-top: 1.5rem;
-        text-align: center;
-    }
-
-    .pagination a,
-    .pagination span {
-        display: inline-block;
-        margin: 0 6px;
-        padding: 8px 12px;
-        border-radius: 4px;
-        color: #004080;
-        text-decoration: none;
-        border: 1px solid #ddd;
-    }
-
-    .pagination a:hover {
-        background-color: #e0ecff;
-    }
-
-    .pagination span {
-        background-color: #004080;
-        color: white;
-        font-weight: bold;
-    }
-
-    .no-data {
-        text-align: center;
-        color: #888;
-        padding: 20px;
+    .subtable-wrapper {
+        padding: 6px 40px;
     }
 
     .subtable {
         width: 100%;
-        border-collapse: collapse;
-        margin-top: 10px;
+        background: var(--card-bg);
+        border-radius: 8px;
+        border: 1px solid var(--border);
     }
 
-    .subtable th,
-    .subtable td {
-        padding: 5px;
-        border: 1px solid #ddd;
+    .text-right {
+        text-align: right;
+    }
+
+    .text-center {
         text-align: center;
     }
 
-    .detail-row {
-        background-color: #f9f9f9;
-    }
-
-    a i {
-        color: #111827;
-    }
-
-    .btn-pdf {
+    .toggle-btn {
+        cursor: pointer;
+        transition: 0.2s;
         display: inline-block;
-        padding: 10px 20px;
-        background-color: #003366;
-        /* azul oscuro */
-        color: white;
+        color: var(--primary);
         font-weight: bold;
-        border-radius: 6px;
-        text-decoration: none;
-        transition: background 0.3s ease;
-    }
-
-    .btn-pdf:hover {
-        background-color: #0055a5;
     }
 </style>
 
 <script>
     let rawData = [];
-let groupedData = [];
-document.addEventListener("DOMContentLoaded", () => {
-    fetch("{% url 'pagos_interbanking' %}")
-        .then(r => r.json())
-        .then(data => {
-            rawData = data;
-            groupedData = groupByVep(data);
-            cargarMedios(data);
-            buildTable(groupedData);
-        })
-        .catch(err => console.error(err));
-});
-function cargarMedios(data) {
-    const select = document.getElementById("medioFiltro");
-    const medios = [...new Set(data.map(d => d.State_Vep).filter(Boolean))];
-
-    medios.forEach(m => {
-        const opt = document.createElement("option");
-        opt.value = m;
-        opt.textContent = m;
-        select.appendChild(opt);
+    let groupedData = [];
+    document.addEventListener("DOMContentLoaded", () => {
+        fetch("{% url 'pagos_interbanking' %}")
+            .then(r => r.json())
+            .then(data => {
+                rawData = data;
+                groupedData = groupByVep(data);
+                cargarMedios(data);
+                buildTable(groupedData);
+            })
+            .catch(err => console.error(err));
     });
-}
+    function cargarMedios(data) {
+        const select = document.getElementById("medioFiltro");
+        const medios = [...new Set(data.map(d => d.State_Vep).filter(Boolean))];
+
+        medios.forEach(m => {
+            const opt = document.createElement("option");
+            opt.value = m;
+            opt.textContent = m;
+            select.appendChild(opt);
+        });
+    }
 
 
-    
+
     function groupByVep(data) {
         const grouped = {};
 
@@ -545,55 +493,55 @@ function cargarMedios(data) {
         });
     }
 
-function aplicarFiltros() {
-    const fi = document.getElementById("fechaInicio").value;
-    const ff = document.getElementById("fechaFin").value;
-    const empresa = document.getElementById("empresaFiltro").value.trim().toLowerCase();
-    const medio = document.getElementById("medioFiltro").value;
+    function aplicarFiltros() {
+        const fi = document.getElementById("fechaInicio").value;
+        const ff = document.getElementById("fechaFin").value;
+        const empresa = document.getElementById("empresaFiltro").value.trim().toLowerCase();
+        const medio = document.getElementById("medioFiltro").value;
 
-    let filtrados = groupedData.filter(v => {
+        let filtrados = groupedData.filter(v => {
 
-        // Empresa (maneja null)
-        const empresaVep = (v.empresa ?? "pago verificado por secretaría").toLowerCase();
-        if (empresa && !empresaVep.includes(empresa)) {
-            return false;
-        }
+            // Empresa (maneja null)
+            const empresaVep = (v.empresa ?? "pago verificado por secretaría").toLowerCase();
+            if (empresa && !empresaVep.includes(empresa)) {
+                return false;
+            }
 
-        // Método de pago
-        if (medio && v.estado_log !== medio) {
-            return false;
-        }
+            // Método de pago
+            if (medio && v.estado_log !== medio) {
+                return false;
+            }
 
-        // Fecha de pago
-        if (fi || ff) {
-            if (!v.paid_date) return false;
-            const fechaPago = new Date(v.paid_date);
+            // Fecha de pago
+            if (fi || ff) {
+                if (!v.paid_date) return false;
+                const fechaPago = new Date(v.paid_date);
 
-            if (fi && fechaPago < new Date(fi)) return false;
-            if (ff && fechaPago > new Date(ff)) return false;
-        }
+                if (fi && fechaPago < new Date(fi)) return false;
+                if (ff && fechaPago > new Date(ff)) return false;
+            }
 
-        return true;
-    });
+            return true;
+        });
 
-    buildTable(filtrados);
-}
-function limpiarFiltros() {
-    document.getElementById("fechaInicio").value = "";
-    document.getElementById("fechaFin").value = "";
-    document.getElementById("empresaFiltro").value = "";
-    document.getElementById("medioFiltro").value = "";
+        buildTable(filtrados);
+    }
+    function limpiarFiltros() {
+        document.getElementById("fechaInicio").value = "";
+        document.getElementById("fechaFin").value = "";
+        document.getElementById("empresaFiltro").value = "";
+        document.getElementById("medioFiltro").value = "";
 
-    buildTable(groupedData);
-}
+        buildTable(groupedData);
+    }
 </script>
 <script>
-function imprimirTabla() {
-    const contenido = document.querySelector(".table-container").innerHTML;
+    function imprimirTabla() {
+        const contenido = document.querySelector(".table-container").innerHTML;
 
-    const ventana = window.open("", "", "width=1200,height=800");
+        const ventana = window.open("", "", "width=1200,height=800");
 
-    ventana.document.write(`
+        ventana.document.write(`
         <html>
         <head>
             <title>Pagos Interbanking</title>
@@ -649,11 +597,87 @@ function imprimirTabla() {
         </html>
     `);
 
-    ventana.document.close();
-    ventana.focus();
-    ventana.print();
-    ventana.close();
-}
+        ventana.document.close();
+        ventana.focus();
+        ventana.print();
+        ventana.close();
+    }
+
+    function updateKPIs(data) {
+        const total = data.reduce((acc, curr) => acc + curr.total_abonado, 0);
+        document.getElementById('total-monto-kpi').textContent = formatMoney(total);
+        document.getElementById('total-veps-kpi').textContent = data.length;
+        document.getElementById('last-update-kpi').textContent = new Date().toLocaleDateString();
+    }
+
+    // Refactorización del buildTable para usar Badges
+    function buildTable(veps) {
+        const tbody = document.getElementById("vep-body");
+        tbody.innerHTML = "";
+
+        veps.forEach(vep => {
+            const statusClass = vep.estado_vep?.toLowerCase().includes("pagado") ? "badge-success" : "badge-warning";
+            
+            const mainRow = document.createElement("tr");
+            mainRow.innerHTML = `
+                <td class="text-center"><span class="toggle-btn" onclick="toggleDetails(${vep.vep}, this)">+</span></td>
+                <td><strong>#${vep.vep}</strong></td>
+                <td>
+                    <div style="font-weight: 600;">${vep.empresa ?? "Verificado por Secretaría"}</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted)">CUIT: --/-------/-</div>
+                </td>
+                <td><span style="font-size: 0.85rem">${vep.estado_log}</span></td>
+                <td><span class="badge ${statusClass}">${vep.estado_vep || 'Pendiente'}</span></td>
+                <td class="text-center">${vep.detalles.length}</td>
+                <td>${formatDate(vep.paid_date)}</td>
+                <td class="text-right"><strong>${formatMoney(vep.total_abonado)}</strong></td>
+            `;
+
+            // Fila de detalles (se mantiene oculta)
+            const detailRow = document.createElement("tr");
+            detailRow.id = `details-${vep.vep}`;
+            detailRow.className = "detail-row";
+            detailRow.innerHTML = `
+                <td colspan="8">
+                    <div class="subtable-wrapper">
+                        <table class="subtable">
+                            <thead>
+                                <tr>
+                                    <th>Expediente</th>
+                                    <th>Nombre/Mina</th>
+                                    <th>Tipo</th>
+                                    <th>Periodo</th>
+                                    <th class="text-right">Monto</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${vep.detalles.map(d => `
+                                    <tr>
+                                        <td>${d.expediente}</td>
+                                        <td>${d.expediente_name}</td>
+                                        <td>${d.expediente_tipo}</td>
+                                        <td>${d.periodo}</td>
+                                        <td class="text-right">${formatMoney(d.paid)}</td>
+                                    </tr>
+                                `).join("")}
+                            </tbody>
+                        </table>
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(mainRow);
+            tbody.appendChild(detailRow);
+        });
+        if (window.lucide) lucide.createIcons();
+    }
+
+    function toggleDetails(vepId, el) {
+        const row = document.getElementById(`details-${vepId}`);
+        const isVisible = row.style.display === "table-row";
+        row.style.display = isVisible ? "none" : "table-row";
+        el.textContent = isVisible ? "+" : "-";
+        el.style.transform = isVisible ? "rotate(0)" : "rotate(180deg)";
+    }
 </script>
 
 {% endblock %}

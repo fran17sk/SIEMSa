@@ -1,239 +1,324 @@
-{% extends "simsa/home.html" %}
+{% extends "base.html" %}
 {% load static %}
 
+{% block nav %}
+  {% include 'simsa/navbar.html' %}
+{% endblock %}
+
 {% block head %}
+<script src="https://unpkg.com/lucide@latest"></script>
+
 <style>
-    body {
-        background-color: #f8f9fa;
+    
+    .main-container {
+        margin: 2rem auto;
+        max-width: 1200px;
+        padding: 0 20px;
     }
 
-    .container {
-        margin: 30px 60px;
-        background-color: #fff;
-        padding: 25px;
-        border-radius: 8px;
-        box-shadow: 0px 2px 10px rgba(0,0,0,0.1);
+    /* Card Wrapper */
+    .table-card {
+        background-color: var(--card-bg);
+        border-radius: 16px;
+        border: 1px solid var(--border-color);
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.2);
+        overflow: visible; /* IMPORTANTE: Volver a visible para que no corte elementos */
+        padding: 24px;
     }
 
-    h1 {
-        text-align: center;
-        color: #343a40;
-        margin-bottom: 20px;
+    /* --- CORRECCIÓN AQUÍ --- */
+    .table-header-flex {
+        display: flex;
+        justify-content: space-between;
+        align-items: center; /* Alineación vertical perfecta */
+        margin-bottom: 24px;
+        gap: 20px;
+        flex-wrap: nowrap; /* Evita saltos de línea innecesarios en pantallas medianas */
+    }
+
+    .title-section h1 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--text-light);
+        margin: 0;
+    }
+
+    .title-section p {
+        font-size: 0.875rem;
+        color: var(--text-muted);
+        margin-top: 4px;
+        margin-bottom: 0;
+    }
+
+    /* Buscador Estilizado - CORREGIDO */
+    .search-wrapper {
+        position: relative;
+        flex: 1; /* Ocupa el espacio disponible */
+        max-width: 400px; /* Ancho máximo para el buscador */
+        display: flex;
+        align-items: center;
+    }
+
+    .search-wrapper i {
+        position: absolute;
+        left: 14px; /* Un poco más de margen */
+        color: var(--text-muted);
+        width: 18px;
+        height: 18px; /* Forzar tamaño para evitar distorsiones */
+        pointer-events: none; /* Icono no interactuable */
     }
 
     #searchInput {
-        width: 90%;
-        padding: 10px 15px;
-        margin-bottom: 20px;
-        border-radius: 5px;
-        border: 1px solid #ccc;
-        font-size: 16px;
+        width: 100%;
+        background-color: var(--bg-main); /* Fondo más oscuro para el input */
+        color: var(--text-light);
+        padding: 12px 12px 12px 42px; /* Más padding para comodidad y el icono */
+        border-radius: 10px;
+        border: 1px solid var(--border-color);
+        font-size: 0.95rem;
+        transition: all 0.2s ease;
+        height: 44px; /* Altura fija para alineación perfecta */
+    }
+
+    #searchInput:focus {
+        outline: none;
+        border-color: var(--primary-accent);
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+    }
+
+    /* Botones de Exportación - CORREGIDO */
+    .export-group {
+        display: flex;
+        gap: 10px; /* Un poco más de espacio entre botones */
+        align-items: center;
+    }
+
+    .btn-action {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 0 16px; /* Ajuste de padding horizontal */
+        border-radius: 8px;
+        font-size: 0.875rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        border: 1px solid var(--border-color);
+        background: var(--bg-main); /* Fondo más oscuro */
+        color: var(--text-light);
+        height: 44px; /* MISMA ALTURA QUE EL BUSCADOR PARA ALINEACIÓN */
+    }
+
+    .btn-action i {
+        width: 16px;
+        height: 16px;
+    }
+
+    .btn-action:hover {
+        background: var(--border-color); /* Un fondo ligeramente más claro en hover */
+        transform: translateY(-1px);
+    }
+
+    .btn-action.excel:hover { color: var(--success-excel); border-color: var(--success-excel); }
+    .btn-action.pdf:hover { color: var(--danger-pdf); border-color: var(--danger-pdf); }
+
+    /* Tabla Profesional (sin cambios) */
+    .table-responsive {
+        overflow-x: auto;
+        clear: both; /* Asegurar que la tabla empiece debajo del encabezado */
     }
 
     table {
         width: 100%;
-        border-collapse: collapse;
-        font-size: 13px;
-    }
-
-    th, td {
-        padding: 12px 15px;
-        border-bottom: 1px solid #dee2e6;
-        text-align: left;
+        border-collapse: separate;
+        border-spacing: 0;
+        font-size: 0.9rem;
     }
 
     th {
-        background-color: #343a40;
-        color: #fff;
-        font-weight: bold;
+        background-color: var(--table-header-bg);
+        color: var(--text-muted);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        padding: 12px 16px;
+        border-bottom: 2px solid var(--border-color);
+        text-align: left;
     }
 
-    tr:hover {
-        background-color: #f1f3f5;
+    td {
+        padding: 16px;
+        border-bottom: 1px solid var(--border-color);
+        color: var(--text-light);
+    }
+
+    tr:last-child td { border-bottom: none; }
+
+    tr:hover td {
+        background-color: rgba(59, 130, 246, 0.05); /* Ligeramente más visible en oscuro */
+    }
+
+    /* Badges para Roles (sin cambios) */
+    .role-badge {
+        display: inline-block;
+        padding: 4px 8px;
+        border-radius: 6px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        background: var(--bg-main);
+        border: 1px solid var(--border-color);
     }
 
     .no-data {
         text-align: center;
-        color: #6c757d;
-        font-style: italic;
+        padding: 40px;
+        color: var(--text-muted);
     }
-    .btn-export {
-    display: inline-block;
-    padding: 5px 5px;
-    margin: 5px;
-    border-radius: 5px;
-    background-color: #343a40;
-    color: white;
-    text-decoration: none;
-    font-weight: bold;
-    transition: background-color 0.3s;
-}
-.btn-export:hover {
-    background-color: #495057;
-}
+
+    @media (max-width: 768px) {
+        .table-header-flex { flex-direction: column; align-items: stretch; gap: 15px; }
+        .search-wrapper { max-width: 100%; }
+        .export-group { justify-content: flex-start; }
+    }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container">
-    <h1>Listado de Usuarios del SIMSa</h1>
+<div class="main-container">
+    <div class="table-card">
+        
+        <div class="table-header-flex">
+            <div class="title-section">
+                <h1>Listado de Usuarios</h1>
+                <p>Gestión y auditoría de accesos al sistema SIMSa.</p>
+            </div>
 
-    <div style="display:flex; align-content: center; margin-bottom: 10px;">
-    <input type="text" id="searchInput" placeholder="Buscar usuario, rol, correo o compañía...">
-    <button id="downloadExcel" class="btn-export"><img src="https://upload.wikimedia.org/wikipedia/commons/7/73/Microsoft_Excel_2013-2019_logo.svg" style="width: 40px; height: 40px;" alt=""></button>
-    <button id="downloadPDF" class="btn-export"><img src="https://upload.wikimedia.org/wikipedia/commons/8/87/PDF_file_icon.svg" style="width: 40px; height: 40px;" alt=""></button>
-    <div style="text-align: center; margin-bottom: 15px;">
+            <div class="search-wrapper">
+                <input type="text" id="searchInput" placeholder="Filtrar por nombre, correo o compañía...">
+            </div>
+
+            <div class="export-group">
+                <button id="downloadExcel" class="btn-action excel">
+                    <i data-lucide="file-spreadsheet"></i> Excel
+                </button>
+                <button id="downloadPDF" class="btn-action pdf">
+                    <i data-lucide="file-text"></i> PDF
+                </button>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table id="usuariosTable">
+                <thead>
+                    <tr>
+                        <th style="width: 50px;">#</th>
+                        <th>Usuario</th>
+                        <th>CUIL/DNI</th>
+                        <th>Rol</th>
+                        <th>Correo Electrónico</th>
+                        <th>Compañía / CUIT</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for u in usuarios %}
+                    <tr>
+                        {% load format_filters %}
+                        <td style="color: var(--text-muted); font-size: 0.8rem;">{{ forloop.counter }}</td>
+                        <td><strong>{{ u.username }}</strong></td>
+                        <td>{{ u.cuildni|default:"-"|format_id }}</td>
+                        <td><span class="role-badge">{{ u.roleid__name }}</span></td>
+                        <td>{{ u.email }}</td>
+                        <td>
+                            <div>{{ u.company_name|default:"-" }}</div>
+                            <small style="color: var(--text-muted)">{{ u.company_cuit|default:""|format_id }}</small>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="no-data">
+                            <i data-lucide="info" style="margin-bottom: 10px;"></i>
+                            <p>No se encontraron registros en la base de datos.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>
-</div>
 
-    <table id="usuariosTable">
-        <thead>
-            <tr>
-                <th></th>
-                <th>Usuario</th>
-                <th>Cuil/Dni</th>
-                <th>Rol</th>
-                <th>Correo Electrónico</th>
-                <th>Compañía</th>
-                <th>CUIT</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for u in usuarios %}
-            <tr>
-                {% load format_filters %}
-                <td>{{ forloop.counter }}</td>
-                <td>{{ u.username }}</td>
-                <td>{{ u.cuildni|default:"-"|format_id }}</td>
-                <td>{{ u.roleid__name }}</td>
-                <td>{{ u.email }}</td>
-                <td>{{ u.company_name|default:"-" }}</td>
-                <td>{{ u.company_cuit|default:"-"|format_id  }}</td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="4" class="no-data">No se encontraron usuarios.</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
-
-<script>
-    // Buscador dinámico
-    const searchInput = document.getElementById("searchInput");
-    const table = document.getElementById("usuariosTable").getElementsByTagName("tbody")[0];
-
-    searchInput.addEventListener("keyup", function() {
-        const filter = searchInput.value.toLowerCase();
-        const rows = table.getElementsByTagName("tr");
-
-        for (let i = 0; i < rows.length; i++) {
-            const cells = rows[i].getElementsByTagName("td");
-            let match = false;
-            for (let j = 0; j < cells.length; j++) {
-                if (cells[j].textContent.toLowerCase().includes(filter)) {
-                    match = true;
-                    break;
-                }
-            }
-            rows[i].style.display = match ? "" : "none";
-        }
-    });
-</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
 
 <script>
-// Función para obtener filas visibles
-function getVisibleRows() {
-    const table = document.getElementById("usuariosTable").getElementsByTagName("tbody")[0];
-    const rows = table.getElementsByTagName("tr");
-    let data = [];
+    // Inicializar Iconos
+    lucide.createIcons();
 
-    for (let i = 0; i < rows.length; i++) {
-        if (rows[i].style.display !== "none") {
-            const cells = rows[i].getElementsByTagName("td");
-            let rowData = [];
-            for (let j = 0; j < cells.length; j++) {
-                rowData.push(cells[j].innerText);
-            }
-            data.push(rowData);
-        }
-    }
-    return data;
-}
+    // Buscador optimizado
+    const searchInput = document.getElementById("searchInput");
+    searchInput.addEventListener("keyup", function() {
+        const filter = this.value.toLowerCase();
+        const rows = document.querySelectorAll("#usuariosTable tbody tr");
 
-// Exportar a Excel
-document.getElementById("downloadExcel").addEventListener("click", function() {
-    const data = getVisibleRows();
-    const wb = XLSX.utils.book_new();
-    const ws_data = [["Usuario","Rol","Correo Electrónico","Compañía"], ...data];
-    const ws = XLSX.utils.aoa_to_sheet(ws_data);
-    XLSX.utils.book_append_sheet(wb, ws, "Usuarios");
-    XLSX.writeFile(wb, "usuarios_simsa.xlsx");
-});
-
-// Exportar a PDF
-document.getElementById("downloadPDF").addEventListener("click", async function() {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-    doc.setFontSize(10);
-
-    // Cargar imagen desde static como base64
-    const img = new Image();
-    img.src = "{% static 'img/Logo_MPS.png' %}";
-    await new Promise((resolve) => {
-        img.onload = resolve;
+        rows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            row.style.display = text.includes(filter) ? "" : "none";
+        });
     });
 
-    const pageWidth = doc.internal.pageSize.getWidth();
-
-// Dimensiones de la imagen
-const imgWidth = 80;
-const imgHeight = 15;
-
-// Colocar imagen arriba a la derecha
-doc.addImage(img, 'PNG', pageWidth - imgWidth - 5, 5, imgWidth, imgHeight); // 5px de margen derecho y top
-
-// Título debajo de la imagen (alineado a la derecha también)
-doc.setFontSize(14);
-doc.text("Listado de Usuarios del SIMSa", 10, 30, { align: "left" });
-
-    // Obtener datos de la tabla filtrada
-    function getVisibleRows() {
-        const table = document.getElementById("usuariosTable").getElementsByTagName("tbody")[0];
-        const rows = table.getElementsByTagName("tr");
-        let data = [];
-        for (let i = 0; i < rows.length; i++) {
-            if (rows[i].style.display !== "none") {
-                const cells = rows[i].getElementsByTagName("td");
-                let rowData = [];
-                for (let j = 0; j < cells.length; j++) {
-                    rowData.push(cells[j].innerText);
-                }
-                data.push(rowData);
-            }
-        }
-        return data;
+    // Lógica de exportación compartida (sin cambios)
+    function getCleanData() {
+        const rows = Array.from(document.querySelectorAll("#usuariosTable tbody tr"))
+            .filter(row => row.style.display !== "none" && !row.classList.contains('no-data'));
+        
+        return rows.map(row => {
+            const cells = row.querySelectorAll("td");
+            return [
+                cells[0].innerText,
+                cells[1].innerText,
+                cells[2].innerText,
+                cells[3].innerText,
+                cells[4].innerText,
+                cells[5].innerText.replace('\n', ' | ')
+            ];
+        });
     }
 
-    const headers = [["N°","Usuario","Rol","Correo Electrónico","Compañía"]];
-    const data = getVisibleRows();
-
-    // Crear tabla con jsPDF AutoTable
-    doc.autoTable({
-        head: headers,
-        body: data,
-        startY: 40, // debajo del logo
-        styles: { fontSize: 9 },
-        headStyles: { fillColor: [52, 58, 64], textColor: 255 },
+    // Excel (sin cambios)
+    document.getElementById("downloadExcel").addEventListener("click", () => {
+        const data = getCleanData();
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet([["#", "Usuario", "ID", "Rol", "Email", "Compañía"], ...data]);
+        XLSX.utils.book_append_sheet(wb, ws, "Usuarios");
+        XLSX.writeFile(wb, "Usuarios_SIMSa.xlsx");
     });
 
-    doc.save("usuarios_simsa.pdf");
-});
+    // PDF (sin cambios)
+    document.getElementById("downloadPDF").addEventListener("click", async () => {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('l', 'mm', 'a4'); // Horizontal para mejor visualización
+        
+        const img = new Image();
+        img.src = "{% static 'img/Logo_MPS.png' %}";
+        
+        // Encabezado
+        doc.setFontSize(18);
+        doc.text("Listado de Usuarios del SIMSa", 14, 20);
+        doc.setFontSize(10);
+        doc.setTextColor(100);
+        doc.text(`Fecha de reporte: ${new Date().toLocaleDateString()}`, 14, 28);
+
+        doc.autoTable({
+            head: [["#", "Usuario", "Documento", "Rol", "Correo", "Compañía"]],
+            body: getCleanData(),
+            startY: 35,
+            theme: 'striped',
+            headStyles: { fillColor: [59, 130, 246] },
+            styles: { fontSize: 8 }
+        });
+
+        doc.save("Usuarios_SIMSa.pdf");
+    });
 </script>
-
-<!-- Librería para tabla PDF -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
 {% endblock %}

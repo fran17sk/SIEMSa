@@ -1,0 +1,24 @@
+{% if request.user.groups.first.name == "Administrador" or request.user.groups.first.name == "Publicador"   %}
+  {% endif %}
+  <a href="{% url 'exportacion' %}" class="{% if request.resolver_match.url_name == 'exportacion' %}active{% endif %}" title="Exportacion">
+    <i data-lucide="plus"></i> <span>Nueva</span>
+  </a>
+  <a href="{% url 'exportaciones' %}" class="{% if request.resolver_match.url_name == 'exportaciones' %}active{% endif %}" title="Exportaciones">
+    <i data-lucide="truck"></i> <span>Exportaciones</span>
+  </a>
+  
+  <a href="{% url 'minerales' %}" class="{% if request.resolver_match.url_name == 'minerales' %}active{% endif %}" title="Minerales">
+    <i data-lucide="atom"></i> <span>Minerales</span>
+  </a>
+  <a href="{% url 'pais' %}" class="{% if request.resolver_match.url_name == 'pais' %}active{% endif %}" title="Países">
+    <i data-lucide="earth"></i> <span>Países</span>
+  </a>
+  <a href="{% url 'productores' %}" class="{% if request.resolver_match.url_name == 'productores' %}active{% endif %}" title="Productores">
+    <i data-lucide="building-2"></i> <span>Productores</span>
+  </a>
+  {% if request.user.groups.first.name == "Administrador" or request.user.groups.first.name == "Publicador"   %}
+  {% endif %}
+  <!-- Nueva sección Gráficos -->
+  <a href="{% url 'vista_graficos_general' %}" class="{% if request.resolver_match.url_name == 'graficos' %}active{% endif %}" title="Gráficos">
+    <i data-lucide="bar-chart-2"></i> <span>Gráficos</span>
+  </a>

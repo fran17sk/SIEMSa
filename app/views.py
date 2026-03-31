@@ -201,7 +201,7 @@ def custom_logout(request):
 @login_required(login_url='/login/')
 def home(request):
     # tu código aquí
-    return render(request, 'base.html')
+    return render(request, 'dashboard.html')
 
 @login_required(login_url='/login/')
 def paises(request):
@@ -4557,6 +4557,8 @@ def veps_interbanking(request):
                        """)
         cols = [col[0] for col in cursor.description]
         result = [dict(zip(cols, row)) for row in cursor.fetchall()]
+
+        
     return JsonResponse(result, safe=False)
 
 def pagos_electronicos(request):
@@ -4948,6 +4950,7 @@ def expedientes(request):
 
     # 4. Ahora sí, unimos los resultados ya filtrados
     expedientes_unificados = qs_minas.union(qs_grupos).order_by('-expediente')
+
     
 
     # 5. Paginación
@@ -4967,6 +4970,35 @@ def expedientes(request):
         'empresa_id': empresa_id,
     }
     return render(request, 'expedientes/buscar_expediente.html', context)
+
+
+def detalle(request, expediente_nro):
+    # 1. Buscamos el expediente (usando .first() para obtener el objeto)
+    exp = CanteraCateoMina.objects.using('catastro').filter(expediente=expediente_nro).first()
+    
+    if not exp: 
+        exp = GrupoMinero.objects.using('catastro').filter(expediente=expediente_nro).first()
+
+    if not exp:
+        raise Http404("El expediente no existe")
+
+    # 2. PROCESAMIENTO DE CONCESIONARIOS
+    # Supongamos que exp.concesionarios es: '{"JUAN PEREZ","GOMEZ, LUIS"}'
+    concesionarios_raw = getattr(exp, 'concesionario', '') # Evita errores si el campo no existe
+    
+    lista_limpia = []
+    if concesionarios_raw:
+        # Quitamos las llaves {} y las comillas dobles "
+        limpio = concesionarios_raw.replace('{', '').replace('}', '').replace('"', '')
+        
+        # Separamos por la coma para crear la lista
+        # Usamos strip() para eliminar espacios en blanco accidentales
+        lista_limpia = [nombre.strip() for nombre in limpio.split(',') if nombre.strip()]
+
+    # 3. Agregamos la lista procesada al objeto para que el template la use
+    exp.concesionarios_lista = lista_limpia
+
+    return render(request, 'expedientes/detalle_expediente.html', {'exp': exp})
 
 ################################################SIRGEN######################################################
 @login_required

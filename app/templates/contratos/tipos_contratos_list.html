@@ -1,6 +1,11 @@
 {% extends 'contratos/home.html' %}
   {% load static %}
 
+{% block nav %}
+  {% include 'contratos/navbar.html' %}
+{% endblock %}
+
+
 {% block head %}
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
@@ -8,7 +13,7 @@
 /* ====== reutiliza estética exportaciones ====== */
 
 .table-container {
-  background: #fff;
+  background: var(--card-bg);
   border-radius: 12px;
   padding: 1.5rem;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
@@ -47,7 +52,7 @@ th, td {
 }
 
 th {
-  background-color: #f0f2f5;
+  background-color: var(--card-bg);
   font-weight: 600;
 }
 
@@ -75,7 +80,7 @@ th {
 }
 
 .modal-content {
-  background: #fff;
+  background: var(--card-bg);
   width: 420px;
   margin: 10% auto;
   padding: 20px;

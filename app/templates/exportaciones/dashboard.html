@@ -1,8 +1,44 @@
-{% extends "exportaciones/base.html" %}
+{% extends "base.html" %}
 
 {% block head %}
+<style>
+  .chart-nav {
+  display: flex;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  background-color: var(--card-bg);
+  border-bottom: 1px solid #e5e7eb;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  flex-wrap: wrap;
+}
 
+.chart-nav a {
+  color: var(--sidebar-accent);
+  font-weight: 500;
+  text-decoration: none;
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  transition: background-color 0.2s ease;
+}
+
+.chart-nav a:hover {
+  background-color: #e0e7ff;
+  color: #1d4ed8;
+}
+
+.chart-nav a.active {
+  background-color: #3b82f6;
+  color: white;
+}
+</style>
 {% endblock %}
+
+{% block nav %}
+  {% include 'exportaciones/navbar.html' %}
+{% endblock %}
+
 
 {% block content %}
 

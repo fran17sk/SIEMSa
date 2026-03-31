@@ -64,23 +64,24 @@
 label[for="yearSelect"] {
   font-weight: 600;
   font-size: 1rem;
-  color: #495057;
+  color: var(--text-light);
 }
 
 /* Títulos de gráficos */
 h3, h2 {
-  color: #212529;
+  color: var(--text-light);
   font-weight: 700;
   margin-bottom: 1rem;
 }
 
 /* Contenedores canvas */
 canvas {
-  background-color: white;
+  background-color: var(--card-bg);
   border-radius: 0.375rem;
   box-shadow: 0 2px 8px rgb(0 0 0 / 0.1);
   padding: 1rem;
   max-width: 100%;
+  color:var(--text-light)
 }
 
 /* Ajuste responsive para botones y selects en pantallas pequeñas */
@@ -99,7 +100,7 @@ canvas {
 .dashboard-container {
     margin: 30px auto;
     padding: 20px 30px;
-    background-color: #f9f9f9;
+    background-color: var(--sidebar-bg);
     border-radius: 8px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     font-family: Arial, sans-serif;
@@ -108,7 +109,7 @@ canvas {
   .dashboard-container h2 {
     text-align: center;
     margin-bottom: 25px;
-    color: #333;
+    color: var(--text-light);
   }
 
 .d-flex{
@@ -125,14 +126,14 @@ canvas {
         flex-wrap: wrap;
       }
       .counter-card {
-        background: white;
+        background: var(--card-bg);
         flex: 1 1 180px;
         max-width: 200px;
         padding: 20px;
         border-radius: 10px;
         box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         text-align: center;
-        color: #222;
+        color: var(--text-light);
       }
       .counter-number {
         font-size: 2.8rem;
@@ -143,7 +144,7 @@ canvas {
       .counter-label {
         font-size: 1.1rem;
         font-weight: 600;
-        color: #555;
+        color: var(--text-light);
       }
       @media (max-width: 576px) {
         .filter-group {

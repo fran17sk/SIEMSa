@@ -1,23 +1,40 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-theme="light">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Acceso Corporativo | SIEMSa</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lucide-static@0.344.0/font/lucide.min.css">
     
     <style>
         :root {
-            --primary: #0f172a; /* Slate 900 */
-            --accent: #2563eb;  /* Blue 600 */
+            /* --- Light Theme (Default) --- */
+            --primary: #0f172a;
+            --accent: #2563eb;
             --bg-body: #f8fafc;
+            --bg-card: #ffffff;
             --text-main: #1e293b;
             --text-muted: #64748b;
             --input-border: #e2e8f0;
+            --input-bg: #f8fafc;
+            --visual-overlay: rgba(255, 255, 255, 0.05);
+            
             --radius-lg: 12px;
-            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-            --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        [data-theme="dark"] {
+            --primary: #f8fafc;
+            --accent: #3b82f6;
+            --bg-body: #020617;
+            --bg-card: #0f172a;
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+            --input-border: #1e293b;
+            --input-bg: #1e293b;
+            --visual-overlay: rgba(0, 0, 0, 0.4);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -29,6 +46,7 @@
             height: 100vh;
             display: flex;
             overflow: hidden;
+            transition: background-color var(--transition), color var(--transition);
         }
 
         /* --- Panel Visual (Izquierda) --- */
@@ -47,125 +65,147 @@
             inset: 0;
             background: url("{% static 'app/img/bg.jpg' %}") no-repeat center center;
             background-size: cover;
-            opacity: 0.7;
-            filter: saturate(1.2);
+            opacity: 0.6;
             transition: transform 10s ease-out;
         }
 
-        .visual-panel:hover .bg-image { transform: scale(1.05); }
+        .visual-panel:hover .bg-image { transform: scale(1.08); }
 
         .brand-overlay {
             position: relative;
             z-index: 10;
             text-align: center;
-            background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            padding: 3rem;
-            border-radius: 2rem;
+            background: var(--visual-overlay);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            padding: 4rem;
+            border-radius: 2.5rem;
             border: 1px solid rgba(255, 255, 255, 0.1);
             box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
         }
 
         .brand-overlay img {
-            max-width: 280px;
-            height: auto;
+            max-width: 240px;
             filter: drop-shadow(0 4px 10px rgba(0,0,0,0.3));
         }
 
         /* --- Panel de Formulario (Derecha) --- */
         .auth-panel {
             flex: 0.8;
-            background: white;
+            background: var(--bg-card);
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
             padding: 4rem;
-            box-shadow: -10px 0 50px rgba(0,0,0,0.02);
-            z-index: 20;
+            position: relative;
+            transition: background-color var(--transition);
         }
 
-        .auth-card {
-            width: 100%;
-            max-width: 420px;
+        /* Theme Toggle */
+        .theme-toggle {
+            position: absolute;
+            top: 2rem;
+            right: 2rem;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            color: var(--text-main);
+            padding: 0.5rem;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition);
         }
 
-        .auth-header { margin-bottom: 2.5rem; }
+        .theme-toggle:hover { transform: rotate(15deg) scale(1.1); }
 
+        .auth-card { width: 100%; max-width: 400px; }
+
+        .auth-header { margin-bottom: 2rem; }
         .auth-header h1 {
-            font-size: 1.875rem;
-            font-weight: 700;
-            letter-spacing: -0.025em;
-            margin-bottom: 0.75rem;
+            font-size: 2rem;
+            font-weight: 800;
+            letter-spacing: -0.04em;
+            margin-bottom: 0.5rem;
         }
-
-        .auth-header p {
-            color: var(--text-muted);
-            line-height: 1.5;
-        }
+        .auth-header p { color: var(--text-muted); font-size: 0.95rem; }
 
         /* --- Estética de Inputs --- */
-        .form-group { margin-bottom: 1.5rem; }
-
+        .form-group { margin-bottom: 1.25rem; }
         .form-label {
             display: block;
-            font-size: 0.875rem;
-            font-weight: 500;
+            font-size: 0.8rem;
+            font-weight: 700;
             margin-bottom: 0.5rem;
-            color: var(--text-main);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+        }
+
+        .input-wrapper { position: relative; }
+        .input-icon {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 1.2rem;
         }
 
         .input-control {
             width: 100%;
-            height: 48px;
-            padding: 0 1rem;
+            height: 52px;
+            padding: 0 1rem 0 3rem;
             font-family: inherit;
-            font-size: 0.95rem;
+            font-size: 1rem;
             border: 1.5px solid var(--input-border);
             border-radius: var(--radius-lg);
-            background: var(--bg-body);
+            background: var(--input-bg);
+            color: var(--text-main);
             transition: var(--transition);
         }
 
         .input-control:focus {
             outline: none;
             border-color: var(--accent);
-            background: white;
-            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+            background: var(--bg-card);
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.15);
         }
 
         /* --- Botón de Acción --- */
         .btn-login {
             width: 100%;
-            height: 52px;
-            background: var(--primary);
+            height: 56px;
+            background: var(--accent);
             color: white;
             border: none;
             border-radius: var(--radius-lg);
             font-size: 1rem;
-            font-weight: 600;
+            font-weight: 700;
             cursor: pointer;
             transition: var(--transition);
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 12px;
-            margin-top: 2rem;
+            margin-top: 1.5rem;
         }
 
         .btn-login:hover {
-            background: #1e293b;
-            transform: translateY(-1px);
-            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+            filter: brightness(1.1);
+            transform: translateY(-2px);
+            box-shadow: 0 12px 20px -8px rgba(37, 99, 235, 0.5);
         }
 
-        .btn-login:active { transform: translateY(0); }
+        .btn-login:disabled { opacity: 0.7; cursor: not-allowed; transform: none; }
 
-        /* Loader animado */
+        /* Loader */
         .spinner {
-            width: 18px;
-            height: 18px;
-            border: 2px solid rgba(255,255,255,0.3);
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,0.3);
             border-top-color: #fff;
             border-radius: 50%;
             animation: spin 0.8s linear infinite;
@@ -174,29 +214,26 @@
 
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* --- Footer Sutil --- */
         .auth-footer {
             margin-top: 3rem;
             text-align: center;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             color: var(--text-muted);
-        }
-
-        /* --- Responsive --- */
-        @media (max-width: 1100px) {
-            .visual-panel { flex: 0.8; }
-            .auth-panel { flex: 1.2; }
+            font-weight: 500;
         }
 
         @media (max-width: 850px) {
-            body { flex-direction: column; overflow: auto; }
-            .visual-panel { display: none; } /* En móviles priorizamos el form */
-            .auth-panel { width: 100%; min-height: 100vh; padding: 2rem; }
+            .visual-panel { display: none; }
+            .auth-panel { flex: 1; padding: 2rem; }
         }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body>
+
+    <button class="theme-toggle" id="theme-toggle" aria-label="Cambiar tema">
+        <i class="lucide-sun" id="theme-icon"></i>
+    </button>
 
     <section class="visual-panel">
         <div class="bg-image"></div>
@@ -208,25 +245,31 @@
     <main class="auth-panel">
         <div class="auth-card">
             <header class="auth-header">
-                <h1>Iniciar sesión</h1>
-                <p>Bienvenido de nuevo. Por favor ingresa tus credenciales para continuar.</p>
+                <h1>Acceso SIEMSa</h1>
+                <p>Ingresa tus credenciales para gestionar el sistema de minería.</p>
             </header>
 
             <form id="login-form" method="post" novalidate>
                 {% csrf_token %}
                 
                 <div class="form-group">
-                    <label for="id_username" class="form-label">Usuario o Email</label>
-                    <input type="text" name="username" id="id_username" 
-                           class="input-control" placeholder="nombre@siemsa.com" 
-                           required autofocus autocomplete="username">
+                    <label for="id_username" class="form-label">Usuario</label>
+                    <div class="input-wrapper">
+                        <i class="lucide-user input-icon"></i>
+                        <input type="text" name="username" id="id_username" 
+                               class="input-control" placeholder="nombre.apellido" 
+                               required autofocus autocomplete="username">
+                    </div>
                 </div>
 
                 <div class="form-group">
                     <label for="id_password" class="form-label">Contraseña</label>
-                    <input type="password" name="password" id="id_password" 
-                           class="input-control" placeholder="••••••••" 
-                           required autocomplete="current-password">
+                    <div class="input-wrapper">
+                        <i class="lucide-lock input-icon"></i>
+                        <input type="password" name="password" id="id_password" 
+                               class="input-control" placeholder="••••••••" 
+                               required autocomplete="current-password">
+                    </div>
                 </div>
 
                 <button type="submit" id="btn-submit" class="btn-login">
@@ -236,12 +279,37 @@
             </form>
 
             <footer class="auth-footer">
-                &copy; 2024 SIEMSa. Todos los derechos reservados.
+                &copy; 2026 Secretaría de Minería y Energía de Salta.<br>
+                Subsecretaría de Informática.
             </footer>
         </div>
     </main>
 
     <script>
+        // --- Gestión de Tema (Oscuro/Claro) ---
+        const themeToggle = document.getElementById('theme-toggle');
+        const themeIcon = document.getElementById('theme-icon');
+        const htmlElement = document.documentElement;
+
+        // Cargar tema guardado
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        htmlElement.setAttribute('data-theme', savedTheme);
+        updateIcon(savedTheme);
+
+        themeToggle.addEventListener('click', () => {
+            const currentTheme = htmlElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            
+            htmlElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            updateIcon(newTheme);
+        });
+
+        function updateIcon(theme) {
+            themeIcon.className = theme === 'light' ? 'lucide-moon' : 'lucide-sun';
+        }
+
+        // --- Lógica de Login ---
         const loginForm = document.getElementById('login-form');
         const btnSubmit = document.getElementById('btn-submit');
         const btnSpinner = document.getElementById('btn-spinner');
@@ -250,9 +318,8 @@
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
 
-            // UI Feedback: Estado de carga
             btnSubmit.disabled = true;
-            btnText.innerText = 'Verificando...';
+            btnText.innerText = 'Autenticando...';
             btnSpinner.style.display = 'block';
 
             const formData = new FormData(loginForm);
@@ -269,25 +336,21 @@
                 const data = await response.json();
 
                 if (response.ok && data.success) {
-                    // Éxito: Animación de salida opcional
                     window.location.href = data.redirect_url;
                 } else {
-                    throw new Error(data.error || 'Credenciales inválidas');
+                    throw new Error(data.error || 'Credenciales incorrectas');
                 }
 
             } catch (error) {
                 Swal.fire({
                     icon: 'error',
-                    title: 'Error de acceso',
+                    title: 'Acceso Denegado',
                     text: error.message,
-                    confirmButtonColor: '#0f172a',
-                    padding: '2em',
-                    customClass: {
-                        popup: 'swal2-modern'
-                    }
+                    confirmButtonColor: '#2563eb',
+                    background: getComputedStyle(document.documentElement).getPropertyValue('--bg-card'),
+                    color: getComputedStyle(document.documentElement).getPropertyValue('--text-main'),
                 });
 
-                // Revertir UI
                 btnSubmit.disabled = false;
                 btnText.innerText = 'Entrar al sistema';
                 btnSpinner.style.display = 'none';

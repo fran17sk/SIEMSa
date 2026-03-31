@@ -1,354 +1,422 @@
-{% extends "simsa/home.html" %}
+{% extends "base.html" %}
+
+{% block nav %}
+{% include 'simsa/navbar.html' %}
+{% endblock %}
+
 {% block content %}
-<style>
-:root {
-    --primary: #004080;
-    --primary-dark: #002a55;
-    --secondary: #3b82f6;
-    --bg-main: #f4f6f8;
-    --card-bg: #ffffff;
-    --text-main: #1f2937;
-    --text-muted: #6b7280;
-    --border-soft: #e5e7eb;
-}
-.filters {
-    display: flex;
-    gap: 1.2rem;
-    flex-wrap: wrap;
-    background: var(--card-bg);
-    padding: 1.2rem;
-    border-radius: 14px;
-    box-shadow: 0 6px 18px rgba(0,0,0,.06);
-    margin-bottom: 2rem;
-    margin: 1rem;
-}
-
-.filter-group {
-    display: flex;
-    flex-direction: column;
-    min-width: 180px;
-}
-
-.filter-group label {
-    font-size: 0.7rem;
-    font-weight: 700;
-    color: var(--text-muted);
-    margin-bottom: 4px;
-    text-transform: uppercase;
-    letter-spacing: .04em;
-}
-
-.filter-group select {
-    padding: 8px 10px;
-    border-radius: 8px;
-    border: 1px solid var(--border-soft);
-    font-size: 0.85rem;
-    background: #fff;
-}
-
-.filter-group button {
-    margin-top: auto;
-}
-.add-btn {
-    background: linear-gradient(135deg, var(--primary), var(--secondary));
-    color: white;
-    border: none;
-    border-radius: 10px;
-    padding: 0.6rem 1.2rem;
-    font-weight: 700;
-    cursor: pointer;
-    transition: all .25s ease;
-    box-shadow: 0 4px 12px rgba(0,64,128,.25);
-}
-
-.add-btn:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 8px 20px rgba(0,64,128,.35);
-}
-.chart-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
-    gap: 1rem;
-    margin: 1rem;
-}
-
-.chart-card {
-    background: var(--card-bg);
-    border-radius: 16px;
-    padding: 1.5rem;
-    box-shadow: 0 10px 30px rgba(0,0,0,.08);
-    position: relative;
-    transition: transform .25s ease;
-}
-
-.chart-card:hover {
-    transform: translateY(-4px);
-}
-.chart-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1rem;
-}
-
-.chart-title {
-    font-size: 1.05rem;
-    font-weight: 700;
-    color: var(--text-main);
-}
-
-.chart-subtitle {
-    font-size: 0.75rem;
-    color: var(--text-muted);
-}
-.chart-card canvas {
-    max-height: 320px;
-}
-@media (max-width: 768px) {
-    .chart-grid {
-        grid-template-columns: 1fr;
-    }
-}
-
-
-</style>
-<div class="filters">
-    <div class="filter-group">
-        <label>Año</label>
-            
-
-        <select id="anioFiltro">
-            <option value="">Todos</option>
-        </select>
-    </div>
-
-    <div class="filter-group">
-        <label>Mes</label>
-        <select id="mesFiltro">
-            <option value="">Todos</option>
-        </select>
-    </div>
-
-    <div class="filter-group">
-        <label>Método de pago</label>
-        <select id="medioFiltro">
-            <option value="">Todos</option>
-        </select>
-    </div>
-
-    <div class="filter-group">
-        <button class="add-btn" onclick="aplicarFiltrosGraficos()">
-            Aplicar filtros
-        </button>
-    </div>
-</div>
-
-<div class="chart-grid">
-
-    <div class="chart-card">
-        <div class="chart-header">
-            <div>
-                <div class="chart-title">Acumulado mensual</div>
-                <div class="chart-subtitle">Total abonado por mes (ARS)</div>
-            </div>
-        </div>
-        <canvas id="chartMes"></canvas>
-    </div>
-
-    <div class="chart-card">
-        <div class="chart-header">
-            <div>
-                <div class="chart-title">Acumulado anual</div>
-                <div class="chart-subtitle">Total abonado por año (ARS)</div>
-            </div>
-        </div>
-        <canvas id="chartAnio"></canvas>
-    </div>
-    <div class="chart-card">
-    <div class="chart-header">
+<div class="dashboard-wrapper">
+    <header class="dashboard-header">
         <div>
-            <div class="chart-title">Distribución por medio de pago</div>
-            <div class="chart-subtitle">Participación sobre el total abonado</div>
+            <h1>Panel de Control de Regalías</h1>
+            <p>Monitoreo de recaudación y estadísticas de pago</p>
+        </div>
+        <div class="header-actions">
+            <button class="btn-secondary" onclick="window.print()">
+                <i data-lucide="printer"></i> Exportar PDF
+            </button>
+        </div>
+    </header>
+
+    <nav class="filter-toolbar">
+        <div class="filter-group">
+            <label><i data-lucide="calendar"></i> Año</label>
+            <select id="anioFiltro">
+                <option value="">Todos los años</option>
+                <option value="2024">2024</option>
+                <option value="2025">2025</option>
+            </select>
+        </div>
+
+        <div class="filter-group">
+            <label><i data-lucide="calendar-days"></i> Mes</label>
+            <select id="mesFiltro">
+                <option value="">Todos los meses</option>
+                <option value="1">Enero</option>
+                <option value="2">Febrero</option>
+            </select>
+        </div>
+
+        <div class="filter-group">
+            <label><i data-lucide="credit-card"></i> Método</label>
+            <select id="medioFiltro">
+                <option value="">Todos los medios</option>
+                <option value="transferencia">Transferencia</option>
+                <option value="cheque">Cheque</option>
+            </select>
+        </div>
+
+        <button class="btn-primary" onclick="aplicarFiltrosGraficos()">
+            <i data-lucide="filter"></i> Aplicar Filtros
+        </button>
+    </nav>
+
+    <div class="chart-grid">
+        <div class="chart-card large">
+            <div class="chart-info">
+                <div class="chart-title">Evolución de Recaudación Mensual</div>
+                <div class="chart-subtitle">Comparativa de ingresos totales en ARS</div>
+            </div>
+            <div class="canvas-container">
+                <canvas id="chartMes"></canvas>
+            </div>
+        </div>
+
+        <div class="chart-card">
+            <div class="chart-info">
+                <div class="chart-title">Acumulado Anual</div>
+                <div class="chart-subtitle">Total consolidado por ejercicio</div>
+            </div>
+            <div class="canvas-container">
+                <canvas id="chartAnio"></canvas>
+            </div>
+        </div>
+
+        <div class="chart-card">
+            <div class="chart-info">
+                <div class="chart-title">Medios de Pago</div>
+                <div class="chart-subtitle">Distribución porcentual por tipo</div>
+            </div>
+            <div class="canvas-container doughnut">
+                <canvas id="chartMedio"></canvas>
+            </div>
         </div>
     </div>
-    <canvas id="chartMedio"></canvas>
 </div>
 
-</div>
+<style>
+    .dashboard-wrapper {
+        padding: 30px;
+        background: var(--card-bg);
+        border-radius: 50px;
+        min-height: 100vh;
+    }
+
+    .dashboard-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+    }
+
+    .dashboard-header h1 {
+        font-size: 1.8rem;
+        font-weight: 800;
+        color: var(--text-main);
+        letter-spacing: -0.02em;
+    }
+
+    .dashboard-header p {
+        color: var(--text-muted);
+    }
+
+    /* Barra de Filtros */
+    .filter-toolbar {
+        display: flex;
+        gap: 20px;
+        background: var(--card-bg);
+        padding: 20px;
+        border-radius: 16px;
+        box-shadow: var(--shadow);
+        border: 1px solid var(--border);
+        margin-bottom: 30px;
+        align-items: flex-end;
+    }
+
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        flex: 1;
+    }
+
+    .filter-group label {
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .filter-group select {
+        padding: 10px;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        background: var(--bg-dashboard);
+        color: var(--text-main);
+        font-weight: 500;
+    }
+
+    /* Botones */
+    .btn-primary,
+    .btn-secondary {
+        padding: 11px 20px;
+        border-radius: 10px;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: 0.2s;
+        border: none;
+    }
+
+    .btn-primary {
+        background: var(--primary);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: var(--primary-hover);
+        transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+        background: var(--card-bg);
+        border: 1px solid var(--border);
+        color: var(--text-main);
+    }
+
+    /* Grid y Cards */
+    .chart-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 24px;
+    }
+
+    .chart-card.large {
+        grid-column: span 2;
+    }
+
+    .chart-card {
+        background: var(--card-bg);
+        border-radius: 20px;
+        padding: 24px;
+        box-shadow: var(--shadow);
+        border: 1px solid var(--border);
+        transition: transform 0.3s ease;
+    }
+
+    .chart-card:hover {
+        transform: translateY(-5px);
+    }
+
+    .chart-info {
+        margin-bottom: 20px;
+    }
+
+    .chart-title {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--text-main);
+    }
+
+    .chart-subtitle {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+    }
+
+    .canvas-container {
+        position: relative;
+        height: 300px;
+        width: 100%;
+    }
+
+    .canvas-container.doughnut {
+        height: 250px;
+    }
+
+    @media (max-width: 900px) {
+        .chart-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .chart-card.large {
+            grid-column: span 1;
+        }
+
+        .filter-toolbar {
+            flex-direction: column;
+            align-items: stretch;
+        }
+    }
+</style>
 
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-let rawData = [];
-let chartMes, chartAnio, chartMedio;
-document.addEventListener("DOMContentLoaded", () => {
-    fetch("{% url 'pagos_interbanking' %}")
-        .then(r => r.json())
-        .then(data => {
+    let rawData = [];
+    let chartMes, chartAnio, chartMedio;
+    document.addEventListener("DOMContentLoaded", () => {
+        fetch("{% url 'pagos_interbanking' %}")
+            .then(r => r.json())
+            .then(data => {
 
-            // 👉 SOLO 2024 y 2025 en adelante
-            rawData = data.filter(d => {
-                if (!d.PaidDate) return false;
-                const year = new Date(d.PaidDate).getFullYear();
-                return year >= 2024;
+                // 👉 SOLO 2024 y 2025 en adelante
+                rawData = data.filter(d => {
+                    if (!d.PaidDate) return false;
+                    const year = new Date(d.PaidDate).getFullYear();
+                    return year >= 2024;
+                });
+
+                cargarFiltros(rawData);
+                renderCharts(rawData);
             });
+    });
+    function cargarFiltros(data) {
+        const anios = new Set();
+        const medios = new Set();
 
-            cargarFiltros(rawData);
-            renderCharts(rawData);
+        data.forEach(d => {
+            if (d.PaidDate) {
+                anios.add(new Date(d.PaidDate).getFullYear());
+            }
+            if (d.State_Vep) {
+                medios.add(d.State_Vep);
+            }
         });
-});
-function cargarFiltros(data) {
-    const anios = new Set();
-    const medios = new Set();
 
-    data.forEach(d => {
-        if (d.PaidDate) {
-            anios.add(new Date(d.PaidDate).getFullYear());
-        }
-        if (d.State_Vep) {
-            medios.add(d.State_Vep);
-        }
-    });
+        const anioSelect = document.getElementById("anioFiltro");
+        [...anios].sort().forEach(a => {
+            anioSelect.innerHTML += `<option value="${a}">${a}</option>`;
+        });
 
-    const anioSelect = document.getElementById("anioFiltro");
-    [...anios].sort().forEach(a => {
-        anioSelect.innerHTML += `<option value="${a}">${a}</option>`;
-    });
+        const medioSelect = document.getElementById("medioFiltro");
+        [...medios].forEach(m => {
+            medioSelect.innerHTML += `<option value="${m}">${m}</option>`;
+        });
 
-    const medioSelect = document.getElementById("medioFiltro");
-    [...medios].forEach(m => {
-        medioSelect.innerHTML += `<option value="${m}">${m}</option>`;
-    });
+        const mesSelect = document.getElementById("mesFiltro");
+        const meses = [
+            "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+            "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+        ];
+        meses.forEach((m, i) => {
+            mesSelect.innerHTML += `<option value="${i + 1}">${m}</option>`;
+        });
+    }
+    function aplicarFiltrosGraficos() {
+        const anio = document.getElementById("anioFiltro").value;
+        const mes = document.getElementById("mesFiltro").value;
+        const medio = document.getElementById("medioFiltro").value;
 
-    const mesSelect = document.getElementById("mesFiltro");
-    const meses = [
-        "Enero","Febrero","Marzo","Abril","Mayo","Junio",
-        "Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"
-    ];
-    meses.forEach((m,i) => {
-        mesSelect.innerHTML += `<option value="${i+1}">${m}</option>`;
-    });
-}
-function aplicarFiltrosGraficos() {
-    const anio = document.getElementById("anioFiltro").value;
-    const mes = document.getElementById("mesFiltro").value;
-    const medio = document.getElementById("medioFiltro").value;
+        let filtrados = rawData.filter(d => {
+            if (!d.PaidDate) return false;
 
-    let filtrados = rawData.filter(d => {
-        if (!d.PaidDate) return false;
+            const fecha = new Date(d.PaidDate);
 
-        const fecha = new Date(d.PaidDate);
+            if (anio && fecha.getFullYear() != anio) return false;
+            if (mes && fecha.getMonth() + 1 != mes) return false;
+            if (medio && d.State_Vep !== medio) return false;
 
-        if (anio && fecha.getFullYear() != anio) return false;
-        if (mes && fecha.getMonth() + 1 != mes) return false;
-        if (medio && d.State_Vep !== medio) return false;
+            return true;
+        });
 
-        return true;
-    });
+        renderCharts(filtrados);
+    }
+    function acumuladoPorMes(data) {
+        const map = {};
 
-    renderCharts(filtrados);
-}
-function acumuladoPorMes(data) {
-    const map = {};
+        data.forEach(d => {
+            if (!d.PaidDate) return;
 
-    data.forEach(d => {
-        if (!d.PaidDate) return;
+            const f = new Date(d.PaidDate);
+            const year = f.getFullYear();
+            const month = f.getMonth() + 1;
 
-        const f = new Date(d.PaidDate);
-        const year = f.getFullYear();
-        const month = f.getMonth() + 1;
+            const key = `${year}-${month.toString().padStart(2, "0")}`;
 
-        const key = `${year}-${month.toString().padStart(2, "0")}`;
+            map[key] = (map[key] || 0) + (parseFloat(d.Paid) || 0);
+        });
 
-        map[key] = (map[key] || 0) + (parseFloat(d.Paid) || 0);
-    });
+        const ordered = Object.keys(map)
+            .map(k => {
+                const [y, m] = k.split("-").map(Number);
+                return { key: k, year: y, month: m };
+            })
+            .sort((a, b) =>
+                a.year !== b.year
+                    ? a.year - b.year
+                    : a.month - b.month
+            );
 
-    const ordered = Object.keys(map)
-        .map(k => {
-            const [y, m] = k.split("-").map(Number);
-            return { key: k, year: y, month: m };
-        })
-        .sort((a, b) =>
-            a.year !== b.year
-                ? a.year - b.year
-                : a.month - b.month
-        );
+        return {
+            labels: ordered.map(o => o.key),
+            values: ordered.map(o => map[o.key])
+        };
+    }
+    function acumuladoPorAnio(data) {
+        const map = {};
 
-    return {
-        labels: ordered.map(o => o.key),
-        values: ordered.map(o => map[o.key])
-    };
-}
-function acumuladoPorAnio(data) {
-    const map = {};
+        data.forEach(d => {
+            if (!d.PaidDate) return;
+            const y = new Date(d.PaidDate).getFullYear();
+            map[y] = (map[y] || 0) + (parseFloat(d.Paid) || 0);
+        });
 
-    data.forEach(d => {
-        if (!d.PaidDate) return;
-        const y = new Date(d.PaidDate).getFullYear();
-        map[y] = (map[y] || 0) + (parseFloat(d.Paid) || 0);
-    });
+        return {
+            labels: Object.keys(map),
+            values: Object.values(map)
+        };
+    }
+    function distribucionPorMedio(data) {
+        const map = {};
 
-    return {
-        labels: Object.keys(map),
-        values: Object.values(map)
-    };
-}
-function distribucionPorMedio(data) {
-    const map = {};
+        data.forEach(d => {
+            if (!d.State_Vep) return;
+            const medio = d.State_Vep;
+            map[medio] = (map[medio] || 0) + (parseFloat(d.Paid) || 0);
+        });
 
-    data.forEach(d => {
-        if (!d.State_Vep) return;
-        const medio = d.State_Vep;
-        map[medio] = (map[medio] || 0) + (parseFloat(d.Paid) || 0);
-    });
+        return {
+            labels: Object.keys(map),
+            values: Object.values(map)
+        };
+    }
+    function renderCharts(data) {
+        const mes = acumuladoPorMes(data);
+        const anio = acumuladoPorAnio(data);
+        const medio = distribucionPorMedio(data);
 
-    return {
-        labels: Object.keys(map),
-        values: Object.values(map)
-    };
-}
-function renderCharts(data) {
-    const mes = acumuladoPorMes(data);
-    const anio = acumuladoPorAnio(data);
-    const medio = distribucionPorMedio(data);
+        if (chartMes) chartMes.destroy();
+        if (chartAnio) chartAnio.destroy();
+        if (chartMedio) chartMedio.destroy();
 
-    if (chartMes) chartMes.destroy();
-    if (chartAnio) chartAnio.destroy();
-    if (chartMedio) chartMedio.destroy();
+        chartMes = new Chart(document.getElementById("chartMes"), {
+            type: "bar",
+            data: {
+                labels: mes.labels,
+                datasets: [{
+                    label: "Total abonado (ARS)",
+                    data: mes.values
+                }]
+            }
+        });
 
-    chartMes = new Chart(document.getElementById("chartMes"), {
-        type: "bar",
-        data: {
-            labels: mes.labels,
-            datasets: [{
-                label: "Total abonado (ARS)",
-                data: mes.values
-            }]
-        }
-    });
+        chartAnio = new Chart(document.getElementById("chartAnio"), {
+            type: "bar",
+            data: {
+                labels: anio.labels,
+                datasets: [{
+                    label: "Total abonado (ARS)",
+                    data: anio.values
+                }]
+            }
+        });
 
-    chartAnio = new Chart(document.getElementById("chartAnio"), {
-        type: "bar",
-        data: {
-            labels: anio.labels,
-            datasets: [{
-                label: "Total abonado (ARS)",
-                data: anio.values
-            }]
-        }
-    });
-
-    chartMedio = new Chart(document.getElementById("chartMedio"), {
-        type: "pie",
-        data: {
-            labels: medio.labels,
-            datasets: [{
-                label: "Total abonado (ARS)",
-                data: medio.values
-            }]
-        }
-    });
-}
+        chartMedio = new Chart(document.getElementById("chartMedio"), {
+            type: "pie",
+            data: {
+                labels: medio.labels,
+                datasets: [{
+                    label: "Total abonado (ARS)",
+                    data: medio.values
+                }]
+            }
+        });
+    }
 
 </script>
 {% endblock %}

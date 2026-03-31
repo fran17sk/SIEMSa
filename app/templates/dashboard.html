@@ -1,0 +1,163 @@
+{% extends 'base.html' %}
+{% block nav %}
+
+    {% include 'navbar.html' %}
+
+{% endblock %}
+
+{% block content %}
+<div class="card-container" id="cards">
+      <!--
+ 
+      <div class="card">
+    <div class="card-icon">💼</div>
+    <div class="card-title">Catastro Minero</div>
+    <div class="card-desc">
+      Registro de la información relacionada con las concesiones y derechos mineros en un determinado territorio.
+    </div>
+    <a href="#" class="card-btn">INGRESAR</a>
+  </div>
+  
+  
+  
+  <div class="card">
+    <div class="card-icon">💵</div>
+    <div class="card-title">Canon</div>
+    <div class="card-desc">
+       Retribución que el Estado percibe por el uso del suelo y subsuelo con fines mineros.
+    </div>
+    <a href="" class="card-btn">INGRESAR</a>
+  </div>
+
+  <div class="card">
+    <div class="card-icon">💻</div>
+    <div class="card-title">SIRGEN</div>
+    <div class="card-desc">
+      Plataforma integral de la administración pública, promoviendo una gestión más ágil, transparente y segura en el manejo de los expedientes.
+    </div>
+    <a href="" class="card-btn">INGRESAR</a>
+  </div>
+  <div class="card">
+    <div class="card-icon"><i class="fa fa-truck" aria-hidden="true"></i>
+  </div>
+    <div class="card-title">Registro de Proveedores</div>
+    <div class="card-desc">
+      Registro de Proveedores Mineros
+    </div>
+    <a href="" class="card-btn">INGRESAR</a>
+  </div>
+  
+  <div class="card">
+    <div class="card-icon">🗃️</div>
+    <div class="card-title">Expedientes Judiciales</div>
+    <div class="card-desc">
+      Consultar por expedientes Judiales de Canon y Catastro Minero.
+    </div>
+    <a href="{% url 'buscar_expediente' %}" class="card-btn">INGRESAR</a>
+  </div>
+  <div class="card">
+    <div class="card-icon"><i class="fa fa-leaf" aria-hidden="true"></i></div>
+    <div class="card-title">Gestion Ambiente</div>
+    <div class="card-desc">
+      Gestion de informes de impacto Ambiental
+    </div>
+    <a href="{% url 'pgypm' %}" class="card-btn">INGRESAR</a>
+  </div>
+  -->
+
+
+      {% if request.user.es_asuntos_legales %}
+      <div class="card">
+        <div class="card-icon">🌐</div>
+        <div class="card-title">SIMSa</div>
+        <div class="card-desc">
+          Información relacionada con plataforma del SIMSa.
+        </div>
+        <a href="{% url 'consulta_deudas_expedientes' %}" class="card-btn">INGRESAR</a>
+      </div>
+      <div class="card">
+        <div class="card-icon">🤝</div>
+        <div class="card-title">Contratos</div>
+        <div class="card-desc">
+          Registro de Contratos
+        </div>
+        <a href="{% url 'contratos' %}" class="card-btn">INGRESAR</a>
+      </div>
+      {% else %}
+
+
+      <div class="card">
+        <div class="card-icon">📊</div>
+        <div class="card-title">Exportacion de Minerales</div>
+        <div class="card-desc">
+          Sistema para supervisar y controlar el envío de recursos minerales desde el territorio Salteño hacia el
+          mercado internacional.
+        </div>
+        <a href="{% url 'exportacion' %}" class="card-btn">INGRESAR</a>
+      </div>
+
+      
+      <div class="card">
+        <div class="card-icon"><i class="fa fa-truck" aria-hidden="true"></i>
+        </div>
+        <div class="card-title">Registro de Proveedores</div>
+        <div class="card-desc">
+          Registro de Proveedores Mineros
+        </div>
+        <a href="{% url 'proveedores' %}" class="card-btn">INGRESAR</a>
+      </div>
+
+      <div class="card">
+        <div class="card-icon">🤝</div>
+        <div class="card-title">Contratos</div>
+        <div class="card-desc">
+          Registro de Contratos
+        </div>
+        <a href="{% url 'contratos' %}" class="card-btn">INGRESAR</a>
+      </div>
+      <div class="card">
+        <div class="card-icon">📂
+        </div>
+        <div class="card-title">Expedientes</div>
+        <div class="card-desc">
+          Expedientes Judiciales
+        </div>
+        <a href="{% url 'expedientes' %}" class="card-btn">INGRESAR</a>
+      </div>
+
+      <div class="card">
+        <div class="card-icon">🌐</div>
+        <div class="card-title">SIMSa</div>
+        <div class="card-desc">
+          Información relacionada con plataforma del SIMSa.
+        </div>
+        <a href="{% url 'consulta_deudas_expedientes' %}" class="card-btn">INGRESAR</a>
+      </div>
+
+
+
+      {% if request.user.groups.first.name == "Administrador" %}
+      <div class="card">
+        <div class="card-icon">🔒</div>
+        <div class="card-title">Administración</div>
+        <div class="card-desc">
+          Acceso a solo personal de aministracion del Sistema
+        </div>
+        <a href="{% url 'administration'%}" class="card-btn">INGRESAR</a>
+      </div>
+      <div class="card">
+        <div class="card-icon">👨‍💻 </div>
+        <div class="card-title">Informatica</div>
+        <div class="card-desc">
+          Area de informatica de la Secretaria de Mineria y Energia
+        </div>
+        <a href="{% url 'inventario_list'%}" class="card-btn">INGRESAR</a>
+      </div>
+
+      {% endif %}
+      {% endif %}
+
+    </div>
+
+  </div>
+{% endblock %}

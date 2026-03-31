@@ -1,4 +1,9 @@
-{% extends 'contratos/home.html' %}
+{% extends 'base.html' %}
+
+{% block nav %}
+  {% include 'contratos/navbar.html' %}
+{% endblock %}
+
 
 {% block head %}
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
@@ -7,7 +12,7 @@
     .container#cards {
         max-width: 1200px;
         margin: 40px auto;
-        background: #ffffff;
+        background: var(--card-bg);
         padding: 2.5rem;
         border-radius: 14px;
         box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
@@ -17,7 +22,7 @@
         margin-bottom: 2rem;
         font-weight: 700;
         font-size: 1.8rem;
-        color: #111827;
+        color: var(--text-ligth);
         text-align: center;
     }
 
@@ -44,7 +49,7 @@
     .form-group label {
         font-weight: 600;
         margin-bottom: 8px;
-        color: #4b5563;
+        color: var(--text-ligth);
         font-size: 0.9rem;
     }
 
@@ -57,15 +62,16 @@
         border: 1.5px solid #d1d5db;
         border-radius: 8px;
         font-size: 0.95rem;
-        background-color: #fff;
+        color: var(--text-ligth);
+        background-color: var(--bg-main);
         width: 100%;
         box-sizing: border-box;
     }
 
     /* Estilo para campos de solo lectura */
     .form-group input[readonly] {
-        background-color: #f3f4f6;
-        color: #4b5563;
+        background-color: var(--card-bg);
+        color: var(--text-ligth);
         cursor: default;
     }
 
@@ -74,7 +80,8 @@
         align-items: center;
         border: 1.5px solid #d1d5db;
         border-radius: 8px;
-        background: #f3f4f6;
+        background: var(--card-bg);
+        color:var(--text-ligth);
         /* Indica que es lectura */
         height: 40px;
     }
@@ -113,7 +120,7 @@
         position: absolute;
         top: 45px;
         width: 100%;
-        background: white;
+        background: var(--bg-main);
         border: 1px solid #d1d5db;
         border-radius: 8px;
         z-index: 1000;
@@ -134,7 +141,7 @@
     }
 
     .empresa-panel li:hover {
-        background: #f3f4f6;
+        background: var(--card-bg);
     }
 
     button[type="submit"] {

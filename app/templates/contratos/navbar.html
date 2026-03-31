@@ -1,37 +1,27 @@
-<a href="{% url 'home' %}">
-    <div class="menu-item">
-        <i class="fas fa-home"></i>
-        <span class="menu-text">Inicio</span>
-    </div>
-</a>
-
-<a href="{% url 'contratos' %}">
-  <div class="menu-item">
-    <i class="fa fa-plus" aria-hidden="true"></i>
-    <span class="menu-text">Nuevo</span>
-  </div>
-</a>
+{% if request.user.groups.first.name == "Administrador" or request.user.groups.first.name == "Publicador" %}
+        {% endif %}
+        
+        
+        <a href="{% url 'contratos' %}" class="{% if request.resolver_match.url_name == 'contratos' %}active{% endif %}"
+        title="Nuevo Contrato">
+         <i data-lucide="plus"></i><span>Nuevo Contrato</span>
+      </a>
 
 
-<a href="{% url 'serch' %}">
-  <div class="menu-item">
-  <i class="fa fa-search" aria-hidden="true"></i>
-      <span class="menu-text">Consultar</span>
-  </div>
-</a>
 
-<a href="{% url '' %}">
-  <div class="menu-item">
-  <i class="fa fa-search" aria-hidden="true"></i>
-      <span class="menu-text">Tipos Contratos</span>
-  </div>
-</a>
-
-<a href="{% url 'lista_contratos' %}">
-  <div class="menu-item">
-  <i class="fas fa-file-alt"></i>
-      <span class="menu-text">Contratos List</span>
-  </div>
-</a>
-
-  
+      <a href="{% url 'lista_contratos' %}"
+          class="{% if request.resolver_match.url_name == 'lista_contratos' %}active{% endif %}" title="Lista de Contratos">
+          <i data-lucide="handshake"></i> <span>Lista de Contratos</span>
+        </a>
+        
+        <a href="{% url 'tipos_contratos_list' %}" class="{% if request.resolver_match.url_name == 'tipos_contratos_list' %}active{% endif %}"
+        title="Tipos Contratos">
+         <i data-lucide="list"></i><span>Tipos Contratos</span>
+      </a>
+      
+      {% if request.user.groups.first.name == "Administrador" or request.user.groups.first.name == "Publicador" %}
+        {% endif %}
+        <!-- Nueva sección Administración -->
+        {% if request.user.groups.first.name == "Administrador" %}
+      
+      {% endif %}

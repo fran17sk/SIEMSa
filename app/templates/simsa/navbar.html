@@ -1,0 +1,28 @@
+<a href="{% url 'simsa_users' %}" class="{% if request.resolver_match.url_name == 'simsa_users' %}active{% endif %}" title="Exportacion">
+    <i data-lucide="users"></i> <span>Usuarios SIMSa</span>
+</a>
+
+<a href="{% url 'reportes_home' %}" class="{% if request.resolver_match.url_name == 'reportes_home' or request.resolver_match.url_name == 'deudas_expedientes' %}active{% endif %}" title="Exportaciones">
+    <i data-lucide="file-chart-column"></i> <span>Reportes</span>
+</a>
+
+<a href="{% url 'consulta_deudas_expedientes' %}" class="{% if request.resolver_match.url_name == 'consulta_deudas_expedientes' %}active{% endif %}" title="Consulta">
+    <i data-lucide="search"></i> <span>Consulta Expediente</span>
+</a>
+
+<div class="menu-item {% if request.resolver_match.url_name == 'pagos_electronicos' or request.resolver_match.url_name == 'pagos_graficos' or request.resolver_match.url_name == 'regalias' %}open{% endif %}">
+    
+    <div class="submenu">
+        <a href="{% url 'pagos_electronicos' %}" class="{% if request.resolver_match.url_name == 'pagos_electronicos' %}active{% endif %}">
+            <i data-lucide="credit-card"></i> <span>Pagos Electrónicos</span>
+        </a>
+
+        <a href="{% url 'pagos_graficos' %}" class="{% if request.resolver_match.url_name == 'pagos_graficos' %}active{% endif %}">
+            <i data-lucide="bar-chart-3"></i> <span>Pagos Gráficos</span>
+        </a>
+
+        <a href="{% url 'regalias' %}" class="{% if request.resolver_match.url_name == 'regalias' %}active{% endif %}">
+            <i data-lucide="coins"></i> <span>Pagos Regalías</span>
+        </a>
+    </div>
+</div>

@@ -121,6 +121,7 @@ urlpatterns = [
     path('pgypm/',views.pgypm,name='pgypm'),
     ###################################################expedientes##########################################################
     path('expedientes/',views.expedientes,name='expedientes'),
+    path('expedientes/detalle/<int:expediente_nro>/', views.detalle, name='detalle'),
 
 
     path('sirgen/',views.sirgen_view,name='sirgen'),

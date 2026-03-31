@@ -1,4 +1,9 @@
-{% extends 'contratos/home.html' %}
+{% extends 'base.html' %}
+
+
+{% block nav %}
+  {% include 'contratos/navbar.html' %}
+{% endblock %}
 
 {% block head %}
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
@@ -6,7 +11,8 @@
 .container#cards {
     max-width: 1200px;
     margin:  auto;
-    background: #ffffff;
+    background: var(--card-bg);
+    color: var(--text-light);
     padding: 2rem;
     border-radius: 14px;
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
@@ -17,7 +23,7 @@
     margin-bottom: 2rem;
     font-weight: 700;
     font-size: 1.8rem;
-    color: #111827;
+    color: var(--text-light);
     text-align: center;
 }
 
@@ -55,7 +61,7 @@
 .form-group label {
     font-weight: 600;
     margin-bottom: 8px;
-    color: #4b5563;
+    color: var(--text-light);
     font-size: 0.9rem;
     white-space: nowrap;
 }
@@ -71,7 +77,8 @@
     border-radius: 8px;
     font-size: 0.95rem;
     transition: all 0.2s ease;
-    background-color: #fff;
+    background-color: var(--bg-main);
+    color:var(--text-light);
     box-sizing: border-box; /* Fundamental para que el padding no sume al ancho */
     width: 100%;
 }
@@ -91,8 +98,8 @@
 
 .form-group input:disabled, 
 .form-group select:disabled {
-    background-color: #f3f4f6;
-    color: #6b7280;
+    background-color: var(--sidebar-accent);
+    color: var(--text-ligth);
     cursor: not-allowed;
 }
 
@@ -105,7 +112,7 @@
     align-items: center;
     border: 1.5px solid #d1d5db;
     border-radius: 8px;
-    background: #fff;
+    background: var(--card-bg);
     height: 40px;
     overflow: hidden;
 }
@@ -137,7 +144,8 @@
     margin-bottom: 0;
     cursor: pointer;
     font-weight: 600;
-    color: #4b5563;
+    color: var(--text-light);
+    
 }
 
 .form-group .checkbox-label input[type="checkbox"] {
@@ -300,7 +308,8 @@ button[type="submit"]:hover {
     padding: 12px;
     border: 2px dashed #d1d5db;
     border-radius: 10px;
-    background-color: #f9fafb;
+    color:var(--text-ligth);
+    background-color: var(--bg-main);
     transition: all 0.3s ease;
     text-align: center;
 }

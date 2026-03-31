@@ -12,14 +12,14 @@
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
-            background: #f5f7fa;
+            background: var(--card-bg);
             color: #333;
         }
         h2 {
             text-align: center;
             margin: 20px 0 10px 0;
             font-weight: 700;
-            color: #2c3e50;
+            color: var(--text-light);
         }
         #filter-form {
             display: flex;
@@ -33,6 +33,7 @@
             margin-right: 5px;
             align-self: center;
             white-space: nowrap;
+            color:var(--text-light)
         }
         #filter-form input[type="number"],
         #filter-form select {
@@ -76,8 +77,8 @@
         .legend {
             position: fixed;
             bottom: 20px;
-            left: 250PX;
-            background: white;
+            right: 50PX;
+            background: var(--card-bg);
             padding: 15px 20px;
             border-radius: 8px;
             box-shadow: 0 3px 15px rgba(0,0,0,0.15);
@@ -95,6 +96,7 @@
             display: flex;
             align-items: center;
             margin-bottom: 6px;
+            color: var(--text-light);
         }
         
         .color-box {

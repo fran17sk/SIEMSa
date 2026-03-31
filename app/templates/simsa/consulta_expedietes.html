@@ -1,363 +1,417 @@
-{% extends "simsa/home.html" %}
+{% extends "base.html" %}
 {% load static %}
 
+{% block nav %}
+  {% include 'simsa/navbar.html' %}
+{% endblock %}
+
 {% block content %}
-<div class="consulta-container">
-  <h2>Consulta de Deuda por Expediente</h2>
-
-  <form id="consulta-form" class="consulta-form" onsubmit="return false;">
-    <div class="form-group">
-      <label for="expediente-numero">Ingresar N° o Nombre del expediente: </label>
-      <input type="text" id="expediente-numero" placeholder="Ej: 12345" />
+<main class="content-container">
+    <div class="view-header">
+        <div class="header-text">
+            <h1>Consulta de Expedientes</h1>
+            <p>Consulta de estados de deuda y registros mineros en tiempo real.</p>
+        </div>
+        <div class="header-actions">
+            <button id="descargar-btn" class="btn-ghost" title="Exportar registros">
+                <i data-lucide="download"></i>
+                <span>Exportar CSV</span>
+            </button>
+        </div>
     </div>
-    <button id="buscar-btn" type="button">Buscar</button>
-    <button id="descargar-btn" type="button" style="margin-top: 20px;">Descargar tabla completa</button>
-  </form>
 
-  <div id="resultado" class="resultado-section">
-    <p>Ingrese un número de expediente y presione <strong>Buscar</strong>.</p>
+    <div class="search-section">
+        <div class="search-bar">
+            <i data-lucide="search" class="search-icon"></i>
+            <input type="text" id="expediente-numero" placeholder="Buscar por número o nombre de expediente..." autocomplete="off">
+            <button id="buscar-btn" class="btn-search">Buscar</button>
+        </div>
+    </div>
 
-  </div>
-</div>
+    <div id="resultado" class="resultado-section">
+        <div class="status-placeholder">
+            <div class="placeholder-icon">
+                <i data-lucide="database"></i>
+            </div>
+            <h3>Listo para consultar</h3>
+            <p>Ingresa un criterio de búsqueda para visualizar la información fiscal.</p>
+        </div>
+    </div>
+</main>
+{% endblock %}
 
-<script>
-const buscarBtn = document.getElementById('buscar-btn');
-const numeroInput = document.getElementById('expediente-numero');
-const resultadoDiv = document.getElementById('resultado');
-
-async function buscarExpediente() {
-  const numero = numeroInput.value.trim();
-
-  if (!numero) {
-    resultadoDiv.innerHTML = '<div class="alert alert-error">Debe ingresar un número de expediente.</div>';
-    return;
-  }
-
-  resultadoDiv.innerHTML = '<div class="loader"></div><p class="loading-text">Consultando expediente...</p>';
-
-  try {
-    const response = await fetch(`/expediente/deuda/?numero=${encodeURIComponent(numero)}`, {
-      headers: { 'X-Requested-With': 'XMLHttpRequest' }
-    });
-
-    if (!response.ok) throw new Error('No se pudo consultar el expediente.');
-
-    const html = await response.text();
-    resultadoDiv.innerHTML = html;
-    numeroInput.value=""
-  } catch (error) {
-    resultadoDiv.innerHTML = `<div class="alert alert-error">${error.message}</div>`;
-    numeroInput.value=""
-  }
-}
-
-buscarBtn.addEventListener('click', buscarExpediente);
-numeroInput.addEventListener('keydown', (event) => {
-  if (event.key === 'Enter') {
-    event.preventDefault();
-    buscarExpediente();
-  }
-});
-
-document.addEventListener("click", async function(e) {
-  if (e.target && e.target.id === "ver-mas-btn") {
-    const btn = e.target;
-    const id = btn.dataset.id;
-    const contenedor = document.getElementById("otros-expedientes");
-
-    btn.disabled = true;
-    btn.textContent = "Cargando...";
-
-    try {
-      const resp = await fetch(`/expediente/otros/?id=${id}`);
-      const html = await resp.text();
-      contenedor.innerHTML = html;
-      btn.style.display = "none";
-    } catch (err) {
-      contenedor.innerHTML = `<p style='color:red;'>Error al cargar los expedientes.</p>`;
-      btn.disabled = false;
-    }
-  }
-});
-
-
-</script>
-<script>
-  const descargarBtn = document.getElementById('descargar-btn');
-
-descargarBtn.addEventListener('click', () => {
-  let filas = [];
-
-  const tarjetas = document.querySelectorAll('.expediente-card');
-
-  tarjetas.forEach(tarjeta => {
-    const h3 = tarjeta.querySelector('h3')?.textContent.trim() || "";
-    // Suponiendo que h3 tiene formato "12345 | Mina X | Tipo Y"
-    const partes = h3.split('|').map(p => p.trim());
-    const nroExpediente = partes[0] || "";
-    const nombreMina = partes[1] || "";
-    const tipo = partes[2] || "";
-
-    // Buscamos la tabla de pagos
-    const tabla = tarjeta.querySelector('table');
-    if (!tabla) {
-      filas.push([nroExpediente, nombreMina, tipo, "Sin pagos", "-", "Pendiente"]);
-      return;
-    }
-
-    const trs = tabla.querySelectorAll('tbody tr');
-    if (trs.length === 0) {
-      filas.push([nroExpediente, nombreMina, tipo, "Sin pagos", "-", "Pendiente"]);
-    } else {
-      // Buscamos el último pago (suponiendo que la tabla tiene los pagos en orden cronológico)
-      let ultimoPagoFila = null;
-      for (let i = trs.length - 1; i >= 0; i--) {
-        const tr = trs[i];
-        if (!tr.querySelector('td')?.textContent.includes("No hay registros")) {
-          ultimoPagoFila = tr;
-          break;
-        }
-      }
-
-      if (ultimoPagoFila) {
-        const periodo = ultimoPagoFila.querySelector('td:nth-child(1)')?.textContent.trim() || "Sin pagos";
-        const fechaPago = ultimoPagoFila.querySelector('td:nth-child(5)')?.textContent.trim() || "-";
-        const estado = ultimoPagoFila.querySelector('td:nth-child(8)')?.textContent.includes("Pagado") ? "Pagado" : "Pendiente";
-
-        filas.push([nroExpediente, nombreMina, tipo, periodo, fechaPago, estado]);
-      } else {
-        filas.push([nroExpediente, nombreMina, tipo, "Sin pagos", "-", "Pendiente"]);
-      }
-    }
-  });
-
-  if (filas.length === 0) {
-    alert("No hay datos para descargar.");
-    return;
-  }
-
-  // Armamos CSV
-  let csvContent = "data:text/csv;charset=utf-8,";
-  csvContent += "Nro de expediente,Nombre Mina,Tipo,Periodo,Fecha del último pago,Estado\n";
-  filas.forEach(fila => {
-    csvContent += fila.map(c => `"${c}"`).join(",") + "\n";
-  });
-
-  // Descargar
-  const encodedUri = encodeURI(csvContent);
-  const link = document.createElement("a");
-  link.setAttribute("href", encodedUri);
-  link.setAttribute("download", `minas_completo.csv`);
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-});
-
-
-</script>
+{% block head %}
 <style>
-body {
-  margin: 0;
-  background-color: #f5f7fb;
-  font-family: 'Inter', 'Segoe UI', Roboto, Arial, sans-serif;
-  color: #2d2d2d;
+    /* Estructura Base */
+    .content-container {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 2rem;
+        background-color: var(--card-bg);
+        border-radius: 50px;
+    }
+
+    /* Header de la vista */
+    .view-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        margin-bottom: 2.5rem;
+    }
+
+    .header-text h1 {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: var(--text-light);
+        margin: 0 0 0.5rem 0;
+    }
+
+    .header-text p {
+        color: var(--text-muted);
+        margin: 0;
+        font-size: 0.95rem;
+    }
+
+    /* Botón Ghost (Moderno) */
+    .btn-ghost {
+        background: transparent;
+        border: 1px solid var(--border-color);
+        color: var(--text-light);
+        padding: 0.6rem 1.2rem;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-size: 0.9rem;
+    }
+
+    .btn-ghost:hover {
+        background: var(--hover-bg);
+        border-color: var(--sidebar-accent);
+    }
+
+    /* Barra de búsqueda estilo Spotlight */
+    .search-section {
+        margin-bottom: 2rem;
+    }
+
+    .search-bar {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        padding: 0.5rem 0.5rem 0.5rem 1.2rem;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        transition: border-color 0.3s, box-shadow 0.3s;
+    }
+
+    .search-bar:focus-within {
+        border-color: var(--sidebar-accent);
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .search-icon {
+        color: var(--text-muted);
+        width: 20px;
+    }
+
+    .search-bar input {
+        flex: 1;
+        background: transparent;
+        border: none;
+        color: var(--text-light);
+        padding: 0.8rem 1rem;
+        font-size: 1rem;
+    }
+
+    .search-bar input:focus { outline: none; }
+
+    .btn-search {
+        background: var(--sidebar-accent);
+        color: white;
+        border: none;
+        padding: 0.8rem 1.8rem;
+        border-radius: 10px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: opacity 0.2s;
+    }
+
+    .btn-search:hover { opacity: 0.9; }
+
+    /* Viewport de resultados */
+    .results-viewport {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        min-height: 400px;
+        padding: 2rem;
+    }
+
+    /* Placeholder inicial */
+    .status-placeholder {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 300px;
+        text-align: center;
+        color: var(--text-muted);
+    }
+
+    .placeholder-icon {
+        width: 64px;
+        height: 64px;
+        background: var(--hover-bg);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1.5rem;
+        color: var(--sidebar-accent);
+    }
+
+    .status-placeholder h3 {
+        color: var(--text-light);
+        margin: 0 0 0.5rem 0;
+    }
+
+    /* Loader */
+    .loader-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 4rem;
+    }
+
+    .loader {
+        width: 38px;
+        height: 38px;
+        border: 3px solid var(--border-color);
+        border-bottom-color: var(--sidebar-accent);
+        border-radius: 50%;
+        animation: rotation 1s linear infinite;
+        margin-bottom: 1rem;
+    }
+
+    @keyframes rotation { 0% { transform: rotate(0deg) } 100% { transform: rotate(360deg) } }
+
+    @media (max-width: 768px) {
+        .view-header { flex-direction: column; align-items: flex-start; gap: 1rem; }
+        .search-bar { padding: 0.3rem 0.3rem 0.3rem 1rem; }
+        .btn-search { padding: 0.6rem 1.2rem; }
+    }
+    /* Estilos de Tabla dinámicos */
+.resultado-section table { width: 100%; border-collapse: collapse; margin-top: 20px; overflow: hidden; border-radius: 10px; }
+.resultado-section th { background: var(--sidebar-bg); padding: 15px; text-align: left; font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; }
+.resultado-section td { padding: 15px; border-bottom: 1px solid var(--border-color); font-size: 0.95rem; }
+
+@media (max-width: 768px) {
+    .action-buttons { flex-direction: column; }
+    .consulta-container { margin: 15px; padding: 25px; }
 }
 
-/* CONTENEDOR PRINCIPAL */
-.consulta-container {
-  background: #ffffff;
-  padding: 45px 55px;
-  max-width: 920px;
-  margin: 60px auto;
-  border-radius: 14px;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.06);
-  border: 1px solid #e5e9f0;
+
+/* Card y Header */
+.expediente-card {
+    background: var(--card-bg);
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
 }
 
-/* TÍTULO PRINCIPAL */
-h2 {
-  text-align: center;
-  color: #1f2937;
-  font-weight: 700;
-  margin-bottom: 35px;
-  font-size: 1.8em;
-  letter-spacing: 0.4px;
+.card-header {
+    padding: 24px;
+    display: flex;
+    flex-flow: row nowrap;
+    justify-content: space-between;
+    background: linear-gradient(to right, var(--card-bg), var(--hover-bg));
+    border-bottom: 1px solid var(--border-color);
 }
 
-/* FORMULARIO */
-.consulta-form {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 18px;
-  justify-content: center;
-  align-items: flex-end;
-  margin-bottom: 30px;
+.badge-expediente {
+    background: var(--sidebar-accent);
+    color: white;
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+.mina-title h3 { margin: 8px 0; font-size: 1.5rem; color: var(--text-light); }
+.tipo-tag { color: var(--text-muted); font-size: 0.9rem; margin: 0; }
+
+/* Grid de Información */
+.info-grid {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 24px;
+    padding: 24px;
+    background: var(--bg-main);
 }
 
-.form-group {
-  display: flex;
-  flex-direction: column;
+.info-item label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-bottom: 8px;
 }
 
-label {
-  font-size: 0.92em;
-  color: #4b5563;
-  margin-bottom: 6px;
-  font-weight: 500;
+.concesionario-tag {
+    display: inline-block;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    margin-right: 8px;
 }
 
-input {
-  padding: 10px 14px;
-  border-radius: 8px;
-  border: 1px solid #cbd5e1;
-  width: 260px;
-  font-size: 1em;
-  background-color: #fff;
-  transition: all 0.25s ease;
+/* Tabla Moderna */
+.canon-section { padding: 24px; }
+.section-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
 }
 
-input:focus {
-  outline: none;
-  border-color: #1f2937;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+.modern-table { width: 100%; border-collapse: separate; border-spacing: 0 8px; }
+.modern-table th { padding: 12px; color: var(--text-muted); font-size: 0.8rem; text-align: left; }
+.modern-table td { background: var(--bg-main); padding: 16px 12px; }
+.modern-table td:first-child { border-radius: 10px 0 0 10px; }
+.modern-table td:last-child { border-radius: 0 10px 10px 0; }
+
+/* Pildoras de Estado */
+.status-pill {
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
 }
+.status-pill.success { background: rgba(34, 197, 94, 0.15); color: #22c55e; }
+.status-pill.warning { background: rgba(234, 179, 8, 0.15); color: #eab308; }
 
-/* BOTONES */
-button {
-  background: #1f2937;
-  color: #fff;
-  border: none;
-  padding: 11px 22px;
-  border-radius: 8px;
-  font-weight: 600;
-  font-size: 0.95em;
-  cursor: pointer;
-  transition: background-color 0.2s, transform 0.1s ease;
-}
-
-button:hover {
-  background-color: #1f2937;
-  transform: translateY(-1px);
-}
-
-button:active {
-  transform: translateY(0);
-}
-
-/* SECCIÓN DE RESULTADOS */
-.resultado-section {
-  margin-top: 25px;
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
-  padding: 25px;
-  min-height: 120px;
-  font-size: 0.96em;
-  transition: all 0.3s ease;
-}
-
-/* LOADER */
-.loader {
-  border: 4px solid #e5e7eb;
-  border-top: 4px solid #1f2937;
-  border-radius: 50%;
-  width: 36px;
-  height: 36px;
-  animation: spin 1s linear infinite;
-  margin: 15px auto;
-}
-
-.loading-text {
-  text-align: center;
-  color: #555;
-  font-size: 0.95em;
-  margin-top: 10px;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-/* ALERTAS */
-.alert {
-  padding: 14px 16px;
-  border-radius: 8px;
-  margin: 12px 0;
-  font-size: 0.92em;
-}
-
-.alert-error {
-  background-color: #fef2f2;
-  border: 1px solid #fecaca;
-  color: #b91c1c;
-}
-
-.alert-success {
-  background-color: #ecfdf5;
-  border: 1px solid #a7f3d0;
-  color: #065f46;
-}
-
-/* TABLAS */
-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 1.5em;
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-th, td {
-  padding: 12px 14px;
-  text-align: left;
-  border-bottom: 1px solid #e5e7eb;
-  font-size: 0.94em;
-}
-
-th {
-  background-color: #1f2937;
-  color: #fff;
-  font-weight: 600;
-  font-size: 0.9em;
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
-}
-
-tr:nth-child(even) {
-  background-color: #f9fafb;
-}
-
-tr.pagado {
-  background-color: #ecfdf5;
-}
-
-tr.pendiente {
-  background-color: #fef2f2;
-}
-
-/* EFECTO AL PASAR */
-tr:hover {
-  background-color: #f1f5f9;
-  transition: background-color 0.2s ease;
-}
-
-/* RESPONSIVIDAD */
-@media (max-width: 700px) {
-  .consulta-container {
-    padding: 30px 25px;
-  }
-
-  input {
+/* Botón Ver Más */
+.btn-load-more {
     width: 100%;
-  }
-
-  button {
-    width: 100%;
-  }
-
-  th, td {
-    font-size: 0.85em;
-  }
+    padding: 16px;
+    background: var(--hover-bg);
+    border: 1px dashed var(--border-color);
+    color: var(--text-light);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: all 0.3s;
 }
+.btn-load-more:hover { background: var(--border-color); color: var(--sidebar-accent); }
 </style>
+{% endblock %}
+
+{% block script %}
+<script>
+    const buscarBtn = document.getElementById('buscar-btn');
+    const descargarBtn = document.getElementById('descargar-btn');
+    const numeroInput = document.getElementById('expediente-numero');
+    const resultadoDiv = document.getElementById('resultado');
+
+    async function buscarExpediente() {
+        const numero = numeroInput.value.trim();
+        if (!numero) return;
+
+        resultadoDiv.innerHTML = `
+            <div class="loader-container">
+                <div class="loader"></div>
+                <p>Sincronizando con base de datos...</p>
+            </div>`;
+
+        try {
+            const response = await fetch(`/expediente/deuda/?numero=${encodeURIComponent(numero)}`, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            if (!response.ok) throw new Error();
+            
+            resultadoDiv.innerHTML = await response.text();
+            if (window.lucide) lucide.createIcons();
+        } catch (error) {
+            resultadoDiv.innerHTML = `<div class="status-placeholder"><p style="color:var(--sidebar-accent)">No se encontró información para el expediente solicitado.</p></div>`;
+        }
+    }
+
+   // --- Función de Exportación ---
+    function exportarCSV() {
+        let filas = [];
+        const tarjetas = document.querySelectorAll('.expediente-card');
+
+        if (tarjetas.length === 0) {
+            alert("Realice una búsqueda antes de exportar.");
+            return;
+        }
+
+        tarjetas.forEach(tarjeta => {
+            const h3 = tarjeta.querySelector('h3')?.textContent.trim() || "";
+            const [nro = "", mina = "", tipo = ""] = h3.split('|').map(p => p.trim());
+
+            const tabla = tarjeta.querySelector('table');
+            const trs = tabla ? tabla.querySelectorAll('tbody tr') : [];
+            
+            if (trs.length === 0) {
+                filas.push([nro, mina, tipo, "Sin registros", "-", "Pendiente"]);
+            } else {
+                const ultimoTr = Array.from(trs).reverse().find(tr => !tr.innerText.includes("No hay registros"));
+                if (ultimoTr) {
+                    const periodo = ultimoTr.querySelector('td:nth-child(1)')?.innerText.trim() || "-";
+                    const fecha = ultimoTr.querySelector('td:nth-child(5)')?.innerText.trim() || "-";
+                    const pagado = ultimoTr.innerText.toLowerCase().includes("pagado") ? "Pagado" : "Pendiente";
+                    filas.push([nro, mina, tipo, periodo, fecha, pagado]);
+                }
+            }
+        });
+
+        const csvRows = [
+            ["Nro Expediente", "Mina", "Tipo", "Periodo", "Ult. Pago", "Estado"],
+            ...filas
+        ];
+
+        let csvContent = "data:text/csv;charset=utf-8,\uFEFF" + csvRows.map(e => e.map(c => `"${c}"`).join(",")).join("\n");
+        const link = document.createElement("a");
+        link.href = encodeURI(csvContent);
+        link.download = `Reporte_Expedientes_${new Date().toISOString().slice(0,10)}.csv`;
+        link.click();
+    }
+
+    // Listeners
+    buscarBtn.addEventListener('click', buscarExpediente);
+    descargarBtn.addEventListener('click', exportarCSV);
+    numeroInput.addEventListener('keydown', (e) => e.key === 'Enter' && buscarExpediente());
+
+    // Manejo delegado para el botón "Ver más"
+    document.addEventListener("click", async (e) => {
+        if (e.target.id === "ver-mas-btn") {
+            const btn = e.target;
+            const contenedor = document.getElementById("otros-expedientes");
+            btn.disabled = true;
+            btn.innerHTML = '<span class="loader" style="width:14px; height:14px; margin:0"></span>';
+
+            try {
+                const resp = await fetch(`/expediente/otros/?id=${btn.dataset.id}`);
+                contenedor.innerHTML = await resp.text();
+                btn.style.display = "none";
+                if (window.lucide) lucide.createIcons();
+            } catch (err) {
+                contenedor.innerHTML = "<p style='color:#ef4444'>Error de conexión.</p>";
+                btn.disabled = false;
+                btn.innerText = "Reintentar";
+            }
+        }
+    });
+</script>
 {% endblock %}

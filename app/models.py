@@ -9,7 +9,14 @@ def es_asuntos_legales(self):
         organismo__organismonombre="Asuntos Legales"
     ).exists()
 
+def es_canon(self):
+    return self.organismos_usuario.filter(
+        organismo__organismonombre="Canon"
+    ).exists()
+
 User.add_to_class("es_asuntos_legales", property(es_asuntos_legales))
+User.add_to_class("es_canon", property(es_canon))
+
 
 class Mineral(models.Model):
     id_min = models.AutoField(primary_key=True,unique=True)
