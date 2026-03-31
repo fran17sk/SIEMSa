@@ -143,7 +143,7 @@ STATIC_URL = '/static/'
 
 # 2. Donde Django BUSCA archivos adicionales (tu carpeta mi_proyecto/static)
 STATICFILES_DIRS = [
-    BASE_DIR / "/app/static",
+    BASE_DIR / "/app/static/app",
 ]
 
 # 3. Donde Django COPIARÁ todo al ejecutar collectstatic (mi_proyecto/staticfiles)
