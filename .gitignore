@@ -15,8 +15,6 @@ db.sqlite3
 db.sqlite3-journal
 media/
 staticfiles/
-static/
-
 # If you are using Django Compressor
 *.cache
 
