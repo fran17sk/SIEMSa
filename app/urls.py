@@ -1,6 +1,8 @@
 from django.urls import path
 from django.contrib.auth import views as auth_views
 from . import views
+from django.conf import settings
+from django.conf.urls.static import static
 
 urlpatterns = [
     path('login/', views.custom_login, name='login'),
@@ -142,4 +144,4 @@ urlpatterns = [
     path("notificar-secretaria/", views.notificar_secretaria, name="notificar_secretaria"),
     path('informatica/montos_canon',views.montos_canon,name='montos_canon'),
 
-]
+]+ static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
