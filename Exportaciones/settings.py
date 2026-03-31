@@ -141,13 +141,19 @@ LOGIN_REDIRECT_URL = '/home'
 
 STATIC_URL = '/static/'
 
+# 2. Donde Django BUSCA archivos adicionales (tu carpeta mi_proyecto/static)
 STATICFILES_DIRS = [
     BASE_DIR / "static",
 ]
 
-# 3. La carpeta donde Django COPIARÁ todos los archivos al ejecutar collectstatic
-# (Esta carpeta no debe estar dentro de tus archivos de código fuente habitualmente)
+# 3. Donde Django COPIARÁ todo al ejecutar collectstatic (mi_proyecto/staticfiles)
 STATIC_ROOT = BASE_DIR / "staticfiles"
+
+# 4. (Opcional pero recomendado) Localización de los buscadores de estáticos
+STATICFILES_FINDERS = [
+    'django.contrib.staticfiles.finders.FileSystemFinder',   # Busca en STATICFILES_DIRS
+    'django.contrib.staticfiles.finders.AppDirectoriesFinder', # Busca en carpetas 'static' de cada APP
+]
 LOGIN_URL = '/login/'  
 
 # Asegúrate de que esta URL exista
