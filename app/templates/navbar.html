@@ -8,6 +8,10 @@
           title="Contratos">
           <i data-lucide="handshake"></i> <span>Contratos</span>
         </a>
+        <a href="{% url 'index' %}" class="{% if request.resolver_match.url_name == 'index' %}active{% endif %}"
+          title="Arca | PadronA13">
+          <i data-lucide="circle-user"></i> <span>ARCA</span>
+        </a>
         {% else %}
         <a href="{% url 'exportacion' %}"
           class="{% if request.resolver_match.url_name == 'exportacion' %}active{% endif %}" title="Exportaciones">
