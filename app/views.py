@@ -5553,12 +5553,21 @@ def consultar(request):
         form = ConsultaCuitForm(request.POST)
         if form.is_valid():
             cuit = form.cleaned_data["cuit"].strip()
-            data = consultar_cuit(cuit)
-            obj, _ = ConsultaPadron.objects.update_or_create(
-                cuit=cuit,
-                defaults={k: v for k, v in data.items() if k != "cuit"}
-            )
-            return render(request, "padron/resultados.html", {"resultados": [obj], "modo": "single"})
+            try:
+                data = consultar_cuit(cuit)
+                print("DATA RETORNADA:", data)  # <-- ver en logs
+                obj, created = ConsultaPadron.objects.update_or_create(
+                    cuit=cuit,
+                    defaults={k: v for k, v in data.items() if k != "cuit"}
+                )
+                print("OBJ GUARDADO:", obj, "| CREADO:", created)
+                return render(request, "padron/resultados.html", {"resultados": [obj], "modo": "single"})
+            except Exception as e:
+                import traceback
+                print("ERROR COMPLETO:")
+                traceback.print_exc()
+                # Mostrar error en pantalla temporalmente
+                return HttpResponse(f"<pre>{traceback.format_exc()}</pre>", status=500)
     return redirect("padron:index")
 
 def procesar_txt(request):
