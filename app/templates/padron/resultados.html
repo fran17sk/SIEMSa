@@ -1,0 +1,314 @@
+{% extends "base.html" %}
+{% load static %}
+{% block nav %}
+  {% include 'navbar.html' %}
+{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<style>
+  .main {
+    flex: 1;
+    padding: 2rem;
+    overflow-y: auto;
+    animation: fadeIn 0.4s ease;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .result-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+  }
+  .result-header h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0;
+  }
+  .result-header .badge-count {
+    background: #e8f0fe;
+    color: #1a56db;
+    border-radius: 20px;
+    padding: 0.2rem 0.8rem;
+    font-size: 0.82rem;
+    font-weight: 700;
+    margin-left: 0.5rem;
+  }
+  .result-actions {
+    display: flex;
+    gap: 0.6rem;
+    align-items: center;
+  }
+
+  .btn-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.48rem 1rem;
+    background: var(--card-bg);
+    color: #ffffff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background 0.2s;
+  }
+  .btn-back:hover { background: #f0f0f0; color: #222; }
+
+  .btn-export {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.48rem 1rem;
+    background-color: var(--bg-main);
+    color: var(--text-light);
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background 0.3s ease;
+  }
+  .btn-export:hover { background-color: var(--hover-bg); color: var(--text-light); }
+
+  /* Buscador */
+  .search-bar {
+    margin-bottom: 1rem;
+  }
+  .search-bar input {
+    padding: 0.5rem 0.9rem;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    width: 280px;
+    background: var(--card-bg);
+    transition: border-color 0.2s;
+    color:var(--text-light)
+  }
+  .search-bar input:focus {
+    outline: none;
+    border-color: #1a56db;
+    box-shadow: 0 0 0 3px rgba(26,86,219,0.1);
+  }
+
+  .table-container {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.07);
+    overflow-x: auto;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8rem;
+  }
+  th {
+    background: var(--card-bg);
+    font-weight: 700;
+    padding: 0.75rem 0.8rem;
+    text-align: left;
+    border-bottom: 2px solid #eee;
+    white-space: nowrap;
+    color: var(--text-light);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  td {
+    padding: 0.75rem 0.8rem;
+    border-bottom: 1px solid #f0f0f0;
+    vertical-align: middle;
+  }
+  tbody tr:hover { background: var(--bg-main); }
+  tbody tr:last-child td { border-bottom: none; }
+
+  .badge-fisica {
+    background: #e8f0fe; color: #1a56db;
+    padding: 0.2rem 0.6rem; border-radius: 20px;
+    font-size: 0.72rem; font-weight: 700;
+  }
+  .badge-juridica {
+    background: #fef3c7; color: #92400e;
+    padding: 0.2rem 0.6rem; border-radius: 20px;
+    font-size: 0.72rem; font-weight: 700;
+  }
+  .badge-error {
+    background: #fee2e2; color: #b91c1c;
+    padding: 0.2rem 0.6rem; border-radius: 20px;
+    font-size: 0.72rem; font-weight: 700;
+  }
+
+  .row-error td { background: #fff5f5; }
+
+  .no-data {
+    text-align: center;
+    color: #aaa;
+    padding: 2rem;
+    font-size: 0.9rem;
+  }
+
+  /* domicilio en dos líneas */
+  .dom-principal { font-weight: 500; }
+  .dom-sub { color: #888; font-size: 0.75rem; margin-top: 2px; }
+
+  /* nombre completo / razon social */
+  .nombre-completo { font-weight: 600; }
+  .nombre-sub { color: #888; font-size: 0.75rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<aside class="main">
+
+  <div class="result-header">
+    <div>
+      <h2>
+        Resultados
+        <span class="badge-count">{{ resultados|length }} registros</span>
+      </h2>
+    </div>
+    <div class="result-actions">
+      <a href="{% url 'index' %}" class="btn-back">
+        <i class="fa fa-arrow-left"></i> Nueva consulta
+      </a>
+      <button onclick="exportarCSV()" class="btn-export">
+  <i class="fa fa-download"></i> Exportar CSV
+</button>
+    </div>
+  </div>
+
+  <div class="search-bar">
+    <input type="text" id="searchInput" placeholder="🔍  Filtrar resultados...">
+  </div>
+
+  <div class="table-container">
+    <table id="tablaResultados">
+      <thead>
+        <tr>
+          <th>CUIT</th>
+          <th>DNI</th>
+          <th>Apellido / Nombre / Razón Social</th>
+          <th>Tipo</th>
+          <th>Actividad</th>
+          <th>Domicilio Fiscal</th>
+          <th>Domicilio Legal/Real</th>
+          <th>Estado</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody">
+        {% for r in resultados %}
+        <tr class="{% if r.error %}row-error{% endif %}">
+          <td><strong>{{ r.cuit }}</strong></td>
+          <td>{{ r.dni }}</td>
+          <td>
+            {% if r.razon_social %}
+              <div class="nombre-completo">{{ r.razon_social }}</div>
+            {% else %}
+              <div class="nombre-completo">{{ r.apellido }}{% if r.nombre %}, {{ r.nombre }}{% endif %}</div>
+            {% endif %}
+          </td>
+          <td>
+            {% if r.tipo_persona == "FISICA" %}
+              <span class="badge-fisica">Física</span>
+            {% elif r.tipo_persona == "JURIDICA" %}
+              <span class="badge-juridica">Jurídica</span>
+            {% else %}
+              {{ r.tipo_persona }}
+            {% endif %}
+          </td>
+          <td style="max-width:200px;">{{ r.actividad }}</td>
+          <td>
+            {% if r.domicilio_fiscal %}
+              <div class="dom-principal">{{ r.domicilio_fiscal }}</div>
+              <div class="dom-sub">{{ r.localidad_fiscal }}{% if r.provincia_fiscal %} · {{ r.provincia_fiscal }}{% endif %}</div>
+            {% else %}<span style="color:#ccc">—</span>{% endif %}
+          </td>
+          <td>
+            {% if r.domicilio_legal %}
+              <div class="dom-principal">{{ r.domicilio_legal }}</div>
+              <div class="dom-sub">{{ r.localidad_legal }}{% if r.provincia_legal %} · {{ r.provincia_legal }}{% endif %}</div>
+            {% else %}<span style="color:#ccc">—</span>{% endif %}
+          </td>
+          <td>
+            {% if r.error %}
+              <span class="badge-error" title="{{ r.error }}">Error</span>
+            {% else %}
+              <span style="color:#1a7f37; font-size:1rem;">✓</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8" class="no-data">No hay resultados para mostrar.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+</aside>
+{% endblock %}
+
+{% block script %}
+<script>
+  document.getElementById('searchInput').addEventListener('keyup', function () {
+    const filter = this.value.toLowerCase();
+    const rows   = document.querySelectorAll('#tableBody tr');
+    rows.forEach(row => {
+      row.style.display = row.textContent.toLowerCase().includes(filter) ? '' : 'none';
+    });
+  });
+
+  function exportarCSV() {
+  const headers = [
+    "CUIT", "DNI", "Apellido/Nombre/Razón Social", "Tipo",
+    "Actividad", "Dom. Fiscal", "Localidad Fiscal", "Provincia Fiscal",
+    "Dom. Legal", "Localidad Legal", "Provincia Legal", "Error"
+  ];
+
+  const rows = document.querySelectorAll('#tablaResultados tbody tr');
+  const data = [headers];
+
+  rows.forEach(row => {
+    if (row.style.display === 'none') return; // respetar filtro activo
+    const cels = row.querySelectorAll('td');
+    if (!cels.length) return;
+
+    data.push([
+      cels[0].innerText.trim(),  // CUIT
+      cels[1].innerText.trim(),  // DNI
+      cels[2].innerText.trim(),  // Nombre/Razón Social
+      cels[3].innerText.trim(),  // Tipo
+      cels[4].innerText.trim(),  // Actividad
+      // Fiscal: separa dirección de localidad·provincia
+      cels[5].querySelector('.dom-principal')?.innerText.trim() || '',
+      cels[5].querySelector('.dom-sub')?.innerText.split('·')[0]?.trim() || '',
+      cels[5].querySelector('.dom-sub')?.innerText.split('·')[1]?.trim() || '',
+      // Legal
+      cels[6].querySelector('.dom-principal')?.innerText.trim() || '',
+      cels[6].querySelector('.dom-sub')?.innerText.split('·')[0]?.trim() || '',
+      cels[6].querySelector('.dom-sub')?.innerText.split('·')[1]?.trim() || '',
+      cels[7].innerText.trim(),  // Estado/Error
+    ]);
+  });
+
+  const csvContent = data
+    .map(row => row.map(v => `"${v.replace(/"/g, '""')}"`).join('#'))
+    .join('\n');
+
+  const bom  = '\uFEFF'; // para Excel con tildes
+  const blob = new Blob([bom + csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = `padron_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+</script>
+{% endblock %}

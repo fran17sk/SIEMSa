@@ -64,3 +64,17 @@ class UserCreateForm(forms.ModelForm):
     class Meta:
         model = User
         fields = ['username', 'email', 'is_active', 'is_staff', 'password']
+
+
+class ConsultaCuitForm(forms.Form):
+    cuit = forms.CharField(
+        max_length=11,
+        label="CUIT",
+        widget=forms.TextInput(attrs={"placeholder": "Ej: 20427543472", "class": "form-control"})
+    )
+
+class UploadTxtForm(forms.Form):
+    archivo = forms.FileField(
+        label="Archivo TXT (un CUIT por línea)",
+        widget=forms.FileInput(attrs={"class": "form-control", "accept": ".txt"})
+    )

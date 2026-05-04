@@ -91,6 +91,7 @@ urlpatterns = [
     path('proveedores/actualizar_proveedores',views.actualizar_proveedores,name='actualizar_proveedores'),
     
     path('users_simsa',views.usuarios_simsa , name='simsa_users'),
+    path('simsa/importar/empleados',views.importar_empleados , name='importar_empleados'),
     path('reportes/', views.reportes_home, name='reportes_home'),
     path('tableros/', views.tablero_home, name='tablero_home'),
     path("deudas-expedientes/", views.deudas_expedientes, name="deudas_expedientes"),
@@ -143,5 +144,11 @@ urlpatterns = [
     path('informatica/enviar-correos/', views.enviar_correos_view, name='enviar_correos'),
     path("notificar-secretaria/", views.notificar_secretaria, name="notificar_secretaria"),
     path('informatica/montos_canon',views.montos_canon,name='montos_canon'),
+
+    ################################################ arca ####################################
+    path("padron/",             views.index,        name="index"),
+    path("consultar/",   views.consultar,    name="consultar"),
+    path("procesar-txt/",views.procesar_txt, name="procesar_txt"),
+    path("exportar/",    views.exportar_csv, name="exportar_csv"),
 
 ]+ static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

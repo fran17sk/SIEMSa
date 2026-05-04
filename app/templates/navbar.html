@@ -18,6 +18,10 @@
           title="Contratos">
           <i data-lucide="handshake"></i> <span>Contratos</span>
         </a>
+        <a href="{% url 'index' %}" class="{% if request.resolver_match.url_name == 'index' %}active{% endif %}"
+          title="Arca | PadronA13">
+          <i data-lucide="circle-user"></i> <span>ARCA</span>
+        </a>
         <a href="{% url 'proveedores' %}"
           class="{% if request.resolver_match.url_name == 'proveedores' %}active{% endif %}" title="Proveedores">
           <i data-lucide="truck"></i> <span>Proveedores</span>

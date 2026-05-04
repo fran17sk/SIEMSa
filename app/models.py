@@ -349,3 +349,27 @@ class InventarioXUsuario(models.Model):
 
     def __str__(self):
         return f"{self.inventario} asignado a {self.usuario}"
+
+
+class ConsultaPadron(models.Model):
+    cuit              = models.CharField(max_length=11)
+    dni               = models.CharField(max_length=20, blank=True)
+    apellido          = models.CharField(max_length=200, blank=True)
+    nombre            = models.CharField(max_length=200, blank=True)
+    razon_social      = models.CharField(max_length=200, blank=True)
+    tipo_persona      = models.CharField(max_length=20, blank=True)
+    actividad         = models.TextField(blank=True)
+    domicilio_fiscal  = models.CharField(max_length=300, blank=True)
+    provincia_fiscal  = models.CharField(max_length=100, blank=True)
+    localidad_fiscal  = models.CharField(max_length=100, blank=True)
+    domicilio_legal   = models.CharField(max_length=300, blank=True)
+    provincia_legal   = models.CharField(max_length=100, blank=True)
+    localidad_legal   = models.CharField(max_length=100, blank=True)
+    error             = models.TextField(blank=True)
+    consultado_en     = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-consultado_en"]
+
+    def __str__(self):
+        return f"{self.cuit} - {self.apellido or self.razon_social}"

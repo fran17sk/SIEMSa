@@ -5,7 +5,10 @@ __pycache__/
 
 # C extensions
 *.so
-
+certs/*.crt
+certs/*.pem
+certs/*.key
+padron_token_cache.json
 # Django stuff:
 *.log
 *.pot

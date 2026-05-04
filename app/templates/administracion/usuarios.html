@@ -1,403 +1,229 @@
-{% extends "administracion/home.html" %}
+{% extends "base.html" %}
 
+{% block nav %}
+  {% include 'navbar.html' %}
+{% endblock %}
 
 {% block head %}
 <style>
 
 
-
-.expediente-container {
-  margin: 0;
-  font-family: 'Segoe UI', sans-serif;
-  color: #333;
-  margin: 50px;
-}
-
-/* ✨ Importante: scopea el table al contenedor */
-.expediente-container table {
-  border-collapse: collapse;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-}
-
-.expediente-container.collapsed {
-  margin-left: 50px;
-  width: 95%;
-}
-
-.expediente-container.collapsed table {
-  width: 100%;
-}
-
-  thead {
-    background-color: #243b55;
-    color: white;
-  }
-
-  th, td {
-    padding: 12px;
-    text-align: center;
-    border-bottom: 1px solid #eee;
-  }
-
-  tbody tr:hover {
-    background-color: #f6f6f6;
-  }
-
-  .header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 25px;
-  }
-
-  .header h2 {
-    font-size: 1.6rem;
-    margin: 0;
-    color: #243b55;
-  }
-
-  .search-box {
-    display: flex;
-    gap: 8px;
-  }
-
-  .search-box input {
-    padding: 8px 12px;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    outline: none;
-    font-size: 14px;
-    width: 350px;
-  }
-
-  .search-box button {
-    padding: 8px 14px;
-    background-color: #243b55;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 14px;
-  }
-
-  .search-box button:hover {
-    background-color: #004999;
-    transform: scale(1.05);
-    transition: 0.2s;
-  }
-
-  
-
-  .badge {
-    padding: 4px 10px;
-    border-radius: 20px;
-    font-size: 13px;
-    font-weight: bold;
-    display: inline-block;
-  }
-
-  .bg-success {
-    background-color: #4CAF50;
-    color: white;
-  }
-
-  .bg-muted {
-    background-color: #a50d0d;
-    color: #ffffff;
-  }
-
-  .bg-info {
-    background-color: #17a2b8;
-    color: white;
-  }
-
-  .bg-light {
-    background-color: #eee;
-    color: #444;
-  }
-
-  .no-users {
-    text-align: center;
-    padding: 20px;
-    color: #999;
-  }
-.accion {
-    margin: 0 2px;
-    font-size: 1rem;
-    text-decoration: none;
-    color: #000;
-    transition: transform 0.2s ease;
-  }
-
-  .accion:hover {
-    transform: scale(1.2);
-  }
-
-  .messages {
-    max-width: 1000px;
-    margin: 10px auto;
-    padding: 10px;
-    font-size: 15px;
-    background-color: #e6f7ff;
-    border: 1px solid #b3e5fc;
-    border-radius: 6px;
-    color: #004d66;
-  }
-
-
-
-  
-  
-  @keyframes fadeIn {
-    from { opacity: 0; transform: scale(0.95); }
-    to { opacity: 1; transform: scale(1); }
-  }
-  .badge {
-  display: inline-block;
-  padding: 3px 8px;
-  border-radius: 6px;
-  font-size: 12px;
-}
-
-.badge-info {
-  background-color: #17a2b8;
-  color: white;
-}
-
-.badge-warning {
-  background-color: #f0ad4e;
-  color: white;
-}
-
-.badge-light {
-  background-color: #e0e0e0;
-  color: #333;
-}
-
-.info-btn {
-  border: none;
-  background: none;
-  cursor: pointer;
-  margin-left: 6px;
-  font-size: 14px;
-}
-
-.info-popup {
-  display: none;
-  position: absolute;
-  background: white;
-  border: 1px solid #ccc;
-  padding: 8px;
-  box-shadow: 0px 2px 8px rgba(0,0,0,0.2);
-  border-radius: 6px;
-  z-index: 100;
-}
-
-.info-popup ul {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.info-popup li {
-  padding: 2px 0;
-}
-
-
-/* Botón para abrir modal */
-    .btn-open {
-      background: #2563eb;
-      color: #fff;
-      border: none;
-      padding: 12px 20px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 16px;
-      transition: background 0.3s ease;
+    .expediente-container {
+        margin: 00px auto;
+        max-width: 1400px;
+        padding: 0 20px;
+        font-family: 'Inter', -apple-system, sans-serif;
     }
 
-    .btn-open:hover {
-      background: #1e40af;
+    /* --- Header & Search --- */
+    .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+        background: var(--card-bg);
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: var(--shadow);
     }
 
-    /* Overlay del modal */
+    .header h2 {
+        font-size: 1.4rem;
+        font-weight: 700;
+        color: var(--primary);
+        margin: 0;
+    }
+
+    .search-box {
+        display: flex;
+        gap: 10px;
+        flex-grow: 1;
+        max-width: 500px;
+        margin: 0 20px;
+    }
+
+    .search-box input {
+        width: 100%;
+        padding: 10px 16px;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        background: var(--bg-main);
+        outline: none;
+        color: var(--text-ligth);
+        transition: border 0.2s;
+    }
+
+    .search-box input:focus { border-color: var(--accent) }
+
+    /* --- Tabla --- */
+    .table-wrapper {
+        background: var(--card-bg);
+        border-radius: 12px;
+        box-shadow: var(--shadow);
+        overflow: hidden;
+        border: 1px solid var(--border-color);
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        text-align: left;
+    }
+
+    thead {
+        background-color: var(--card-bg);
+        border-bottom: 2px solid var(--border-color);
+    }
+
+    th {
+        padding: 14px 18px;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--text-muted);
+        font-weight: 700;
+    }
+
+    td {
+        padding: 14px 18px;
+        border-bottom: 1px solid var(--border-color);
+        font-size: 0.9rem;
+        color: var(--text-main);
+        vertical-align: middle;
+    }
+
+    tbody tr:hover { background-color: var(--bg-main); }
+
+    /* --- Badges --- */
+    .badge {
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .bg-success { background: var(--card-bg); color: #166534; }
+    .bg-muted { background:   var(--card-bg); color: #991b1b; }
+    .bg-info { background:    var(--card-bg); color: #075985; }
+    .bg-warning { background: var(--card-bg); color: #92400e; }
+    .bg-light { background:   var(--card-bg); color: #475569; }
+
+    /* --- Botones Acciones --- */
+    .accion {
+        padding: 8px;
+        font-size: 1.1rem;
+        color: var(--text-muted);
+        transition: all 0.2s;
+        border-radius: 6px;
+        display: inline-flex;
+    }
+
+    .accion:hover { color: var(--accent); transform: scale(1.1); }
+
+    /* --- Modales --- */
     .modal-overlay {
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0, 0, 0, 0.5);
-      display: none;
-      justify-content: center;
-      align-items: center;
-      z-index: 1000;
-    }
-    
-    .form-section{
-      display:flex;
-      flex-flow: row;
-      justify-content: space-between;
-      align-items: center;
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.6);
+        backdrop-filter: blur(4px);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
     }
 
-    /* Contenido del modal */
-    .modal {
-      background: #fff;
-      width: 800px;
-      max-width: 90%;
-      border-radius: 12px;
-      padding: 25px;
-      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
-      position: relative;
-      animation: fadeIn 0.3s ease-in-out;
-      z-index: 2001;
-
+    .modal, .modal-content {
+        background: var(--bg-main);
+        border-radius: 16px;
+        padding: 30px;
+        box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+        border: none;
+        color: var(--text-ligth);
+        width: 60%;
     }
 
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(-20px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    /* Botón cerrar */
-    .close-btn {
-      position: absolute;
-      top: 15px;
-      right: 15px;
-      background: transparent;
-      border: none;
-      font-size: 22px;
-      cursor: pointer;
-      color: #555;
-      transition: color 0.2s ease;
-    }
-    .close-btn:hover {
-      color: #000;
-    }
-
-    .modal h2 {
-      margin: 0 0 20px;
-      color: #1f2937;
-      font-size: 22px;
-      text-align: center;
-    }
-
-    .form-group {
-      margin: 5px;
-      margin-bottom: 15px;
+    .form-section {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 60px;
+        margin-bottom: 5px;
     }
 
     .form-group label {
-      display: block;
-      font-weight: 600;
-      margin-bottom: 6px;
-      color: #374151;
+        display: block;
+        font-size: 0.8rem;
+        font-weight: 600;
+        margin-bottom: 6px;
+        color: var(--text-ligth);
     }
 
-    .form-group input,
-    .form-group select {
-      width: 100%;
-      padding: 10px;
-      border: 1px solid #d1d5db;
-      border-radius: 8px;
-      font-size: 14px;
-      outline: none;
-      transition: border 0.2s ease;
-    }
-
-    .form-group input:focus,
-    .form-group select:focus {
-      border-color: #2563eb;
-    }
-
-    .modal-footer {
-      display: flex;
-      justify-content: flex-end;
-      margin-top: 20px;
-      gap: 10px;
-    }
-
-    .btn-cancel {
-      background: #e5e7eb;
-      border: none;
-      padding: 10px 18px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 14px;
-      transition: background 0.2s ease;
-    }
-
-    .btn-cancel:hover {
-      background: #d1d5db;
+    .form-group input, .form-group select {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        background: var(--card-bg);
+        color: var(--text-ligth);
     }
 
     .btn-submit {
-      background: #2563eb;
-      color: #fff;
+        background: var(--text-muted);
+        margin-top: 15px;
+        color: white;
+        padding: 10px 24px;
+        border-radius: 8px;
+        font-weight: 600;
+        border: none;
+        cursor: pointer;
+        transition: 0.2s;
+    }
+
+    .btn-submit:hover { background: var(--card-bg); }
+    .close-btn{
+      background-color: transparent;
+      color: var(--text-ligth);
       border: none;
-      padding: 10px 18px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 14px;
-      transition: background 0.3s ease;
+      
+    }
+    .btn-cancel{
+      background: var(--text-muted);
+        margin-top: 15px;
+        color: white;
+        padding: 10px 24px;
+        border-radius: 8px;
+        font-weight: 600;
+        border: none;
+        cursor: pointer;
+        transition: 0.2s;
     }
 
-    .btn-submit:hover {
-      background: #1e40af;
-    }
-.password-wrapper {
-  display: flex;
-  gap: 8px;
-}
+    .btn-cancel:hover { background: var(--card-bg); }
 
-.btn-generate {
-  background: #28a745;
-  height: 16px;
-  color: #fff;
-  border: none;
-  padding: 1px 1px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 11px;
-  transition: background 0.2s;
-}
-.modal-edit {
-  display: none;
-  position: fixed;
-  z-index: 1000;
-  left: 0; top: 0;
-  width: 100%; height: 100%;
-  background: rgba(0,0,0,0.6);
-}
-.modal-content {
-  background: #fff;
-  margin: 8% auto;
-  padding: 20px;
-  border-radius: 10px;
-  width: 400px;
-  box-shadow: 0 0 15px rgba(0,0,0,0.3);
-}
-.close-btn {
-  float: right;
-  font-size: 20px;
-  cursor: pointer;
-}
-label {
-  display: block;
-  margin: 10px 0 5px;
-}
-input[type="text"], input[type="email"] {
-  width: 100%;
-  padding: 8px;
-  margin-bottom: 10px;
-}
-#organismos_container {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  margin-bottom: 15px;
-}
-.btn-generate:hover {
-  background: #218838;
-}
+    .btn-generate{
+      background: var(--text-muted);
+        color: white;
+        border-radius: 8px;
+        font-weight: 600;
+        border: none;
+        cursor: pointer;
+        transition: 0.2s;
+    }
+
+    .btn-generate:hover { background: var(--card-bg); }
+    .info-popup {
+        display: none;
+        position: absolute;
+        background: var(--primary);
+        color: white;
+        padding: 12px;
+        border-radius: 8px;
+        z-index: 100;
+        font-size: 0.8rem;
+        box-shadow: var(--shadow);
+    }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 {% endblock %}
@@ -405,185 +231,265 @@ input[type="text"], input[type="email"] {
 
 {% block content %}
 
-
-
-<div class="expediente-container" id="cards">
-  
-  <div class="header">
-    <h2>👥 Usuarios del Sistema</h2>
-    <form method="get" class="search-box">
-      <input type="search" name="q" placeholder="Buscar usuario, email o nombre" value="{{ query }}">
-      <button type="submit">Buscar</button>
-    </form>
-      <button class="btn-open">➕ Nuevo Usuario</button>
-  </div>
-
-  <div class="table-wrapper">
-    <table>
-      <thead>
-  <tr>
-    <th>#</th>
-    <th>Usuario</th>
-    <th>Email</th>
-    <th>Nombre completo</th>
-    <th>Celular</th>
-    <th>Cambiar pass</th>
-    <th>Organismos</th>
-    <th>Activo</th>
-    <th>Staff</th>
-    <th></th>
-  </tr>
-</thead>
-<tbody>
-  {% for u in usuarios %}
-  <tr>
-    <td>{{ u.id }}</td>
-    <td><strong>{{ u.username }}</strong></td>
-    <td>{{ u.email|default:"—" }}</td>
-    <td>{{ u.perfilusuario.usuarionom|default:u.get_full_name }}</td>
-    <td>{{ u.perfilusuario.usuariocelular|default:"—" }}</td>
-    <td>
-      {% if u.perfilusuario.debe_cambiar_password %}
-        <span class="badge bg-warning"><i class="fa fa-check" aria-hidden="true"></i></span>
-      {% else %}
-        <span class="badge "><i class="fa fa-times-circle" aria-hidden="true"></i></span>
-      {% endif %}
-    </td>
-    <td>
-  {% if u.organismos_usuario.count == 0 %}
-  {% elif u.organismos_usuario.count == 1 %}
-    <span class="badge badge-info">{{ u.organismos_usuario.first.organismo.organismonombre }}</span>
-  {% else %}
-    <span class="badge badge-warning">Varios</span>
-    <button class="info-btn" onclick="toggleInfo('info-{{ u.id }}')"><i class="fa fa-info-circle" aria-hidden="true"></i></button>
-
-    <!-- Contenedor oculto con la info -->
-    <div id="info-{{ u.id }}" class="info-popup">
-      <ul>
-        {% for org in u.organismos_usuario.all %}
-          <li>{{ org.organismo.organismonombre }}</li>
-        {% endfor %}
-      </ul>
+<div class="expediente-container">
+    
+    <div class="header">
+        <h2><i class="fa fa-users"></i> Usuarios del Sistema</h2>
+        <form method="get" class="search-box">
+            <input type="search" name="q" placeholder="Buscar por usuario, email o nombre..." value="{{ query }}">
+            <button class="btn-submit" type="submit">Buscar</button>
+        </form>
+        <button class="btn-submit btn-open">
+            <i class="fa fa-plus"></i> Nuevo Usuario
+        </button>
     </div>
-  {% endif %}
-</td>
-    <td>
-      {% if u.is_active %}
-        <span class="badge bg-success"><i class="fa fa-check" aria-hidden="true"></i></span>
-      {% else %}
-        <span class="badge bg-muted"><i class="fa fa-times-circle" aria-hidden="true"></i></span>
-      {% endif %}
-    </td>
-    <td>
-      {% if u.is_staff %}
-        <span class="badge bg-info"><i class="fa fa-check" aria-hidden="true"></i></span>
-      {% else %}
-        <span class="badge bg-light"><i class="fa fa-times-circle" aria-hidden="true"></i></span>
-      {% endif %}
-    </td>
-    <td style="display: flex;flex-flow: row nowrap;"> <button class="edit-btn" style="background:none; border:none; cursor:pointer;" data-userid="{{ u.id }}"><i class="fa fa-pencil accion" aria-hidden="true"></i></button><button class="accion btn-toggle" data-url="{% url 'usuario_toggle_activo' u.id %}" data-username="{{ u.username }}" data-activo="{{ u.is_active }}" title="Activar/Desactivar" style="background:none; border:none; cursor:pointer;" > {% if u.is_active %}<i class="fa fa-thumbs-down" aria-hidden="true"></i>{% else %}<i class="fa fa-thumbs-up" aria-hidden="true"></i>{% endif %} </button> <a href="#" class="accion blanquear-password" data-url="{% url 'usuario_blanquear_password' u.id %}" title="Blanquear contraseña"> <i class="fa fa-unlock-alt" aria-hidden="true"></i> </a> </td>
-  </tr>
-  {% endfor %}
-</tbody>
-    </table>
-  </div>
 
-<!-- Modal -->
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Usuario</th>
+                    <th>Nombre Completo</th>
+                    <th>Organismos</th>
+                    <th style="text-align: center;">Acceso</th>
+                    <th style="text-align: center;">Staff</th>
+                    <th style="text-align: center;">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in usuarios %}
+                <tr>
+                    <td><span style="color: var(--text-muted);">#{{ u.id }}</span></td>
+                    <td>
+                        <div style="font-weight: 700;">{{ u.username }}</div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted);">{{ u.email|default:"—" }}</div>
+                    </td>
+                    <td>{{ u.perfilusuario.usuarionom|default:u.get_full_name }}</td>
+                    <td>
+                        {% if u.organismos_usuario.count == 1 %}
+                            <span class="badge bg-info">{{ u.organismos_usuario.first.organismo.organismonombre }}</span>
+                        {% elif u.organismos_usuario.count > 1 %}
+                            <span class="badge bg-warning">Varios ({{ u.organismos_usuario.count }})</span>
+                            <button class="info-btn" onclick="toggleInfo('info-{{ u.id }}')" style="border:none; background:none; cursor:pointer; color: var(--accent);">
+                                <i class="fa fa-info-circle"></i>
+                            </button>
+                            <div id="info-{{ u.id }}" class="info-popup">
+                                <ul style="margin:0; padding:0; list-style:none;">
+                                    {% for org in u.organismos_usuario.all %}
+                                        <li>• {{ org.organismo.organismonombre }}</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        {% else %}
+                            <span class="badge bg-light">Ninguno</span>
+                        {% endif %}
+                    </td>
+                    <td style="text-align: center;">
+                        {% if u.is_active %}
+                            <span class="badge bg-success"><i class="fa fa-check"></i> Activo</span>
+                        {% else %}
+                            <span class="badge bg-muted"><i class="fa fa-times-circle"></i> Inactivo</span>
+                        {% endif %}
+                    </td>
+                    <td style="text-align: center;">
+                        {% if u.is_staff %}
+                            <span class="badge bg-info">Sí</span>
+                        {% else %}
+                            <span class="badge bg-light">No</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div style="display: flex; justify-content: center; gap: 5px;">
+                            <button class="edit-btn accion" style="background:none; border:none; cursor:pointer;" data-userid="{{ u.id }}">
+                                <i class="fa fa-pencil" title="Editar"></i>
+                            </button>
+                            <button class="accion btn-toggle" data-url="{% url 'usuario_toggle_activo' u.id %}" data-username="{{ u.username }}" data-activo="{{ u.is_active }}" style="background:none; border:none; cursor:pointer;">
+                                <i class="fa {% if u.is_active %}fa-thumbs-down{% else %}fa-thumbs-up{% endif %}" title="Cambiar Estado"></i>
+                            </button>
+                            <a href="#" class="accion blanquear-password" data-url="{% url 'usuario_blanquear_password' u.id %}">
+                                <i class="fa fa-unlock-alt" title="Blanquear Password"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+ <!-- Modal -->
+
   <div class="modal-overlay" id="modalOverlay">
+
   <div class="modal">
+
     <button class="close-btn" id="closeModal">&times;</button>
+
     <h2 id="modalTitle">Crear Usuario</h2>
+
     <form id="userForm">
+
       {% csrf_token %}
+
       <input type="hidden" id="userId" name="userId"> <!-- Solo para edición -->
 
+
       <div class="form-section">
+
         <div class="form-group">
+
           <label for="username">Usuario (login)</label>
+
           <input type="text" id="username" name="username" required>
+
         </div>
+
 
         <div class="form-group password-group" id="password-group">
+
           <div class="form-section">
+
             <label for="usuariopass">Contraseña</label>
+
             <button type="button" class="btn-generate" id="generatePass">Generar</button>
+
           </div>
+
           <div class="password-wrapper">
+
             <input type="password" id="usuariopass" name="usuariopass">
+
           </div>
+
         </div>
+
 
         <div class="form-group" id="password-group-repeat">
+
           <label for="usuariopass_repeat">Repetir Contraseña</label>
+
           <input type="password" id="usuariopass_repeat" name="usuariopass_repeat">
+
         </div>
+
       </div>
+
 
       <div class="form-section">
+
         <div class="form-group">
+
           <label for="usuarionom">Nombre completo</label>
+
           <input type="text" id="usuarionom" name="usuarionom" required>
+
         </div>
 
+
         <div class="form-group">
+
           <label for="usuarioemail">Correo electrónico</label>
+
           <input type="email" id="usuarioemail" name="usuarioemail" required>
+
         </div>
 
+
         <div class="form-group">
+
           <label for="usuariocelular">Celular</label>
+
           <input type="text" id="usuariocelular" name="usuariocelular">
+
         </div>
+
       </div>
+
 
       <div class="form-group">
+
         <label for="organismos">Organismos</label>
+
         <select id="organismos" name="organismos" multiple required>
+
           {% for org in organismos %}
+
             <option value="{{ org.organismoid }}">{{ org.organismonombre }}</option>
+
           {% endfor %}
+
         </select>
+
         <small>Puedes seleccionar más de uno (Ctrl o Shift + clic).</small>
+
       </div>
+
 
       <div class="modal-footer">
+
         <button type="button" class="btn-cancel" id="cancelBtn">Cancelar</button>
+
         <button type="submit" class="btn-submit">Guardar</button>
+
       </div>
+
     </form>
+
   </div>
+
 </div>
 
 
-<div id="editModal" class="modal-edit">
+
+<div id="editModal" class="modal-overlay">
+
   <div class="modal-content">
+
     <span class="close-btn">&times;</span>
+
     <h2>Editar Usuario</h2>
+
     <form id="editUserForm">
+
       <input type="hidden" id="edit_user_id">
 
+
       <div class="form-group">
+
           <label for="username">Usuario (login)</label>
+
           <input type="text" id="username" name="username" required>
+
         </div>
 
+
       <label>Nombre:</label>
+
       <input type="text" id="edit_first_name" name="first_name">
 
+
       <label>Apellido:</label>
+
       <input type="text" id="edit_last_name" name="last_name">
 
+
       <label>Email:</label>
+
       <input type="email" id="edit_email" name="email">
 
+
       <label>Organismos:</label>
+
       <div id="organismos_container"></div>
 
+
       <button type="submit">Guardar Cambios</button>
+
     </form>
-  </div>
-</div>
-</div>
+
+  </div> 
 {% endblock %}
 
 {% block script %}

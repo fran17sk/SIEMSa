@@ -1,4 +1,9 @@
-{% extends 'proveedores/home.html' %}
+{% extends 'base.html' %}
+
+{% block nav %}
+{% include 'proveedores/navbar.html' %}
+
+{% endblock %}
 
 {% block head %}
 {% load static %}
@@ -657,6 +662,10 @@
               <th>Empleados</th>
               <th>Alta</th>
               <th>Vto</th>
+              <th>Actividad</th>
+              <th>Numero</th>
+              <th>Localidad</th>
+              <th>Cuil</th>
             </tr>
           </thead>
           <tbody id="tablaVigentes"></tbody>
@@ -675,6 +684,10 @@
               <th>Empleados</th>
               <th>Alta</th>
               <th>Vto</th>
+              <th>Actividad</th>
+              <th>Numero</th>
+              <th>Localidad</th>
+              <th>Cuil</th>
             </tr>
           </thead>
           <tbody id="tablaVencidos"></tbody>
@@ -1061,6 +1074,10 @@ document.getElementById('btn_pdf').classList.remove('disabled');
       <td>${item.empleados}</td>
       <td>${item.fecha_alta || "-"}</td>
       <td>${item.fecha_vto || "-"}</td>
+      <td>${item.actividad || "-"}</td>
+      <td>${item.Numero_certificado || "-"}</td>
+      <td>${item.localidad || "-"}</td>
+      <td>${item.cuil || "-"}</td>
     </tr>`;
               });
 
@@ -1075,6 +1092,10 @@ document.getElementById('btn_pdf').classList.remove('disabled');
       <td>${item.empleados}</td>
       <td>${item.fecha_alta || "-"}</td>
       <td>${item.fecha_vto || "-"}</td>
+      <td>${item.actividad || "-"}</td>
+      <td>${item.Numero_certificado || "-"}</td>
+      <td>${item.localidad || "-"}</td>
+      <td>${item.cuil || "-"}</td>
     </tr>`;
               });
 
@@ -1282,26 +1303,34 @@ function descargarExcel() {
   const { vigentes, vencidos, no_encontrados } = window.ultimoResultadoInspeccion;
 
   const sheetVigentes = [
-    ["#", "Referencia", "Coincidencia", "Empleados", "Fecha Alta", "Fecha Vto"],
+    ["#", "Referencia", "Coincidencia", "Empleados", "Fecha Alta", "Fecha Vto", "Numero Certificado" , "Actividad", "Localidad","Cuil"],
     ...vigentes.map((item, i) => [
       i + 1,
       item.referencia,
       item.coincidencia,
       item.empleados,
       item.fecha_alta || "-",
-      item.fecha_vto || "-"
+      item.fecha_vto || "-",
+      item.Numero_certificado,
+      item.actividad,
+      item.localidad,
+      item.cuil
     ])
   ];
 
   const sheetVencidos = [
-    ["#", "Referencia", "Coincidencia", "Empleados", "Fecha Alta", "Fecha Vto"],
+    ["#", "Referencia", "Coincidencia", "Empleados", "Fecha Alta", "Fecha Vto", "Numero Certificado" , "Actividad", "Localidad", "Cuit"],
     ...vencidos.map((item, i) => [
       i + 1,
       item.referencia,
       item.coincidencia,
       item.empleados,
       item.fecha_alta || "-",
-      item.fecha_vto || "-"
+      item.fecha_vto || "-",
+      item.Numero_certificado,
+      item.actividad,
+      item.localidad,
+      item.cuil
     ])
   ];
 

@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block nav %}
+  {% include 'simsa/navbar.html' %}
+{% endblock %}
+
+{% block content %}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card upload-card">
+                <div class="card-header bg-primary text-white p-3">
+                    <h5 class="mb-0"><i class="bi bi-file-earmark-arrow-up-fill"></i> Importar Masiva de Empleados</h5>
+                </div>
+                <div class="card-body p-4">
+                    <form action="" method="POST" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <div class="mb-4">
+                            <label for="company_id" class="form-label fw-bold">Empresa Destino</label>
+                            <select name="company_id" id="company_id" class="form-select" required>
+                                <option value="" disabled selected>Seleccione la empresa que recibirá estos empleados</option>
+                                {% for company in companies %}
+                                    <option value="{{ company.id }}">{{ company.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Archivo de Datos (Excel/CSV)</label>
+                            <div class="drop-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
+                                <i class="bi bi-cloud-upload fs-1 text-primary"></i>
+                                <p class="mt-2" id="file-name">Arrastre el archivo aquí o haga clic para buscar</p>
+                                <input type="file" name="employee_file" id="file-input" hidden accept=".csv, .xlsx, .xls" required>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <h6><i class="bi bi-info-circle-fill"></i> Requisitos del archivo:</h6>
+                            <small>
+                                <ul>
+                                    <li>Columnas obligatorias: DNI, Nombre, Apellido, CUIL, Fecha Nacimiento, Fecha Ingreso, Sueldo Bruto.</li>
+                                    <li>El sistema generará automáticamente los <strong>UUIDs</strong> y los registros de auditoría.</li>
+                                </ul>
+                            </small>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-check-circle"></i> Iniciar Importación
+                            </button>
+                            {{ error }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+{% endblock %}
+
+{% block head %}
+
+<style>
+        .upload-card { border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+        .drop-zone { border: 2px dashed #ccc; padding: 40px; text-align: center; cursor: pointer; transition: 0.3s; }
+        .drop-zone:hover { border-color: #0d6efd; background: #f8f9fa; }
+    </style>
+
+{% endblock %}
+
+{% block script %}
+<script>
+    // Script simple para mostrar el nombre del archivo seleccionado
+    const fileInput = document.getElementById('file-input');
+    const fileNameText = document.getElementById('file-name');
+    
+    fileInput.addEventListener('change', (e) => {
+        if(e.target.files.length > 0) {
+            fileNameText.innerText = "Archivo seleccionado: " + e.target.files[0].name;
+            fileNameText.classList.add('text-success', 'fw-bold');
+        }
+    });
+</script>
+{% endblock %}

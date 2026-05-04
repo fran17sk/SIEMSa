@@ -1,0 +1,274 @@
+{% extends "base.html" %}
+{% load static %}
+{% block nav %}
+  {% include 'navbar.html' %}
+{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<style>
+  .main {
+    flex: 1;
+    padding: 2rem;
+    overflow-y: auto;
+    animation: fadeIn 0.4s ease;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .padron-header {
+    margin-bottom: 2rem;
+  }
+  .padron-header h2 {
+    font-size: 1.6rem;
+    font-weight: 700;
+    margin: 0;
+  }
+  .padron-header p {
+    color: #888;
+    margin: 0.3rem 0 0;
+    font-size: 0.9rem;
+  }
+
+  .cards-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+  @media (max-width: 768px) {
+    .cards-grid { grid-template-columns: 1fr; }
+  }
+
+  .padron-card {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 1.8rem;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.07);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+  .padron-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+  }
+
+  .card-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+  }
+  .icon-blue  { background: #e8f0fe; color: #1a56db; }
+  .icon-green { background: #e3f9e5; color: #1a7f37; }
+
+  .padron-card h5 {
+    font-size: 1rem;
+    font-weight: 700;
+    margin: 0 0 0.3rem;
+  }
+  .padron-card p {
+    font-size: 0.82rem;
+    color: #888;
+    margin: 0 0 1.2rem;
+  }
+
+  .form-group {
+    margin-bottom: 1rem;
+  }
+  .form-group label {
+    display: block;
+    font-size: 0.82rem;
+    font-weight: 600;
+    margin-bottom: 0.4rem;
+    color: #555;
+  }
+  .form-control {
+    width: 100%;
+    padding: 0.55rem 0.8rem;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    box-sizing: border-box;
+    transition: border-color 0.2s;
+    background: var(--card-bg);
+    color:var(--text-light)
+  }
+  .form-control:focus {
+    outline: none;
+    border-color: #1a56db;
+    box-shadow: 0 0 0 3px rgba(26,86,219,0.1);
+  }
+
+  .btn-primary-padron {
+    background-color: var(--bg-main);
+    color: var(--text-light);
+    border: none;
+    padding: 0.55rem 1.2rem;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.88rem;
+    cursor: pointer;
+    transition: background 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    justify-content: center;
+  }
+  .btn-primary-padron:hover { background-color: var(--hover-bg); }
+
+  .btn-success-padron {
+    background-color: #1a7f37;
+    color: #fff;
+    border: none;
+    padding: 0.55rem 1.2rem;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.88rem;
+    cursor: pointer;
+    transition: background 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    justify-content: center;
+  }
+  .btn-success-padron:hover { background-color: #145f28; }
+
+  .export-bar {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 1.2rem 1.8rem;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.07);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .export-bar span {
+    font-size: 0.88rem;
+    color: #888;
+  }
+  .btn-export {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1.1rem;
+    background-color: var(--bg-main);
+    color: var(--text-light);
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-decoration: none;
+    transition: background 0.3s ease;
+  }
+  .btn-export:hover { background-color: var(--hover-bg); color: var(--text-light); }
+
+  .drop-zone {
+    border: 2px dashed #ccc;
+    border-radius: 8px;
+    padding: 1.2rem;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    margin-bottom: 1rem;
+    position: relative;
+  }
+  .drop-zone:hover, .drop-zone.dragover {
+    border-color: #1a7f37;
+    background: #f0faf0;
+  }
+  .drop-zone input[type="file"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+  .drop-zone i { font-size: 1.5rem; color: #aaa; display: block; margin-bottom: 0.4rem; }
+  .drop-zone span { font-size: 0.82rem; color: #888; }
+  #file-name { font-size: 0.82rem; color: #1a7f37; margin-top: 0.3rem; font-weight: 600; }
+</style>
+{% endblock %}
+
+{% block content %}
+<aside class="main">
+  <div class="padron-header">
+    <h2>Consulta Padrón AFIP A13</h2>
+    <p>Consultá datos fiscales de contribuyentes en tiempo real</p>
+  </div>
+
+  <div class="cards-grid">
+
+    <!-- Consulta individual -->
+    <div class="padron-card">
+      <div class="card-icon icon-blue"><i class="fa fa-search"></i></div>
+      <h5>Consultar CUIT individual</h5>
+      <p>Ingresá un CUIT para obtener los datos del contribuyente al instante.</p>
+      <form method="post" action="{% url 'consultar' %}">
+        {% csrf_token %}
+        <div class="form-group">
+          <label for="id_cuit">CUIT <small>(sin guiones)</small></label>
+          <input type="text" name="cuit" id="id_cuit" class="form-control"
+                 placeholder="Ej: 20427543472" maxlength="11" required>
+        </div>
+        <button type="submit" class="btn-primary-padron">
+          <i class="fa fa-search"></i> Consultar
+        </button>
+      </form>
+    </div>
+
+    <!-- Carga masiva -->
+    <div class="padron-card">
+      <div class="card-icon icon-green"><i class="fa fa-upload"></i></div>
+      <h5>Carga masiva por TXT</h5>
+      <p>Subí un archivo .txt con un CUIT por línea. Los duplicados se eliminan automáticamente.</p>
+      <form method="post" action="{% url 'procesar_txt' %}" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="drop-zone" id="dropZone">
+          <input type="file" name="archivo" id="archivoInput" accept=".txt" required>
+          <i class="fa fa-file-alt"></i>
+          <span>Arrastrá el archivo acá o hacé clic para seleccionar</span>
+          <div id="file-name"></div>
+        </div>
+        <button type="submit" class="btn-success-padron">
+          <i class="fa fa-cogs"></i> Procesar archivo
+        </button>
+      </form>
+    </div>
+
+  </div>
+
+  <!-- Barra de exportación -->
+  <div class="export-bar">
+    <span><i class="fa fa-database" style="margin-right:0.4rem;"></i>Exportar todos los registros consultados</span>
+    <a href="{% url 'exportar_csv' %}" class="btn-export">
+      <i class="fa fa-download"></i> Exportar CSV
+    </a>
+  </div>
+
+</aside>
+{% endblock %}
+
+{% block script %}
+<script>
+  const input    = document.getElementById('archivoInput');
+  const fileName = document.getElementById('file-name');
+  const dropZone = document.getElementById('dropZone');
+
+  input.addEventListener('change', () => {
+    fileName.textContent = input.files[0] ? input.files[0].name : '';
+  });
+  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+  dropZone.addEventListener('dragleave', ()  => dropZone.classList.remove('dragover'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    input.files = e.dataTransfer.files;
+    fileName.textContent = input.files[0] ? input.files[0].name : '';
+  });
+</script>
+{% endblock %}

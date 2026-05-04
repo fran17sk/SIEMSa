@@ -127,6 +127,13 @@ import uuid
 from openpyxl.utils import get_column_letter
 import csv
 from django.db import connection
+import csv
+import io
+from django.shortcuts import render, redirect
+from django.http import HttpResponse
+from django.contrib import messages
+from .forms import ConsultaCuitForm, UploadTxtForm
+from .services import consultar_cuit
 from unidecode import unidecode
 
 
@@ -3224,7 +3231,7 @@ def comparar_proveedores_excel(request):
     columna_proveedores = int(columna_proveedores)
     columna_dni = int(columna_dni)
 
-    # Lectura del Excel
+    # Lectura del Excelkasjs
     try:
         hojas = pd.read_excel(archivo, engine='openpyxl', sheet_name=None, skiprows=1)
     except Exception as e:
@@ -3236,7 +3243,11 @@ def comparar_proveedores_excel(request):
             "id": r.id,
             "nombre_db": r.nombre_razon_social,
             "fecha_alta": r.fecha_alta,
-            "fecha_vto": r.fecha_vto
+            "fecha_vto": r.fecha_vto,
+            "numero_certificado": r.numero_certificado,
+            "actividad": r.actividad,
+            "localidad" : r.localidad,
+            'cuit_cuil': r.cuit_cuil
         }
         for r in registros
     }
@@ -3283,6 +3294,10 @@ def comparar_proveedores_excel(request):
                         "id": proveedor["id"],
                         "fecha_alta": proveedor["fecha_alta"].strftime("%d/%m/%Y") if proveedor["fecha_alta"] else None,
                         "fecha_vto": proveedor["fecha_vto"].strftime("%d/%m/%Y") if proveedor["fecha_vto"] else None,
+                        "actividad": proveedor["actividad"],
+                        "Numero_certificado": proveedor["numero_certificado"],
+                        "localidad": proveedor["localidad"],
+                        "cuil": proveedor["cuit_cuil"],
                         "hoja": nombre_hoja,
                         "empleados": len(empleados)
                     }
@@ -3291,6 +3306,7 @@ def comparar_proveedores_excel(request):
                         and proveedor["fecha_alta"] is not None
                         and proveedor["fecha_vto"] is not None
                         and proveedor["fecha_alta"] <= fecha_obj <= proveedor["fecha_vto"]
+                        
                     ):
                         vigentes.append(entry)
                         vigentes_set.add(proveedor_nombre)
@@ -3475,6 +3491,88 @@ def usuarios_simsa(request):
 
     # Renderizamos el template pasando los usuarios al contexto
     return render(request, "simsa/usuarios_simsa_list.html", {"usuarios": usuarios})
+
+def importar_empleados(request):
+
+    companies = Companies.objects.using('simsa').filter(isdeleted=False)
+
+    if request.method == 'POST' and request.FILES.get('employee_file'):
+        company_id = request.POST.get('company_id')
+        excel_file = request.FILES['employee_file']
+        
+        try:
+            wb = openpyxl.load_workbook(excel_file, data_only=True)
+            sheet = wb.active
+            rows = list(sheet.iter_rows(min_row=2, values_only=True))
+            
+            with transaction.atomic(using='simsa'):
+                for row in rows:
+                    if not row[0]: continue # Salta filas si el CUIL está vacío
+
+                    # 1. Crear registro en People
+                    # Eliminamos 'autoid' para que la DB asigne el número autoincremental
+                    person = People.objects.using('simsa').create(
+                        id=uuid.uuid4(),
+                        
+                        cuil=str(row[0]),
+                        dni=str(row[1]),
+                        name=row[2],
+                        surname=row[3],
+                        birthdate=row[4],
+                        genderid_id=row[5],
+                        nationalityid_id=row[6],
+                        zoneid_id=row[7],
+                        address=row[8],
+                        hasdisability=True if str(row[9]).strip().upper() == 'TRUE' else False,
+                        isdeleted=False,
+                        createdat=timezone.now(),
+                        createdby=request.user.username if request.user.is_authenticated else "EXCEL_IMPORT"
+                    )
+
+                    # 2. Crear registro en Employees
+                    # Omitimos 'autoid' por la misma razón
+                    employee = Employees.objects.using('simsa').create(
+                        id=uuid.uuid4(),
+                        personid=person,
+                        hiredate=row[10],
+                        cctid_id=row[11],
+                        contracttypeid_id=row[12],
+                        academiclevelid_id=row[13],
+                        worktypeid_id=row[14] if row[14] else None,
+                        jobid_id=row[15] if row[15] else None,
+                        workspaceid_id=row[16] if row[16] else None,
+                        grossincome=row[17] if row[17] else 0,
+                        labordays=str(row[18]) if row[18] else 0,
+                        laborhours=8.0,
+                        isactive=True,
+                        isdeleted=False,
+                        createdat=timezone.now(),
+                        createdby=request.user.username if request.user.is_authenticated else "EXCEL_IMPORT"
+                    )
+
+                    # 3. Vincular con la Empresa (Companyemployees)
+                    Companyemployees.objects.using('simsa').create(
+                        id=uuid.uuid4(),
+                        companyid_id=company_id,
+                        employeeid=employee,
+                        isdeleted=False,
+                        createdat=timezone.now()
+                    )
+
+            return render(request, 'simsa/importar_empleados.html', {
+                'message': f'Se importaron {len(rows)} registros correctamente.',
+                'companies': companies
+            })
+
+        except Exception as e:
+            return render(request, 'simsa/importar_empleados.html', {
+                'error': f"Error al procesar el Excel: {str(e)}",
+                'companies': companies
+            })
+
+    return render(request, "simsa/importar_empleados.html", {"companies": companies})
+
+
 
 # ---------------------------
 # Usuarios Admin de Empresas
@@ -5440,3 +5538,71 @@ def montos_canon(request):
     return render(request,'informatica/montos_canon.html' , context)
 
 
+######################################### ARCA ################################################
+
+def index(request):
+    form_cuit   = ConsultaCuitForm()
+    form_upload = UploadTxtForm()
+    return render(request, "padron/index.html", {
+        "form_cuit":   form_cuit,
+        "form_upload": form_upload
+    })
+
+def consultar(request):
+    if request.method == "POST":
+        form = ConsultaCuitForm(request.POST)
+        if form.is_valid():
+            cuit = form.cleaned_data["cuit"].strip()
+            data = consultar_cuit(cuit)
+            obj, _ = ConsultaPadron.objects.update_or_create(
+                cuit=cuit,
+                defaults={k: v for k, v in data.items() if k != "cuit"}
+            )
+            return render(request, "padron/resultados.html", {"resultados": [obj], "modo": "single"})
+    return redirect("padron:index")
+
+def procesar_txt(request):
+    if request.method == "POST":
+        form = UploadTxtForm(request.POST, request.FILES)
+        if form.is_valid():
+            archivo  = request.FILES["archivo"]
+            contenido = archivo.read().decode("utf-8")
+            cuits    = [l.strip() for l in contenido.splitlines() if l.strip()]
+            cuits    = list(dict.fromkeys(cuits))  # elimina duplicados
+
+            resultados = []
+            for cuit in cuits:
+                data = consultar_cuit(cuit)
+                obj, _ = ConsultaPadron.objects.update_or_create(
+                    cuit=cuit,
+                    defaults={k: v for k, v in data.items() if k != "cuit"}
+                )
+                resultados.append(obj)
+
+            messages.success(request, f"{len(resultados)} CUITs procesados.")
+            return render(request, "padron/resultados.html", {"resultados": resultados, "modo": "masivo"})
+    return redirect("padron:index")
+
+def exportar_csv(request):
+    # Exporta todos los registros o los del último procesamiento
+    qs = ConsultaPadron.objects.all()
+
+    response = HttpResponse(content_type="text/csv; charset=utf-8")
+    response["Content-Disposition"] = 'attachment; filename="padron_export.csv"'
+    response.write("\ufeff")  # BOM para Excel
+
+    writer = csv.writer(response, delimiter="#")
+    writer.writerow([
+        "CUIT", "DNI", "Apellido", "Nombre", "Razon Social",
+        "Tipo Persona", "Actividad",
+        "Domicilio Fiscal", "Provincia Fiscal", "Localidad Fiscal",
+        "Domicilio Legal", "Provincia Legal", "Localidad Legal", "Error"
+    ])
+    for r in qs:
+        writer.writerow([
+            r.cuit, r.dni, r.apellido, r.nombre, r.razon_social,
+            r.tipo_persona, r.actividad,
+            r.domicilio_fiscal, r.provincia_fiscal, r.localidad_fiscal,
+            r.domicilio_legal, r.provincia_legal, r.localidad_legal, r.error
+        ])
+    return response
