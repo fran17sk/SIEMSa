@@ -136,7 +136,6 @@ from .forms import ConsultaCuitForm, UploadTxtForm
 from .services import consultar_cuit
 import os
 import json
-import datetime
 from zeep import Client
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
