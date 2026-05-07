@@ -5420,7 +5420,7 @@ def consultar(request):
                 traceback.print_exc()
                 # Mostrar error en pantalla temporalmente
                 return HttpResponse(f"<pre>{traceback.format_exc()}</pre>", status=500)
-    return redirect("padron:index")
+    return redirect("index")
 
 def procesar_txt(request):
     if request.method == "POST":
