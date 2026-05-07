@@ -1,20 +1,24 @@
 
-<a href="{% url 'proveedores' %}">
-  <div class="menu-item">
+<a href="{% url 'proveedores' %}" class="{% if request.resolver_match.url_name == 'proveedores' %}active{% endif %}"
+          title="Inspeccion">
   <i class="fa fa-search" aria-hidden="true"></i>
-      <span class="menu-text">Comparar Prov</span>
-  </div>
+  <span class="menu-text">Comparar Prov</span>
 </a>
 
-<a href="{% url 'proveedores_list' %}">
-  <div class="menu-item">
+<a href="{% url 'proveedores_list' %}" class="{% if request.resolver_match.url_name == 'proveedores' %}active{% endif %}"
+          title="SIMSA">
   <i class="fa fa-list" aria-hidden="true"></i>
-
-      <span class="menu-text">Listado de Prov</span>
-  </div>
+  <span class="menu-text">Informe Proveedores</span>
 </a>
 
-<a href="{% url 'listado_inspecciones' %}">
+<a href="{% url 'proveedores_list' %}" class="{% if request.resolver_match.url_name == 'proveedores_list' %}active{% endif %}"
+          title="Lista de proveedores">
+  <i class="fa fa-list" aria-hidden="true"></i>
+  <span class="menu-text">Listado de Prov</span>
+</a>
+
+<a href="{% url 'listado_inspecciones' %}" class="{% if request.resolver_match.url_name == 'listado_inspecciones' %}active{% endif %}"
+          title="Listado de inspecciones">
   <div class="menu-item">
   <i class="fa fa-user-secret" aria-hidden="true"></i>
 
@@ -23,7 +27,8 @@
 </a>
 
 
-<a href="{% url 'actualizar_proveedores' %}">
+<a href="{% url 'actualizar_proveedores' %}" class="{% if request.resolver_match.url_name == 'actualizar_proveedores' %}active{% endif %}"
+          title="Actualizar proveedores">
   <div class="menu-item">
   <i class="fa fa-user-secret" aria-hidden="true"></i>
 

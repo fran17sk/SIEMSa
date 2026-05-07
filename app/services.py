@@ -9,26 +9,35 @@ from zeep import Client
 from zeep.helpers import serialize_object
 from lxml import etree
 from django.conf import settings
+import tempfile
 
-TOKEN_FILE        = os.path.join(settings.BASE_DIR, "padron_token_cache.json")
+TOKEN_FILE = os.path.join(tempfile.gettempdir(), "padron_token_cache.json")
 CERT_FILE         = settings.AFIP_CERT_FILE
 KEY_FILE          = settings.AFIP_KEY_FILE
 CUIT_REPRESENTADA = settings.AFIP_CUIT_REPRESENTADA
 
 def obtener_token_sign():
+    # 1. Intentar leer desde el directorio temporal
     if os.path.exists(TOKEN_FILE):
-        with open(TOKEN_FILE) as f:
-            cache = json.load(f)
-        expira = datetime.datetime.fromisoformat(cache["expiration"])
-        if datetime.datetime.now() < expira - datetime.timedelta(minutes=5):
-            return cache["token"], cache["sign"]
+        try:
+            with open(TOKEN_FILE, "r") as f:
+                cache = json.load(f)
+            
+            expira = datetime.datetime.fromisoformat(cache["expiration"])
+            # Si el token es válido por al menos 5 minutos más, lo usamos
+            if datetime.datetime.now() < expira - datetime.timedelta(minutes=5):
+                return cache["token"], cache["sign"]
+        except (json.JSONDecodeError, KeyError, ValueError, OSError):
+            # Si el archivo está corrupto o hay error de lectura, seguimos para pedir uno nuevo
+            pass
 
+    # 2. Si no hay caché válido, solicitar nuevo a la AFIP
     with open(CERT_FILE, "rb") as f:
         cert = x509.load_pem_x509_certificate(f.read())
     with open(KEY_FILE, "rb") as f:
         key = serialization.load_pem_private_key(f.read(), password=None)
 
-    now        = datetime.datetime.now()
+    now = datetime.datetime.now()
     expiration = now + datetime.timedelta(hours=10)
 
     tra_xml = f"""<?xml version="1.0" encoding="UTF-8"?>
@@ -39,7 +48,7 @@ def obtener_token_sign():
     <expirationTime>{expiration.strftime('%Y-%m-%dT%H:%M:%S')}</expirationTime>
   </header>
   <service>ws_sr_padron_a13</service>
-</loginTicketRequest>""".encode("utf-8")
+</loginTicketRequest>""".strip().encode("utf-8")
 
     signature = (
         pkcs7.PKCS7SignatureBuilder()
@@ -48,15 +57,29 @@ def obtener_token_sign():
         .sign(serialization.Encoding.DER, options=[])
     )
 
-    cms_base64   = base64.b64encode(signature).decode()
-    client       = Client("https://wsaa.afip.gov.ar/ws/services/LoginCms?wsdl")
+    cms_base64 = base64.b64encode(signature).decode()
+    
+    # IMPORTANTE: Asegúrate de usar la URL de producción o testing según corresponda
+    client = Client("https://wsaa.afip.gov.ar/ws/services/LoginCms?wsdl")
     response_xml = client.service.loginCms(cms_base64)
-    xml_obj      = etree.fromstring(response_xml.encode("utf-8"))
-    token        = xml_obj.find(".//token").text
-    sign         = xml_obj.find(".//sign").text
+    
+    xml_obj = etree.fromstring(response_xml.encode("utf-8"))
+    token = xml_obj.find(".//token").text
+    sign = xml_obj.find(".//sign").text
 
-    with open(TOKEN_FILE, "w") as f:
-        json.dump({"token": token, "sign": sign, "expiration": expiration.isoformat()}, f)
+    # 3. Intentar guardar en el directorio temporal
+    try:
+        with open(TOKEN_FILE, "w") as f:
+            json.dump({
+                "token": token, 
+                "sign": sign, 
+                "expiration": expiration.isoformat()
+            }, f)
+    except OSError as e:
+        # Si por alguna razón falla el guardado (disco lleno, etc.), 
+        # imprimimos el error en el log pero devolvemos los datos 
+        # para que la consulta actual no se detenga.
+        print(f"No se pudo guardar el caché del token: {e}")
 
     return token, sign
 

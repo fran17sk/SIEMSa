@@ -134,6 +134,13 @@ from django.http import HttpResponse
 from django.contrib import messages
 from .forms import ConsultaCuitForm, UploadTxtForm
 from .services import consultar_cuit
+import os
+import json
+import datetime
+from zeep import Client
+from cryptography import x509
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.serialization import pkcs7
 from unidecode import unidecode
 
 
@@ -3009,186 +3016,7 @@ def generar_codigo_unico():
 
 @login_required
 def comparar_proveedores_excel(request):
-    '''if request.method != "POST":
-        return JsonResponse({"error": "Método no permitido. Debe ser POST."}, status=405)
-
-    archivo = request.FILES.get("archivo_excel")
-    fecha_inspeccion = request.POST.get("fecha_inspeccion")
-    empresa = request.POST.get("empresa", "").strip()
-    inspector = request.POST.get("controlador", "").strip()
-    columna_proveedores = request.POST.get("columna_proveedores", "").strip()
-    columna_dni = request.POST.get("columna_dni", "").strip()
-    observaciones = request.POST.get("observaciones", "").strip()
-
-    errores = []
-
-    if fecha_inspeccion:
-        try:
-            fecha_obj = datetime.strptime(fecha_inspeccion, "%Y-%m-%d").date()
-        except ValueError:
-            errores.append("Formato de fecha_inspeccion inválido, debe ser YYYY-MM-DD.")
-            fecha_obj = None
-    else:
-        fecha_obj = None
-
-    if not archivo:
-        errores.append("Debe adjuntar un archivo Excel.")
-    if not empresa:
-        errores.append("Debe ingresar el nombre de la empresa.")
-    if not inspector:
-        errores.append("Debe ingresar el nombre del inspector.")
-    if not columna_proveedores.isdigit():
-        errores.append("Debe ingresar un número de columna válido para proveedores.")
-    if not columna_dni.isdigit():
-        errores.append("Debe ingresar un número de columna válido para DNI.")
-
-    if errores:
-        return JsonResponse({"error": "Faltan datos obligatorios.", "detalle": errores}, status=400)
-
-    columna_proveedores = int(columna_proveedores)
-    columna_dni = int(columna_dni)
-
-    try:
-        hojas = pd.read_excel(archivo, engine='openpyxl', sheet_name=None, skiprows=1)
-    except Exception as e:
-        return JsonResponse({"error": f"Error al leer el Excel: {str(e)}"}, status=400)
-
-    registros = RegistroProveedores.objects.exclude(
-        nombre_razon_social__isnull=True
-    ).exclude(
-        nombre_razon_social__exact=""
-    )
-
-    vigentes, vencidos, no_encontrados = [], [], []
-    vigentes_set, vencidos_set, no_encontrados_set = set(), set(), set()
-    empleados_por_proveedor = {}
-    proveedor_dni_set = {}
-    total_set = set()
-
-    for nombre_hoja, df in hojas.items():
-        if columna_proveedores >= len(df.columns) or columna_dni >= len(df.columns):
-            continue
-
-        mask_valid = df.iloc[:, columna_proveedores].notna() & df.iloc[:, columna_dni].notna()
-        proveedores_raw = df.loc[mask_valid, df.columns[columna_proveedores]].astype(str).tolist()
-        dnis_raw = df.loc[mask_valid, df.columns[columna_dni]].astype(str).tolist()
-
-        coincidencias_confirmadas = []
-        sin_coincidencia = []
-
-        for i, proveedor_raw in enumerate(proveedores_raw):
-            nombre_excel = proveedor_raw.strip()
-            if "empresa" in nombre_excel.lower():
-                continue
-
-            total_set.add(nombre_excel)
-
-            # Buscar todos los registros que coincidan
-            registros_match = [r for r in registros if nombres_coinciden(nombre_excel, r.nombre_razon_social, cutoff=0.8)]
-
-            if registros_match:
-                # Tomar el registro más reciente según fecha_vto
-                proveedor = max(registros_match, key=lambda x: x.fecha_vto or datetime.min.date())
-                proveedor_nombre = proveedor.nombre_razon_social
-
-                if proveedor_nombre not in vigentes_set and proveedor_nombre not in vencidos_set:
-                    empleados = proveedor_dni_set.get(proveedor_nombre, set())
-                    entry = {
-                        "referencia": proveedores_raw[i],
-                        "coincidencia": proveedor_nombre,
-                        "id": proveedor.id,
-                        "fecha_alta": proveedor.fecha_alta.strftime("%d/%m/%Y") if proveedor.fecha_alta else None,
-                        "fecha_vto": proveedor.fecha_vto.strftime("%d/%m/%Y") if proveedor.fecha_vto else None,
-                        "hoja": nombre_hoja,
-                        "empleados": len(empleados)
-                    }
-
-                    if fecha_obj and proveedor.fecha_alta and proveedor.fecha_vto and proveedor.fecha_alta <= fecha_obj <= proveedor.fecha_vto:
-                        vigentes.append(entry)
-                        vigentes_set.add(proveedor_nombre)
-                    else:
-                        vencidos.append(entry)
-                        vencidos_set.add(proveedor_nombre)
-
-                coincidencias_confirmadas.append((proveedor_nombre, dnis_raw[i]))
-            else:
-                sin_coincidencia.append((nombre_excel, dnis_raw[i]))
-
-        # Agrupar no encontrados por similitud
-        grupos = {}
-        for nombre, dni in sin_coincidencia:
-            clave = get_close_matches(nombre, grupos.keys(), n=1, cutoff=0.8)
-            if clave:
-                grupos[clave[0]].add(dni)
-            else:
-                grupos[nombre] = set([dni])
-
-        for grupo, dnis in grupos.items():
-            empleados_por_proveedor[grupo] = len(dnis)
-            if grupo not in no_encontrados_set:
-                no_encontrados.append({
-                    "referencia": grupo,
-                    "hoja": "-",
-                    "empleados": len(dnis)
-                })
-                no_encontrados_set.add(grupo)
-
-        for proveedor_match, dni in coincidencias_confirmadas:
-            if proveedor_match not in empleados_por_proveedor:
-                empleados_por_proveedor[proveedor_match] = 0
-                proveedor_dni_set[proveedor_match] = set()
-            if dni not in proveedor_dni_set[proveedor_match]:
-                proveedor_dni_set[proveedor_match].add(dni)
-                empleados_por_proveedor[proveedor_match] += 1
-
-    total = len(total_set)
-
-    for item in vigentes:
-        item["empleados"] = empleados_por_proveedor.get(item["coincidencia"], 0)
-    for item in vencidos:
-        item["empleados"] = empleados_por_proveedor.get(item["coincidencia"], 0)
-
-    inspeccion = InspeccionProveedores.objects.create(
-        empresa=empresa,
-        fecha_inspeccion=fecha_inspeccion or None,
-        anio=fecha_obj.year if fecha_obj else None,
-        inspector=inspector,
-        codigo_inspeccion=generar_codigo_unico(),
-        columna_proveedores=columna_proveedores,
-        columna_dni=columna_dni,
-        archivo_excel=archivo,
-        observaciones=observaciones or None,
-        usuario_registro=request.user,
-        resultados_vigentes=vigentes,
-        resultados_vencidos=vencidos,
-        resultados_no_encontrados=no_encontrados,
-        total_referencias=total
-    )
-
-    return JsonResponse({
-        "mensaje": "Inspección registrada y comparación realizada con éxito.",
-        "inspeccion": {
-            "id": inspeccion.id,
-            "empresa": inspeccion.empresa,
-            "inspector": inspeccion.inspector,
-            "codigo": inspeccion.codigo_inspeccion,
-            "columna": inspeccion.columna_proveedores,
-            "observaciones": inspeccion.observaciones,
-            "usuario": request.user.username,
-            "fecha": inspeccion.fecha_registro.strftime("%d/%m/%Y"),
-            "fecha_inspeccion": fecha_inspeccion,
-        },
-        "vigentes": vigentes,
-        "vencidos": vencidos,
-        "no_encontrados": no_encontrados,
-        "total_referencia": total,
-        "porcentaje_vigentes": f"{round(len(vigentes) * 100 / total, 2)}%" if total else "0%",
-        "porcentaje_vencidos": f"{round(len(vencidos) * 100 / total, 2)}%" if total else "0%",
-        "porcentaje_no_encontrados": f"{round(len(no_encontrados) * 100 / total, 2)}%" if total else "0%",
-        "empleados_por_proveedor": empleados_por_proveedor,
-    }, json_dumps_params={"ensure_ascii": False, "indent": 2})'''
-
-
+    
     if request.method != "POST":
         return JsonResponse({"error": "Método no permitido. Debe ser POST."}, status=405)
 
@@ -3203,7 +3031,6 @@ def comparar_proveedores_excel(request):
 
     errores = []
 
-    # Validación de fecha
     if fecha_inspeccion:
         try:
             fecha_obj = datetime.strptime(fecha_inspeccion, "%Y-%m-%d").date()
@@ -3213,7 +3040,6 @@ def comparar_proveedores_excel(request):
     else:
         fecha_obj = None
 
-    # Validaciones básicas
     if not archivo:
         errores.append("Debe adjuntar un archivo Excel.")
     if not empresa:
@@ -3231,65 +3057,105 @@ def comparar_proveedores_excel(request):
     columna_proveedores = int(columna_proveedores)
     columna_dni = int(columna_dni)
 
-    # Lectura del Excelkasjs
     try:
         hojas = pd.read_excel(archivo, engine='openpyxl', sheet_name=None, skiprows=1)
     except Exception as e:
         return JsonResponse({"error": f"Error al leer el Excel: {str(e)}"}, status=400)
 
-    registros = RegistroProveedores.objects.all()
-    base = {
-        normalizar_nombres(r.nombre_razon_social): {
+    # ── Base de proveedores: solo el registro más reciente por nombre ──
+    registros = (
+        RegistroProveedores.objects
+        .exclude(nombre_razon_social__isnull=True)
+        .exclude(nombre_razon_social__exact="")
+        .order_by("nombre_razon_social", "-creado")
+    )
+
+    vistos = set()
+    base = {}
+    for r in registros:
+        clave = normalizar_nombres(r.nombre_razon_social)
+        if clave in vistos:
+            continue
+        vistos.add(clave)
+        base[clave] = {
             "id": r.id,
             "nombre_db": r.nombre_razon_social,
             "fecha_alta": r.fecha_alta,
             "fecha_vto": r.fecha_vto,
             "numero_certificado": r.numero_certificado,
             "actividad": r.actividad,
-            "localidad" : r.localidad,
-            'cuit_cuil': r.cuit_cuil
+            "localidad": r.localidad,
+            "cuit_cuil": r.cuit_cuil,
         }
-        for r in registros
-    }
+
+    base_keys = list(base.keys())  # para usar con get_close_matches
 
     vigentes, vencidos, no_encontrados = [], [], []
     vigentes_set, vencidos_set, no_encontrados_set = set(), set(), set()
     empleados_por_proveedor = {}
     proveedor_dni_set = {}
-    total_set = set()
 
-    # Recorremos las hojas del Excel
+    # total_filas cuenta FILAS reales del Excel (no empresas únicas)
+    total_filas = 0
+
+    ENCABEZADOS_A_IGNORAR = {"empresa", "proveedor", "razon social", "razón social", "nombre"}
+
     for nombre_hoja, df in hojas.items():
         if columna_proveedores >= len(df.columns) or columna_dni >= len(df.columns):
             continue
 
-        mask_valid = df.iloc[:, columna_proveedores].notna() & df.iloc[:, columna_dni].notna()
+        mask_valid = (
+            df.iloc[:, columna_proveedores].notna() &
+            df.iloc[:, columna_dni].notna()
+        )
         proveedores_raw = df.loc[mask_valid, df.columns[columna_proveedores]].astype(str).tolist()
         dnis_raw = df.loc[mask_valid, df.columns[columna_dni]].astype(str).tolist()
 
-        nombres_normalizados = [normalizar_nombres(p) for p in proveedores_raw]
         coincidencias_confirmadas = []
-        sin_coincidencia = []
 
-        for i, nombre in enumerate(nombres_normalizados):
-            if "empresa" in nombre.lower():
+        for i, proveedor_raw in enumerate(proveedores_raw):
+            nombre_norm = normalizar_nombres(proveedor_raw)
+            dni_actual = dnis_raw[i]
+
+            # Saltar encabezados reales, no cualquier cosa que contenga "empresa"
+            if nombre_norm.strip() in ENCABEZADOS_A_IGNORAR:
                 continue
-            total_set.add(nombre)
 
+            total_filas += 1
+
+            # ── Matching: primero substring, luego fuzzy ──
             match = None
-            for base_nombre in base:
-                if base_nombre in nombre or nombre in base_nombre:
-                    match = base_nombre
-                    break
+
+            # 1) Coincidencia exacta normalizada
+            if nombre_norm in base:
+                match = nombre_norm
+
+            # 2) Substring: el nombre del Excel contiene o está contenido en la clave base
+            if not match:
+                for base_nombre in base_keys:
+                    if base_nombre in nombre_norm or nombre_norm in base_nombre:
+                        match = base_nombre
+                        break
+
+            # 3) Fuzzy matching como último recurso
+            if not match:
+                candidatos = get_close_matches(nombre_norm, base_keys, n=1, cutoff=0.82)
+                if candidatos:
+                    match = candidatos[0]
 
             if match:
                 proveedor = base[match]
                 proveedor_nombre = proveedor["nombre_db"]
 
+                # Contar DNI para este proveedor (siempre, aunque ya esté en vigentes/vencidos)
+                proveedor_dni_set.setdefault(proveedor_nombre, set()).add(dni_actual)
+                empleados_por_proveedor[proveedor_nombre] = len(proveedor_dni_set[proveedor_nombre])
+                coincidencias_confirmadas.append((proveedor_nombre, dni_actual))
+
+                # Agregar a vigentes/vencidos solo la primera vez que aparece la empresa
                 if proveedor_nombre not in vigentes_set and proveedor_nombre not in vencidos_set:
-                    empleados = proveedor_dni_set.get(proveedor_nombre, set())
                     entry = {
-                        "referencia": proveedores_raw[i],
+                        "referencia": proveedor_raw,
                         "coincidencia": proveedor_nombre,
                         "id": proveedor["id"],
                         "fecha_alta": proveedor["fecha_alta"].strftime("%d/%m/%Y") if proveedor["fecha_alta"] else None,
@@ -3299,62 +3165,52 @@ def comparar_proveedores_excel(request):
                         "localidad": proveedor["localidad"],
                         "cuil": proveedor["cuit_cuil"],
                         "hoja": nombre_hoja,
-                        "empleados": len(empleados)
+                        "empleados": 0  # se actualiza al final
                     }
                     if (
                         fecha_obj
                         and proveedor["fecha_alta"] is not None
                         and proveedor["fecha_vto"] is not None
                         and proveedor["fecha_alta"] <= fecha_obj <= proveedor["fecha_vto"]
-                        
                     ):
                         vigentes.append(entry)
                         vigentes_set.add(proveedor_nombre)
                     else:
                         vencidos.append(entry)
                         vencidos_set.add(proveedor_nombre)
-
-                coincidencias_confirmadas.append((proveedor_nombre, dnis_raw[i]))
             else:
-                clave = normalizar_nombres(proveedores_raw[i])
-                dni_actual = dnis_raw[i]
+                # No encontrado
+                clave_no_enc = nombre_norm
 
-                # Si ya existe el proveedor no encontrado, solo agregamos el nuevo DNI si no estaba
-                if clave in empleados_por_proveedor:
-                    proveedor_dni_set.setdefault(clave, set()).add(dni_actual)
-                    empleados_por_proveedor[clave] = len(proveedor_dni_set[clave])
-                else:
-                    proveedor_dni_set[clave] = {dni_actual}
-                    empleados_por_proveedor[clave] = 1
+                proveedor_dni_set.setdefault(clave_no_enc, set()).add(dni_actual)
+                empleados_por_proveedor[clave_no_enc] = len(proveedor_dni_set[clave_no_enc])
 
-                    # Agregar solo una vez a la lista visible
+                if clave_no_enc not in no_encontrados_set:
                     no_encontrados.append({
-                        "referencia": proveedores_raw[i],
+                        "referencia": proveedor_raw,
                         "hoja": nombre_hoja,
-                        "empleados": empleados_por_proveedor[clave]
+                        "empleados": 0  # se actualiza al final
                     })
-                    no_encontrados_set.add(clave)
+                    no_encontrados_set.add(clave_no_enc)
 
-                sin_coincidencia.append((normalizar_nombres(proveedores_raw[i]), dnis_raw[i]))
-
-        # Contar empleados de coincidencias reales
-        for proveedor_match, dni in coincidencias_confirmadas:
-            if proveedor_match not in empleados_por_proveedor:
-                empleados_por_proveedor[proveedor_match] = 0
-                proveedor_dni_set[proveedor_match] = set()
-            if dni not in proveedor_dni_set[proveedor_match]:
-                proveedor_dni_set[proveedor_match].add(dni)
-                empleados_por_proveedor[proveedor_match] += 1
-
-    total = len(total_set)
-
-    # Actualizar conteo de empleados en cada item de vigentes y vencidos
+    # ── Actualizar conteo final de empleados ──
     for item in vigentes:
         item["empleados"] = empleados_por_proveedor.get(item["coincidencia"], 0)
+
     for item in vencidos:
         item["empleados"] = empleados_por_proveedor.get(item["coincidencia"], 0)
 
-    # Crear registro de inspección
+    for item in no_encontrados:
+        clave = normalizar_nombres(item["referencia"])
+        item["empleados"] = empleados_por_proveedor.get(clave, 0)
+
+    no_encontrados.sort(key=lambda x: x["empleados"], reverse=True)
+
+    # ── Debug temporal: borrar cuando todo funcione ──
+    print(f"[DEBUG] Filas totales procesadas: {total_filas}")
+    print(f"[DEBUG] Vigentes: {len(vigentes)} | Vencidos: {len(vencidos)} | No encontrados: {len(no_encontrados)}")
+    print(f"[DEBUG] Suma empresas únicas: {len(vigentes) + len(vencidos) + len(no_encontrados)}")
+
     inspeccion = InspeccionProveedores.objects.create(
         empresa=empresa,
         fecha_inspeccion=fecha_inspeccion or None,
@@ -3369,11 +3225,8 @@ def comparar_proveedores_excel(request):
         resultados_vigentes=vigentes,
         resultados_vencidos=vencidos,
         resultados_no_encontrados=no_encontrados,
-        total_referencias=total
+        total_referencias=total_filas
     )
-
-    # Ordenar los no encontrados por cantidad de empleados (descendente)
-    no_encontrados.sort(key=lambda x: x["empleados"], reverse=True)
 
     return JsonResponse({
         "mensaje": "Inspección registrada y comparación realizada con éxito.",
@@ -3391,10 +3244,10 @@ def comparar_proveedores_excel(request):
         "vigentes": vigentes,
         "vencidos": vencidos,
         "no_encontrados": no_encontrados,
-        "total_referencia": total,
-        "porcentaje_vigentes": f"{round(len(vigentes) * 100 / total, 2)}%" if total else "0%",
-        "porcentaje_vencidos": f"{round(len(vencidos) * 100 / total, 2)}%" if total else "0%",
-        "porcentaje_no_encontrados": f"{round(len(no_encontrados) * 100 / total, 2)}%" if total else "0%",
+        "total_referencia": total_filas,
+        "porcentaje_vigentes": f"{round(len(vigentes) * 100 / total_filas, 2)}%" if total_filas else "0%",
+        "porcentaje_vencidos": f"{round(len(vencidos) * 100 / total_filas, 2)}%" if total_filas else "0%",
+        "porcentaje_no_encontrados": f"{round(len(no_encontrados) * 100 / total_filas, 2)}%" if total_filas else "0%",
         "empleados_por_proveedor": empleados_por_proveedor,
     }, json_dumps_params={"ensure_ascii": False, "indent": 2})
 
