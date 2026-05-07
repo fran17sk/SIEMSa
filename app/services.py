@@ -17,8 +17,10 @@ KEY_FILE          = settings.AFIP_KEY_FILE
 CUIT_REPRESENTADA = settings.AFIP_CUIT_REPRESENTADA
 
 def obtener_token_sign():
-    # 1. Intentar leer desde el directorio temporal
+    print(">>> Iniciando obtener_token_sign...") # LOG
     if os.path.exists(TOKEN_FILE):
+        print(f">>> Existe cache en {TOKEN_FILE}") # LOG
+        # ... resto del codigo ...
         try:
             with open(TOKEN_FILE, "r") as f:
                 cache = json.load(f)
@@ -68,19 +70,14 @@ def obtener_token_sign():
     sign = xml_obj.find(".//sign").text
 
     # 3. Intentar guardar en el directorio temporal
+    print(f">>> Token obtenido de AFIP. Intentando guardar en {TOKEN_FILE}") # LOG
     try:
         with open(TOKEN_FILE, "w") as f:
-            json.dump({
-                "token": token, 
-                "sign": sign, 
-                "expiration": expiration.isoformat()
-            }, f)
-    except OSError as e:
-        # Si por alguna razón falla el guardado (disco lleno, etc.), 
-        # imprimimos el error en el log pero devolvemos los datos 
-        # para que la consulta actual no se detenga.
-        print(f"No se pudo guardar el caché del token: {e}")
-
+            json.dump({"token": token, "sign": sign, "expiration": expiration.isoformat()}, f)
+        print(">>> Archivo guardado exitosamente.") # LOG
+    except Exception as e:
+        print(f">>> ERROR AL GUARDAR: {e}") # LOG
+    
     return token, sign
 
 def get_domicilio(domicilios, tipo):
