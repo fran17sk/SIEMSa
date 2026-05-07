@@ -11,7 +11,7 @@ from lxml import etree
 from django.conf import settings
 import tempfile
 
-TOKEN_FILE = os.path.join(tempfile.gettempdir(), "padron_token_cache.json")
+TOKEN_FILE = "/certs/padron_token_cache.json"
 CERT_FILE         = settings.AFIP_CERT_FILE
 KEY_FILE          = settings.AFIP_KEY_FILE
 CUIT_REPRESENTADA = settings.AFIP_CUIT_REPRESENTADA
