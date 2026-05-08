@@ -12,6 +12,8 @@ from django.conf import settings
 from pathlib import Path
 import tempfile
 import logging
+from django.utils import timezone
+import pytz
 
 # Configuramos el logger para que use el canal de errores de gunicorn
 logger = logging.getLogger('gunicorn.error')
@@ -25,50 +27,48 @@ def obtener_token_sign():
 
     # 1. Intento de recuperación desde el archivo caché
     if os.path.exists(TOKEN_FILE):
-        logger.info(f">>> [WSAA] Buscando caché en {TOKEN_FILE}")
         try:
             with open(TOKEN_FILE, "r") as f:
                 cache = json.load(f)
             
+            # Hacer que la comparación sea "timezone aware"
             expira = datetime.datetime.fromisoformat(cache["expiration"])
-            # Si el token es válido por al menos 5 minutos más, lo usamos
-            if datetime.datetime.now() < expira - datetime.timedelta(minutes=5):
+            if datetime.datetime.now(pytz.utc) < expira - datetime.timedelta(minutes=5):
                 logger.info(">>> [WSAA] Token válido recuperado del caché local.")
                 return cache["token"], cache["sign"]
-            else:
-                logger.warning(">>> [WSAA] El token en caché ha expirado o está por expirar. Solicitando uno nuevo...")
-        except (json.JSONDecodeError, KeyError, ValueError, OSError) as e:
-            logger.error(f">>> [WSAA] Error al leer el archivo de caché ({type(e).__name__}): {e}")
-            # Continuamos para pedir uno nuevo si el caché falla
+        except Exception as e:
+            logger.error(f">>> [WSAA] Error al leer caché: {e}")
             pass
 
-    # 2. Si no hay caché válido, solicitar nuevo a la AFIP
+    # 2. Solicitar nuevo a la AFIP
     try:
-        logger.info(">>> [WSAA] Cargando certificados y clave privada...")
+        # Forzamos la zona horaria de Argentina (UTC-3)
+        tz_ar = pytz.timezone('America/Argentina/Buenos_Aires')
+        now_ar = datetime.datetime.now(tz_ar)
+
+        # AFIP es estricta: restamos 2 minutos para asegurar que para ellos NO sea el futuro
+        generation_time = now_ar - datetime.timedelta(minutes=2)
+        expiration_time = now_ar + datetime.timedelta(hours=12)
+
+        # IMPORTANTE: XML sin indentación a la izquierda (pegado al borde)
+        tra_xml = f"""<?xml version="1.0" encoding="UTF-8"?>
+<loginTicketRequest version="1.0">
+<header>
+<uniqueId>{int(now_ar.timestamp())}</uniqueId>
+<generationTime>{generation_time.strftime('%Y-%m-%dT%H:%M:%S')}</generationTime>
+<expirationTime>{expiration_time.strftime('%Y-%m-%dT%H:%M:%S')}</expirationTime>
+</header>
+<service>ws_sr_padron_a13</service>
+</loginTicketRequest>""".strip().encode("utf-8")
+
+        logger.info(f">>> [WSAA] Generando ticket con hora AR: {generation_time.strftime('%H:%M:%S')}")
+
+        # --- Resto de tu lógica de firma (Carga de certs, PKCS7, etc.) ---
         with open(CERT_FILE, "rb") as f:
             cert = x509.load_pem_x509_certificate(f.read())
         with open(KEY_FILE, "rb") as f:
             key = serialization.load_pem_private_key(f.read(), password=None)
 
-        now = datetime.datetime.now()
-
-    # AFIP es sensible. Restamos solo 1 minuto para asegurar que no sea 'el futuro'
-    # pero que tampoco sea muy viejo.
-        generation_time = now - datetime.timedelta(minutes=1)
-        expiration_time = now + datetime.timedelta(hours=12)
-
-        tra_xml = f"""<?xml version="1.0" encoding="UTF-8"?>
-        <loginTicketRequest version="1.0">
-        <header>
-        <uniqueId>{int(now.timestamp())}</uniqueId>
-        <generationTime>{generation_time.strftime('%Y-%m-%dT%H:%M:%S')}</generationTime>
-        <expirationTime>{expiration_time.strftime('%Y-%m-%dT%H:%M:%S')}</expirationTime>
-        </header>
-        <service>ws_sr_padron_a13</service>
-        </loginTicketRequest>""".strip().encode("utf-8")
-
-        # Firma PKCS#7
-        logger.info(">>> [WSAA] Firmando el TRA (CMS)...")
         signature = (
             pkcs7.PKCS7SignatureBuilder()
             .set_data(tra_xml)
@@ -77,37 +77,30 @@ def obtener_token_sign():
         )
 
         cms_base64 = base64.b64encode(signature).decode()
-        
-        # Llamada al WSAA (Punto de falla común por red/VPN)
-        url_wsaa = "https://wsaa.afip.gov.ar/ws/services/LoginCms?wsdl"
-        logger.info(f">>> [WSAA] Conectando a {url_wsaa}...")
-        
-        client = Client(url_wsaa)
+        client = Client("https://wsaa.afip.gov.ar/ws/services/LoginCms?wsdl")
         response_xml = client.service.loginCms(cms_base64)
-        
-        logger.info(">>> [WSAA] Respuesta recibida exitosamente de AFIP.")
         
         xml_obj = etree.fromstring(response_xml.encode("utf-8"))
         token = xml_obj.find(".//token").text
         sign = xml_obj.find(".//sign").text
 
-        # 3. Intentar guardar en el archivo caché
+        # 3. Guardar en caché (Guardamos en ISO con zona horaria)
         try:
-            logger.info(f">>> [WSAA] Intentando guardar nuevo token en {TOKEN_FILE}")
-            # Asegurarse de que el directorio existe
             os.makedirs(os.path.dirname(TOKEN_FILE), exist_ok=True)
             with open(TOKEN_FILE, "w") as f:
                 json.dump({
                     "token": token, 
                     "sign": sign, 
-                    "expiration": expiration.isoformat()
+                    "expiration": expiration_time.isoformat()
                 }, f)
-            logger.info(">>> [WSAA] Token guardado en caché exitosamente.")
         except Exception as e:
-            logger.error(f">>> [WSAA] ERROR AL GUARDAR CACHÉ: {e}") 
-            # No retornamos error aquí para que la app siga funcionando aunque no pueda guardar el caché
+            logger.error(f">>> [WSAA] No se pudo guardar caché: {e}")
         
         return token, sign
+
+    except Exception as e:
+        logger.exception(f">>> [WSAA] ERROR CRÍTICO: {str(e)}")
+        raise e
 
     except Exception as e:
         logger.exception(f">>> [WSAA] ERROR CRÍTICO en la obtención del ticket: {str(e)}")
