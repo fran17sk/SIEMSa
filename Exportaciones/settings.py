@@ -198,6 +198,6 @@ else:
 
 MEDIA_URL = '/media/'
 
-AFIP_CERT_FILE          = BASE_DIR / "certs/WS_PADRONA13_72575717e6e59aad.CRT"
+AFIP_CERT_FILE          = BASE_DIR / "certs/WS_PADRONA13_72575717e6e59aad.crt"
 AFIP_KEY_FILE           = BASE_DIR / "certs/key.pem"
 AFIP_CUIT_REPRESENTADA  = 20427543472
