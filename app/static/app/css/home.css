@@ -23,7 +23,7 @@ body.light-mode {
 
 body {
     margin: 0;
-    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-family: 'Inter', system-ui, sans-serif;
     display: flex;
     background-color: var(--bg-main);
     color: var(--text-light);

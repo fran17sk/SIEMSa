@@ -1,75 +1,627 @@
-<div class="row">
-    <!-- VIGENTES -->
-    <div class="col-md-3">
-        <div class="card border-left-success shadow py-2">
-            <div class="card-body">
-                <div class="text-success font-weight-bold text-uppercase mb-1">Vigentes</div>
-                <div class="h5 mb-0">{{ count_vigentes }}</div>
-            </div>
-        </div>
-    </div>
+{% extends 'base.html' %}
+{% load static %}
 
-    <!-- EN TRAMITE INTERNO -->
-    <div class="col-md-3">
-        <div class="card border-left-primary shadow py-2">
-            <div class="card-body">
-                <div class="text-primary font-weight-bold text-uppercase mb-1">En Trámite (Interno)</div>
-                <div class="h5 mb-0">{{ count_en_tramite }}</div>
-            </div>
-        </div>
-    </div>
+{% block head %}
+<title>Dashboard | SIEMSa</title>
+<!-- Fuente Inter para un look moderno -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-    <!-- NOTIFICADOS (ADVERTENCIA) -->
-    <div class="col-md-3">
-        <div class="card border-left-warning shadow py-2" style="background-color: #fff4e5;">
-            <div class="card-body">
-                <div class="text-warning font-weight-bold text-uppercase mb-1">⚠️ Notificados</div>
-                <div class="h5 mb-0">{{ count_notificados }}</div>
-                <small class="text-muted">Esperando respuesta</small>
-            </div>
-        </div>
-    </div>
+<style>
+    :root {
+        
+        /* Semántica */
+        --success: #10b981;
+        --warning: #f59e0b;
+        --danger: #ef4444;
+        --info: #6366f1;
 
-    <!-- VENCIDOS CRÍTICOS -->
-    <div class="col-md-3">
-        <div class="card border-left-danger shadow py-2">
-            <div class="card-body">
-                <div class="text-danger font-weight-bold text-uppercase mb-1">Vencidos Sin Acción</div>
-                <div class="h5 mb-0">{{ count_vencidos_criticos }}</div>
-                <small class="text-muted">Requieren notificación</small>
-            </div>
+        /* Sombras suaves estilo Raycast/Linear */
+        --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+        --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        --border-ui: #e2e8f0;
+    }
+
+    body {
+        font-family: 'Inter', system-ui, sans-serif;
+        margin: 0;
+        -webkit-font-smoothing: antialiased;
+    }
+
+    .wrapper {
+        padding: 2.5rem;
+        max-width: 1500px;
+        background-color: var(--card-bg);
+        border-radius: 50px;
+        margin: 0 auto;
+    }
+
+    /* HEADER ESTRATÉGICO */
+    .dashboard-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        margin-bottom: 3rem;
+    }
+
+    .title-group h1 {
+        font-size: 1.85rem;
+        font-weight: 800;
+        letter-spacing: -0.025em;
+        color: var(--accent);
+        margin: 0;
+    }
+
+    .title-group p {
+        color: var(--text-ligth);
+        font-size: 1rem;
+        margin-top: 0.4rem;
+    }
+
+    /* SISTEMA DE TARJETAS (Glassmorphism sutil) */
+    .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 3rem;
+    }
+
+    .metric-card {
+        background: var(--panel);
+        border: 1px solid var(--border-ui);
+        border-radius: 16px;
+        padding: 1.5rem;
+        position: relative;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        overflow: hidden;
+    }
+
+    .metric-card:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-md);
+        border-color: #cbd5e1;
+    }
+
+    .metric-card::before {
+        content: "";
+        position: absolute;
+        top: 0; left: 0; width: 4px; height: 100%;
+    }
+
+    .card-vigente::before { background: var(--success); }
+    .card-tramite::before { background: var(--info); }
+    .card-notificado::before { background: var(--warning); }
+    .card-vencido::before { background: var(--danger); }
+
+    .card-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .card-head i {
+        font-size: 1.25rem;
+        opacity: 0.8;
+    }
+
+    .value-display {
+        font-size: 2.25rem;
+        font-weight: 700;
+        color: var(--accent);
+        display: block;
+    }
+
+    .label-display {
+        font-size: 0.85rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--text-ligth);
+    }
+
+    /* CONTENEDOR DE TABLA ESTILO DATA-GRID */
+    .data-section {
+        background: var(--panel);
+        border-radius: 20px;
+        border: 1px solid var(--border-ui);
+        box-shadow: var(--shadow-sm);
+        overflow: hidden;
+    }
+
+    .section-header {
+        padding: 1.5rem 2rem;
+        background: var(--bg-main);
+        border-bottom: 1px solid var(--border-ui);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .section-header h2 {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--accent);
+        margin: 0;
+    }
+
+    /* TABLA */
+    .custom-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .custom-table th {
+        background: var(--bg-main);
+        padding: 1rem 2rem;
+        text-align: left;
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        border-bottom: 2px solid #f1f5f9;
+    }
+
+    .custom-table td {
+        padding: 1.25rem 2rem;
+        border-bottom: 1px solid #f1f5f9;
+        font-size: 0.95rem;
+        transition: background 0.2s;
+    }
+
+    .custom-table tr:last-child td { border-bottom: none; }
+
+    .custom-table tr:hover td {
+        background: var(--bg-main);
+    }
+
+    /* COMPONENTES INTERNOS */
+    .badge-cuit {
+        font-family: 'JetBrains Mono', 'Fira Code', monospace;
+        background: #f1f5f9;
+        color: #475569;
+        padding: 4px 8px;
+        border-radius: 6px;
+        font-size: 0.85rem;
+    }
+
+    .status-indicator {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-weight: 600;
+        color: var(--danger);
+    }
+
+    .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--danger);
+        display: inline-block;
+        box-shadow: 0 0 8px var(--danger);
+    }
+
+    .btn-action {
+        background: var(--bg-main);
+        color: var(--text-ligth);
+        border: none;
+        padding: 0.6rem 1.2rem;
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 0.85rem;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .btn-action:hover {
+        background: var(--card-bg);
+        transform: scale(1.02);
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 5rem 2rem;
+    }
+
+    .empty-state i {
+        font-size: 3rem;
+        color: #cbd5e1;
+        margin-bottom: 1rem;
+    }
+    body {
+        font-family: 'Inter', sans-serif;
+        background-color: var(--bg-main);
+        margin: 0;
+        -webkit-font-smoothing: antialiased;
+    }
+
+    .wrapper {
+        padding: 2.5rem;
+        max-width: 1550px;
+        margin: 0 auto;
+    }
+
+    /* HEADER */
+    .dashboard-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2.5rem;
+    }
+
+    .title-group h1 {
+        font-size: 1.75rem;
+        font-weight: 800;
+        color: var(--accent);
+        margin: 0;
+        letter-spacing: -0.02em;
+    }
+
+    .title-group p {
+        color: var(--text-light);
+        margin: 0.3rem 0 0;
+    }
+
+    /* GRID DE TARJETAS AJUSTADO */
+    .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr); /* 3 columnas principales */
+        gap: 1.5rem;
+        margin-bottom: 3rem;
+    }
+
+    .metric-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border-ui);
+        border-radius: var(--radius);
+        padding: 1.5rem;
+        position: relative;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .metric-card:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-md);
+    }
+
+    /* Tarjeta Especial de Gestión */
+    .card-compound {
+        border-left: 5px solid var(--info);
+    }
+
+    .compound-layout {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+    }
+
+    .main-value-group {
+        border-bottom: 1px solid #f1f5f9;
+        padding-bottom: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .sub-metrics {
+        display: flex;
+        justify-content: space-between;
+    }
+
+    .sub-item {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .sub-label {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        color: var(--text-light);
+        font-weight: 600;
+        letter-spacing: 0.02em;
+    }
+
+    .sub-value {
+        font-weight: 700;
+        font-size: 1.1rem;
+    }
+
+    /* Colores y Badges */
+    .text-warning { color: var(--warning) !important; }
+    .text-danger { color: var(--danger) !important; }
+    .text-success { color: var(--success) !important; }
+    
+    .badge-alert {
+        background: #fff7ed;
+        color: var(--warning);
+        padding: 2px 8px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        border: 1px solid #ffedd5;
+    }
+
+    .value-display {
+        font-size: 2.5rem;
+        font-weight: 800;
+        color: var(--accent);
+        line-height: 1;
+    }
+
+    
+
+    
+
+   
+.info-container {
+    position: relative;
+    display: inline-block;
+    cursor: help;
+}
+
+.info-icon {
+    color: var(--info);
+    font-size: 0.9rem;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+
+.info-container:hover .info-icon {
+    opacity: 1;
+}
+
+/* El Tooltip / Cuadro de info */
+.info-tooltip {
+    visibility: hidden;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    width: 180px;
+    background: var(--bg-main);
+    backdrop-filter: blur(4px);
+    border: 1px solid var(--border-ui);
+    color: var(--accent);
+    padding: 12px;
+    border-radius: 12px;
+    box-shadow: var(--shadow-md);
+    z-index: 100;
+    opacity: 0;
+    transition: opacity 0.3s, transform 0.2s;
+    transform: translateY(10px);
+}
+
+.info-tooltip strong {
+    display: block;
+    font-size: 0.75rem;
+    margin-bottom: 8px;
+    color: var(--text-light);
+    text-transform: uppercase;
+}
+
+.info-tooltip ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.info-tooltip li {
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 3px 0;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.info-tooltip li:last-child {
+    border-bottom: none;
+}
+
+/* Mostrar al hacer hover */
+.info-container:hover .info-tooltip {
+    visibility: visible;
+    opacity: 1;
+    transform: translateY(5px);
+}
+    @media (max-width: 1100px) {
+        .metrics-grid { grid-template-columns: 1fr; }
+    }
+    .total-summary-banner {
+    background: var(--accent); /* O un color oscuro profesional */
+    color: white;
+    padding: 1rem 2rem;
+    border-radius: 16px;
+    margin-bottom: 1.5rem; /* Espacio antes de las cards */
+    display: flex;
+    align-items: center;
+    box-shadow: var(--shadow-sm);
+    background: linear-gradient(90deg, #0f172a 0%, #303f58 100%);
+}
+
+.summary-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+.summary-label {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-weight: 500;
+    font-size: 0.9rem;
+    color: #94a3b8; /* Texto gris azulado suave */
+}
+
+.summary-label i {
+    color: var(--info);
+}
+
+.summary-value {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+}
+
+.summary-value .number {
+    font-size: 1.5rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+}
+
+.summary-value .text {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    font-weight: 600;
+    color: #94a3b8;
+    letter-spacing: 0.05em;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="wrapper">
+    
+    <header class="dashboard-header">
+        <div class="title-group">
+            <h1>Panel Central Minero</h1>
+            <p>Control de expedientes y estados administrativos</p>
+        </div>
+        
+        <div>
+            <button class="btn-action">
+                <i class="fas fa-file-export me-2"></i> Reporte Global
+            </button>
+        </div>
+    </header>
+<!-- Banner de Resumen Total -->
+<div class="total-summary-banner">
+    <div class="summary-content">
+        <div class="summary-label">
+            <i class="fas fa-database"></i> 
+            <span>Total de Inscripciones (Proveedores) </span>
+        </div>
+        <div class="summary-value">
+            <span class="number">{{ total_registros }}</span>
+            <span class="text">Registros Totales</span>
         </div>
     </div>
 </div>
-{{ total_registros }}
+    <!-- Metrics Section -->
+    <section class="metrics-grid">
+        
+        <!-- CARD 1: VIGENTES -->
+        <div class="metric-card" style="border-left: 5px solid var(--success)">
+            <div class="main-value-group">
+                <div class="sub-label">Proveedores Inscriptos</div>
+                <div class="value-display text-success">{{ count_vigentes }}</div>
+            </div>
+            <div class="sub-label">Estado: Vigentes</div>
+        </div>
 
-<!-- Sección de Tabla para Notificados -->
-<div class="card shadow mt-4">
-    <div class="card-header py-3 bg-warning">
-        <h6 class="m-0 font-weight-bold text-white">Detalle de Proveedores Notificados</h6>
+        <!-- CARD 2: AGRUPADA (GESTIÓN + NOTIFICADOS) -->
+        <div class="metric-card card-compound">
+            <div class="compound-layout">
+                <div class="main-value-group">
+    <div class="d-flex justify-content-between align-items-start mb-1">
+        <span class="sub-label">Proveedores en Trámite</span>
+        
+        <!-- Icono de información con Tooltip integrado -->
+        <div class="info-container">
+            <i class="fas fa-info-circle info-icon"></i>
+            <div class="info-tooltip">
+                <strong>Incluye estados:</strong>
+                <ul>
+                    <li>PRESENTADO</li>
+                    <li>PARA LA FIRMA</li>
+                    <li>NUMERADO SICE</li>
+                    <li>JURÍDICO</li>
+                    <li>CONTABLE</li>
+                    <li>EN TRÁMITE</li>
+                </ul>
+            </div>
+        </div>
     </div>
-    <div class="card-body">
-        <div class="table-responsive">
-            <table class="table table-hover">
+    <!-- Suma lógica de En Trámite + Notificados -->
+    <div class="value-display">{{ count_en_tramite|add:count_notificados }}</div>
+</div>
+                
+                <div class="sub-metrics">
+                    <div class="sub-item">
+                        <span class="sub-label">En Gestión</span>
+                        <span class="sub-value">{{ count_en_tramite }}</span>
+                    </div>
+                    <div class="sub-item text-warning" style="border-left: 1px solid #e2e8f0; padding-left: 1.5rem;">
+                        <span class="sub-label">Notificados</span>
+                        <span class="sub-value">{{ count_notificados }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CARD 3: VENCIDOS -->
+        <div class="metric-card" style="border-left: 5px solid var(--danger)">
+            <div class="main-value-group">
+                <div class="sub-label">Proveedores Inscriptos</div>
+                <div class="value-display text-danger">{{ count_vencidos_criticos }}</div>
+            </div>
+            <div class="sub-label">Estado: No Vigentes | Certificado Vencido</div>
+        </div>
+
+    </section>
+
+    <!-- Table Section -->
+    <section class="data-section">
+        <div class="section-header">
+            <h2 style="font-size: 1rem; font-weight: 700; margin:0;">Proveedores Notificados</h2>
+        </div>
+
+        <div style="overflow-x: auto;">
+            <table class="custom-table">
                 <thead>
                     <tr>
-                        <th>Razón Social</th>
-                        <th>CUIT</th>
-                        <th>Expediente</th>
+                        <th>Empresa / Razón Social</th>
+                        <th>CUIT/CUIL</th>
+                        <th>N° Expediente</th>
                         <th>Vencimiento</th>
+                        <th style="text-align: right;">Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for p in lista_notificados %}
                     <tr>
-                        <td>{{ p.nombre_razon_social }}</td>
-                        <td>{{ p.cuit_cuil }}</td>
-                        <td>{{ p.numero_expediente }}</td>
-                        <td class="text-danger">{{ p.fecha_vto|date:"d/m/Y" }}</td>
+                        <td>
+                            <div style="font-weight: 700; color: var(--accent);">{{ p.nombre_razon_social }}</div>
+                            <span style="font-size: 0.75rem; color: var(--text-light);">Registro Minero</span>
+                        </td>
+                        <td><span class="cuit-code">{{ p.cuit_cuil }}</span></td>
+                        <td style="font-weight: 500;">{{ p.numero_expediente }}</td>
+                        <td>
+                            <div style="color: var(--danger); font-weight: 700; font-size: 0.9rem;">
+                                <i class="far fa-clock me-1"></i> {{ p.fecha_vto|date:"d/m/Y" }}
+                            </div>
+                        </td>
+                        <td style="text-align: right;">
+                            <button class="btn-action">Detalle</button>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" style="text-align: center; padding: 4rem; color: var(--text-light);">
+                            <i class="fas fa-check-circle fa-2x mb-3" style="opacity: 0.3;"></i>
+                            <p>No hay proveedores con notificaciones pendientes.</p>
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
-    </div>
+    </section>
 </div>
+{% endblock %}
+
+{% block nav %}
+    {% include 'proveedores/navbar.html' %}
+{% endblock %}
+

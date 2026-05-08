@@ -5,7 +5,7 @@
 
 html, body {
     height: 100%;
-    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    font-family: 'Inter', system-ui, sans-serif;
 }
 
 /* Imagen de fondo que cubre todo */
