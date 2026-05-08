@@ -1,0 +1,75 @@
+<div class="row">
+    <!-- VIGENTES -->
+    <div class="col-md-3">
+        <div class="card border-left-success shadow py-2">
+            <div class="card-body">
+                <div class="text-success font-weight-bold text-uppercase mb-1">Vigentes</div>
+                <div class="h5 mb-0">{{ count_vigentes }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- EN TRAMITE INTERNO -->
+    <div class="col-md-3">
+        <div class="card border-left-primary shadow py-2">
+            <div class="card-body">
+                <div class="text-primary font-weight-bold text-uppercase mb-1">En Trámite (Interno)</div>
+                <div class="h5 mb-0">{{ count_en_tramite }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- NOTIFICADOS (ADVERTENCIA) -->
+    <div class="col-md-3">
+        <div class="card border-left-warning shadow py-2" style="background-color: #fff4e5;">
+            <div class="card-body">
+                <div class="text-warning font-weight-bold text-uppercase mb-1">⚠️ Notificados</div>
+                <div class="h5 mb-0">{{ count_notificados }}</div>
+                <small class="text-muted">Esperando respuesta</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- VENCIDOS CRÍTICOS -->
+    <div class="col-md-3">
+        <div class="card border-left-danger shadow py-2">
+            <div class="card-body">
+                <div class="text-danger font-weight-bold text-uppercase mb-1">Vencidos Sin Acción</div>
+                <div class="h5 mb-0">{{ count_vencidos_criticos }}</div>
+                <small class="text-muted">Requieren notificación</small>
+            </div>
+        </div>
+    </div>
+</div>
+{{ total_registros }}
+
+<!-- Sección de Tabla para Notificados -->
+<div class="card shadow mt-4">
+    <div class="card-header py-3 bg-warning">
+        <h6 class="m-0 font-weight-bold text-white">Detalle de Proveedores Notificados</h6>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Razón Social</th>
+                        <th>CUIT</th>
+                        <th>Expediente</th>
+                        <th>Vencimiento</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in lista_notificados %}
+                    <tr>
+                        <td>{{ p.nombre_razon_social }}</td>
+                        <td>{{ p.cuit_cuil }}</td>
+                        <td>{{ p.numero_expediente }}</td>
+                        <td class="text-danger">{{ p.fecha_vto|date:"d/m/Y" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

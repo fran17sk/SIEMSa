@@ -3318,6 +3318,53 @@ def proveedores_view(request):
     }
     return render(request,'proveedores/serch.html',context)
 
+def panel_proveedores(request):
+    with connection.cursor() as cursor:
+        # Consulta para los contadores
+        query_counts = """
+            WITH Ultimos AS (
+                SELECT DISTINCT ON (cuit_cuil) * 
+                FROM app_registroproveedores 
+                ORDER BY cuit_cuil, creado DESC
+            )
+            SELECT 
+                COUNT(*) FILTER (WHERE tramite = 'APROBADO' AND fecha_vto >= CURRENT_DATE) as vigentes,
+                
+                COUNT(*) FILTER (WHERE tramite IN ('PRESENTADO', 'PARA LA FIRMA', 'NUMERADO SICE', 'JURÍDICO', 'CONTABLE', 'EN TRÁMITE')) as tramite_interno,
+                
+                COUNT(*) FILTER (WHERE tramite = 'NOTIFICADO') as notificados,
+                
+                COUNT(*) FILTER (WHERE (tramite = 'NO VIGENTE')) as vencidos_criticos,
+                
+                COUNT(*) as total_proveedores_unicos
+            FROM Ultimos;
+        """
+        cursor.execute(query_counts)
+        counts = cursor.fetchone()
+
+        # Consulta para la lista de Notificados (para la tabla)
+        query_notificados = """
+            SELECT nombre_razon_social, cuit_cuil, numero_expediente, fecha_vto 
+            FROM (SELECT DISTINCT ON (cuit_cuil) * FROM app_registroproveedores ORDER BY cuit_cuil, creado DESC) as u
+            WHERE tramite = 'NOTIFICADO'
+            ORDER BY creado DESC;
+        """
+        cursor.execute(query_notificados)
+        columnas = [col[0] for col in cursor.description]
+        lista_notificados = [dict(zip(columnas, row)) for row in cursor.fetchall()]
+
+        print(counts)
+
+    context = {
+        'count_vigentes': counts[0],
+        'count_en_tramite': counts[1],
+        'count_notificados': counts[2],
+        'count_vencidos_criticos': counts[3],
+        'total_registros': counts[4],
+        'lista_notificados': lista_notificados,
+    }
+
+    return render(request, 'proveedores/panel.html', context)
 def usuarios_simsa(request):
     # Subconsulta para obtener el nombre de la compañía
     company_name = Companies.objects.using("simsa").filter(

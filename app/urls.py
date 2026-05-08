@@ -89,7 +89,7 @@ urlpatterns = [
     path('inspecciones/', views.listado_inspecciones_view, name='listado_inspecciones'),
     path('inspecciones/<int:inspeccion_id>/', views.detalle_inspeccion, name='detalle_inspeccion'),
     path('proveedores/actualizar_proveedores',views.actualizar_proveedores,name='actualizar_proveedores'),
-    
+    path('proveedores/panel',views.panel_proveedores, name='panel_proveedores'),
     path('users_simsa',views.usuarios_simsa , name='simsa_users'),
     path('simsa/importar/empleados',views.importar_empleados , name='importar_empleados'),
     path('reportes/', views.reportes_home, name='reportes_home'),
