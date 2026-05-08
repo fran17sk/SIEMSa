@@ -51,18 +51,21 @@ def obtener_token_sign():
             key = serialization.load_pem_private_key(f.read(), password=None)
 
         now = datetime.datetime.now()
-        expiration = now + datetime.timedelta(hours=10)
 
-        # Generación del TRA (Ticket de Requerimiento de Acceso)
+    # AFIP es sensible. Restamos solo 1 minuto para asegurar que no sea 'el futuro'
+    # pero que tampoco sea muy viejo.
+        generation_time = now - datetime.timedelta(minutes=1)
+        expiration_time = now + datetime.timedelta(hours=12)
+
         tra_xml = f"""<?xml version="1.0" encoding="UTF-8"?>
-<loginTicketRequest version="1.0">
-  <header>
-    <uniqueId>{int(now.timestamp())}</uniqueId>
-    <generationTime>{(now - datetime.timedelta(minutes=10)).strftime('%Y-%m-%dT%H:%M:%S')}</generationTime>
-    <expirationTime>{expiration.strftime('%Y-%m-%dT%H:%M:%S')}</expirationTime>
-  </header>
-  <service>ws_sr_padron_a13</service>
-</loginTicketRequest>""".strip().encode("utf-8")
+        <loginTicketRequest version="1.0">
+        <header>
+            <uniqueId>{int(now.timestamp())}</uniqueId>
+            <generationTime>{generation_time.strftime('%Y-%m-%dT%H:%M:%S')}</generationTime>
+            <expirationTime>{expiration_time.strftime('%Y-%m-%dT%H:%M:%S')}</expirationTime>
+        </header>
+        <service>ws_sr_padron_a13</service>
+        </loginTicketRequest>""".strip().encode("utf-8")
 
         # Firma PKCS#7
         logger.info(">>> [WSAA] Firmando el TRA (CMS)...")
