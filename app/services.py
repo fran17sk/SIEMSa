@@ -60,9 +60,9 @@ def obtener_token_sign():
         tra_xml = f"""<?xml version="1.0" encoding="UTF-8"?>
         <loginTicketRequest version="1.0">
         <header>
-            <uniqueId>{int(now.timestamp())}</uniqueId>
-            <generationTime>{generation_time.strftime('%Y-%m-%dT%H:%M:%S')}</generationTime>
-            <expirationTime>{expiration_time.strftime('%Y-%m-%dT%H:%M:%S')}</expirationTime>
+        <uniqueId>{int(now.timestamp())}</uniqueId>
+        <generationTime>{generation_time.strftime('%Y-%m-%dT%H:%M:%S')}</generationTime>
+        <expirationTime>{expiration_time.strftime('%Y-%m-%dT%H:%M:%S')}</expirationTime>
         </header>
         <service>ws_sr_padron_a13</service>
         </loginTicketRequest>""".strip().encode("utf-8")
