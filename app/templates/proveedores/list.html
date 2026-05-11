@@ -1,197 +1,545 @@
-{% extends 'proveedores/home.html' %}
+{% extends 'base.html' %}
+
+{% block nav %}
+    {% include 'proveedores/navbar.html' %}
+{% endblock %}
+
+
 
 {% block head %}
   <title>Verificación de Proveedores</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
-     h1 {
-        font-size: 26px;
-        margin: 20px;
-        color: #333;
-        font-weight:900;
-    }
-
-    .filtros {
-      background: #fff;
-      padding: 15px;
-      margin-left: 40px;
-      border-radius: 26px;
-      margin-bottom: 20px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-    }
-
-    .filtros select,
-    .filtros input {
-      padding: 6px 10px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      font-size: 13px;
-    }
-
-    .filtros button {
-      padding: 6px 12px;
-      background-color: #1f2937;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-
-    .tabla-container {
-      background: white;
-      border-radius: 6px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    }
-
-    table {
-      border-collapse: collapse;
-      font-size: 13px;
-    }
-
-    th, td {
-      padding: 8px 12px;
-      border-bottom: 1px solid #eee;
-      text-align: left;
-    }
-
-    th {
-      background-color: #f8f9fa;
-      color: #555;
-    }
-
-    tr:hover {
-      background-color: #f1f1f1;
-    }
-
-    .ver-btn {
-      color: #1f2937;
-      border-radius: 4px;
-      text-decoration: none;
-      font-size: 24px;
-      padding: auto;
-    }
-    a {
-    color: white;          /* Hereda el color del texto padre, o puedes poner un color fijo como black */
-    text-decoration: none;   /* Quita el subrayado */
-    cursor: pointer;         /* Opcional, para que siga pareciendo un enlace */
-}
-.icon-table{
-  width: 25px;
-  height: 25px;
-}
-@media print {
-  body * {
-    visibility: hidden;
-  }
-
-  .tabla-container, .tabla-container * {
-    visibility: visible;
-  }
-
-  .tabla-container {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 85%;
-  }
+ .page-proveedores{
+    padding:24px;
+    background:var(--bg-main);
+    min-height:100vh;
+    font-family:Inter, sans-serif;
 }
 
+/* HEADER */
+
+.page-header{
+    margin-bottom:24px;
+}
+
+.page-title h1{
+    margin:0;
+    font-size:30px;
+    font-weight:800;
+    color:var(--text_ligth);
+    letter-spacing:-0.5px;
+}
+
+.page-title p{
+    margin-top:6px;
+    color:#8b95a7;
+    font-size:14px;
+}
+
+/* FILTROS */
+
+.filtros{
+    background:var(--card-bg);
+    border-radius:24px;
+    padding:20px;
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(190px,1fr));
+    gap:16px;
+    margin-bottom:24px;
+    border:1px solid rgba(255,255,255,0.05);
+    box-shadow:0 10px 30px rgba(0,0,0,0.08);
+}
+
+.filtro-group{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+}
+
+.filtro-group label{
+    font-size:12px;
+    font-weight:700;
+    color:#94a3b8;
+    padding-left:2px;
+    text-transform:uppercase;
+    letter-spacing:.4px;
+}
+
+.filtros select,
+.filtros input{
+    width:100%;
+    height:46px;
+    border:none;
+    border-radius:14px;
+    background:#111827;
+    color:var(--text_ligth);
+    padding:0 14px;
+    font-size:14px;
+    transition:.2s ease;
+}
+
+.filtros select:focus,
+.filtros input:focus{
+    outline:none;
+    box-shadow:0 0 0 4px rgba(59,130,246,.18);
+}
+
+/* BOTONES */
+
+.filtros-actions{
+    display:flex;
+    gap:10px;
+    align-items:flex-end;
+    flex-wrap:wrap;
+}
+
+.btn-panel{
+    border:none;
+    border-radius:14px;
+    height:46px;
+    padding:0 18px;
+    cursor:pointer;
+    font-size:14px;
+    font-weight:700;
+    transition:.2s ease;
+}
+
+.btn-filtrar{
+    background:#2563eb;
+    color:white;
+}
+
+.btn-filtrar:hover{
+    background:#1d4ed8;
+    transform:translateY(-1px);
+}
+
+.btn-print{
+    background:#16a34a;
+    color:white;
+}
+
+.btn-print:hover{
+    background:#15803d;
+    transform:translateY(-1px);
+}
+
+/* TABLA */
+
+.tabla-wrapper{
+    background:var(--card-bg);
+    border-radius:24px;
+    overflow:hidden;
+    border:1px solid rgba(255,255,255,0.05);
+    box-shadow:0 10px 30px rgba(0,0,0,0.08);
+}
+
+.table-scroll{
+    overflow:auto;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+    min-width:1400px;
+}
+
+/* HEADER TABLA */
+
+thead{
+    background:#0f172a;
+    position:sticky;
+    top:0;
+    z-index:20;
+}
+
+th{
+    padding:16px 14px;
+    text-align:left;
+    font-size:12px;
+    font-weight:700;
+    color:#94a3b8;
+    text-transform:uppercase;
+    letter-spacing:.5px;
+    white-space:nowrap;
+    border-bottom:1px solid rgba(255,255,255,0.05);
+}
+
+/* BODY */
+
+td{
+    padding:15px 14px;
+    font-size:13px;
+    color:var(--text_ligth);
+    border-bottom:1px solid rgba(255,255,255,0.04);
+    vertical-align:middle;
+}
+
+tbody tr{
+    transition:.15s ease;
+}
+
+tbody tr:hover{
+    background:rgba(255,255,255,0.03);
+}
+
+tbody tr:last-child td{
+    border-bottom:none;
+}
+
+/* BADGES */
+
+.estado-badge{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    padding:7px 11px;
+    border-radius:999px;
+    font-size:11px;
+    font-weight:700;
+    letter-spacing:.3px;
+}
+
+.estado-aprobado{
+    background:rgba(34,197,94,.12);
+    color:#22c55e;
+}
+
+.estado-vencido{
+    background:rgba(239,68,68,.12);
+    color:#ef4444;
+}
+
+.estado-tramite{
+    background:rgba(245,158,11,.12);
+    color:#f59e0b;
+}
+
+/* BOTON DETALLE */
+
+.ver-btn{
+    width:38px;
+    height:38px;
+    border-radius:12px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:#111827;
+    color:white;
+    text-decoration:none;
+    transition:.2s ease;
+}
+
+.ver-btn:hover{
+    background:#2563eb;
+    transform:translateY(-1px);
+}
+
+/* EMPTY */
+
+.empty-row td{
+    padding:50px;
+    text-align:center;
+    color:#94a3b8;
+    font-size:14px;
+}
+
+/* PRINT */
+
+@media print{
+
+    body *{
+        visibility:hidden;
+    }
+
+    .tabla-wrapper,
+    .tabla-wrapper *{
+        visibility:visible;
+    }
+
+    .tabla-wrapper{
+        position:absolute;
+        left:0;
+        top:0;
+        width:100%;
+    }
+
+}
+
+/* MOBILE */
+
+@media(max-width:768px){
+
+    .page-proveedores{
+        padding:14px;
+    }
+
+    .page-title h1{
+        font-size:24px;
+    }
+
+    .filtros{
+        grid-template-columns:1fr;
+    }
+
+}
+
+.page-header{
+    position:sticky;
+    top:0;
+    z-index:120;
+    background:var(--bg-main);
+    padding-top:10px;
+}
+
+.filtros{
+    position:sticky;
+    top:90px;
+    z-index:110;
+}
+
+/* HEADER TABLA */
+
+thead{
+    position:sticky;
+    z-index:100;
+    background:#0f172a;
+}
+.table-scroll{
+    overflow:auto;
+    max-height:calc(100vh - 260px);
+}
   </style>
 {% endblock %}
 
 {% block content %}
-<div class="card-container" id="cards">
- <h1>Proveedores Registrados</h1>
+<div class="page-proveedores">
 
-  <form method="get" class="filtros">
-    <select name="anio">
-      <option value="">Todos los años</option>
-      {% for a in anios %}
-        <option value="{{ a }}" {% if request.GET.anio == a|stringformat:"s" %}selected{% endif %}>{{ a }}</option>
-      {% endfor %}
-    </select>
+    <!-- HEADER -->
 
-    <select name="estado">
-      <option value="">Todos los estados</option>
-      {% for e in estados %}
-        <option value="{{ e }}" {% if request.GET.estado == e %}selected{% endif %}>{{ e }}</option>
-      {% endfor %}
-    </select>
+    <div class="page-header">
 
-    <select name="tipo_registro">
-      <option value="">Todos los tipos</option>
-      {% for t in tipos %}
-        <option value="{{ t }}" {% if request.GET.tipo_registro == t %}selected{% endif %}>{{ t }}</option>
-      {% endfor %}
-    </select>
+        <div class="page-title">
+            <h1>Proveedores Registrados</h1>
+            <p>Administración y verificación de registros de proveedores</p>
+        </div>
 
-    <select name="estado_fecha">
-      <option value="">Todos los tipos</option>
-        <option value="1" {% if request.GET.estado_fecha == "1" %}selected{% endif %}>Vigentes</option>
-        <option value="0" {% if request.GET.estado_fecha == "0" %}selected{% endif %}>No Vigentes</option>
-    </select>
+    </div>
 
-    <input type="text" name="nombre" placeholder="Buscar por razón social" value="{{ request.GET.nombre }}">
-    <button type="submit">Filtrar</button>
-    <button type="button" onclick="window.print()" style="background-color: #28a745;">🖨 Imprimir</button>
 
-  </form>
+    <!-- FILTROS -->
 
-  <div class="tabla-container">
-    <table>
-      <thead>
-        <tr>
-          <th>N° Exp</th>
-          <th>Razón Social</th>
-          <th>CUIT</th>
-          <th>Año</th>
-          <th>Tipo</th>
-          <th>Alta</th>
-          <th>Vto</th>
-          <th>Estado</th>
-          <th>Loc</th>
-          <th>Camara</th>
-          <th>Actividad</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for r in registros %}
-          <tr>
-            <td>{{ r.numero_expediente|default:"-" }}</td>
-            <td>{{ r.nombre_razon_social|default:"-" }}</td>
-            <td>{{ r.cuit_cuil|default:"-" }}</td>
-            <td>{{ r.anio|default:"-" }}</td>
-            <td>{{ r.tipo_registro|default:"-" }}</td>
-            <td>{{ r.fecha_alta|date:"d/m/Y"|default:"-" }}</td>
-            <td>{{ r.fecha_vto|date:"d/m/Y"|default:"-" }}</td>
-            <td>
-              {% if r.tramite == "APROBADO" or r.tramite == "Sí" %}
-                ✅
-              {% elif r.tramite == "NO VIGENTE" %}
-                ❌
-              {% else %}
-                {{ r.tramite|default:"-" }}
-              {% endif %}
-            </td>
-            <td>{{ r.localidad|default:"-" }}</td>
-            <td>{{ r.camara|default:"-" }}</td>
-            <td>{{ r.actividad|default:"-"|truncatechars:30 }}</td>
-            <td class="">
-              <a href="{% url 'detalle_proveedor' r.id %}" class="ver-btn">
-                <i data-lucide="info"></i>
-              </a>
-            </td>
-          </tr>
-        {% empty %}
-          <tr><td colspan="11">No se encontraron proveedores.</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
+    <form method="get" class="filtros">
+
+        <div class="filtro-group">
+            <label>Año</label>
+
+            <select name="anio">
+                <option value="">Todos los años</option>
+
+                {% for a in anios %}
+                    <option value="{{ a }}"
+                        {% if request.GET.anio == a|stringformat:"s" %}
+                            selected
+                        {% endif %}
+                    >
+                        {{ a }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+
+        
+
+
+        <div class="filtro-group">
+            <label>Tipo</label>
+
+            <select name="tipo_registro">
+                <option value="">Todos los tipos</option>
+
+                {% for t in tipos %}
+                    <option value="{{ t }}"
+                        {% if request.GET.tipo_registro == t %}
+                            selected
+                        {% endif %}
+                    >
+                        {{ t }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+
+        <div class="filtro-group">
+            <label>Vigencia</label>
+
+            <select name="estado_fecha">
+                <option value="">Todos</option>
+
+                <option value="1"
+                    {% if request.GET.estado_fecha == "1" %}
+                        selected
+                    {% endif %}
+                >
+                    Vigentes
+                </option>
+
+                <option value="0"
+                    {% if request.GET.estado_fecha == "0" %}
+                        selected
+                    {% endif %}
+                >
+                    No Vigentes
+                </option>
+            </select>
+        </div>
+
+
+        <div class="filtro-group">
+            <label>Razón Social</label>
+
+            <input
+                type="text"
+                name="nombre"
+                placeholder="Buscar proveedor..."
+                value="{{ request.GET.nombre }}"
+            >
+        </div>
+
+
+        <div class="filtros-actions">
+
+            <button type="submit" class="btn-panel btn-filtrar">
+                Filtrar
+            </button>
+
+            <button
+                type="button"
+                onclick="window.print()"
+                class="btn-panel btn-print"
+            >
+                Imprimir
+            </button>
+
+        </div>
+
+    </form>
+
+
+
+    <!-- TABLA -->
+
+    <div class="tabla-wrapper">
+
+        <div class="table-scroll">
+
+            <table>
+
+                <thead>
+                    <tr>
+                        <th>N° Exp</th>
+                        <th>Razón Social</th>
+                        <th>CUIT</th>
+                        <th>Año</th>
+                        <th>Tipo</th>
+                        <th>Vto</th>
+                        <th>Estado</th>
+                        <th>Localidad</th>
+                        <th>Cámara</th>
+                        <th>Actividad</th>
+                        <th></th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    {% for r in registros %}
+
+                    <tr>
+
+                        <td>{{ r.numero_expediente|default:"-" }}</td>
+
+                        <td>
+                            <strong>
+                                {{ r.nombre_razon_social|default:"-" }}
+                            </strong>
+                        </td>
+
+                        <td>{{ r.cuit_cuil|default:"-" }}</td>
+
+                        <td>{{ r.anio|default:"-" }}</td>
+
+                        <td>{{ r.tipo_registro|default:"-" }}</td>
+
+                        <td>
+                            {{ r.fecha_vto|date:"d/m/Y"|default:"-" }}
+                        </td>
+
+                        <td>
+
+                            {% if r.tramite == "APROBADO" %}
+
+                                <span class="estado-badge estado-aprobado">
+                                    ● Vigente
+                                </span>
+
+                            {% elif r.tramite == "NO VIGENTE" %}
+
+                                <span class="estado-badge estado-vencido">
+                                    ● Vencido
+                                </span>
+
+                            {% else %}
+
+                                <span class="estado-badge estado-tramite">
+                                    ● {{ r.tramite }}
+                                </span>
+
+                            {% endif %}
+
+                        </td>
+
+                        <td>{{ r.localidad|default:"-" }}</td>
+
+                        <td>{{ r.camara|default:"-" }}</td>
+
+                        <td>
+                            {{ r.actividad|default:"-"|truncatechars:40 }}
+                        </td>
+
+                        <td>
+
+                            <a
+                                href="{% url 'detalle_proveedor' r.id %}"
+                                class="ver-btn"
+                            >
+                                <i data-lucide="info"></i>
+                            </a>
+
+                        </td>
+
+                    </tr>
+
+                    {% empty %}
+
+                    <tr class="empty-row">
+                        <td colspan="12">
+                            No se encontraron proveedores.
+                        </td>
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
 </div>
 {% endblock %}
 
