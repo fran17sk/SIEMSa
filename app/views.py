@@ -3398,15 +3398,144 @@ def panel_proveedores(request):
         columnas = [col[0] for col in cursor.description]
         lista_notificados = [dict(zip(columnas, row)) for row in cursor.fetchall()]
 
-        print(counts)
+        # =========================
+        # GRAFICO TIPO PROVEEDOR
+        # =========================
+
+        query_tipos = """
+            SELECT tipo_registro, COUNT(*)
+            FROM (
+                SELECT DISTINCT ON (cuit_cuil) *
+                FROM app_registroproveedores
+                ORDER BY cuit_cuil, creado DESC
+            ) t
+            GROUP BY tipo_registro
+            ORDER BY COUNT(*) DESC;
+        """
+
+        cursor.execute(query_tipos)
+
+        tipos = cursor.fetchall()
+
+        # =========================
+        # GRAFICO LOCALIDADES
+        # =========================
+
+        query_localidades = """
+            SELECT localidad, COUNT(*)
+            FROM (
+                SELECT DISTINCT ON (cuit_cuil) *
+                FROM app_registroproveedores
+                ORDER BY cuit_cuil, creado DESC
+            ) t
+            WHERE localidad IS NOT NULL
+            GROUP BY localidad
+            ORDER BY COUNT(*) DESC
+            LIMIT 10;
+        """
+
+        cursor.execute(query_localidades)
+
+        localidades = cursor.fetchall()
+
+        # =========================
+        # APROBADOS POR MES/AÑO
+        # =========================
+
+        query_aprobados_mes = """
+            WITH aprobados_unicos AS (
+
+                SELECT DISTINCT ON (cuit_cuil)
+                    cuit_cuil,
+                    fecha_alta
+
+                FROM app_registroproveedores
+
+                WHERE tramite = 'APROBADO'
+                AND fecha_alta IS NOT NULL
+
+                ORDER BY cuit_cuil, fecha_alta ASC
+            )
+
+            SELECT 
+                EXTRACT(YEAR FROM fecha_alta) as anio,
+                EXTRACT(MONTH FROM fecha_alta) as mes,
+                COUNT(*) as cantidad
+
+            FROM aprobados_unicos
+
+            GROUP BY anio, mes
+
+            ORDER BY anio, mes;
+        """
+
+        cursor.execute(query_aprobados_mes)
+
+        aprobados_mes = cursor.fetchall()
+
+        query_vencimientos_mes = """
+            WITH vencidos_unicos AS (
+
+                SELECT DISTINCT ON (cuit_cuil)
+                    cuit_cuil,
+                    fecha_vto
+
+                FROM app_registroproveedores
+
+                WHERE fecha_vto IS NOT NULL
+
+                ORDER BY cuit_cuil, fecha_vto ASC
+            )
+
+            SELECT 
+                EXTRACT(YEAR FROM fecha_vto) as anio,
+                EXTRACT(MONTH FROM fecha_vto) as mes,
+                COUNT(*) as cantidad
+
+            FROM vencidos_unicos
+
+            GROUP BY anio, mes
+
+            ORDER BY anio, mes;
+        """
+
+        cursor.execute(query_vencimientos_mes)
+
+        vencimientos_mes = cursor.fetchall()
 
     context = {
+
         'count_vigentes': counts[0],
         'count_en_tramite': counts[1],
         'count_notificados': counts[2],
         'count_vencidos_criticos': counts[3],
         'total_registros': counts[4],
+
         'lista_notificados': lista_notificados,
+
+        # gráficos
+        'tipos_labels': json.dumps([x[0] for x in tipos]),
+        'tipos_data': json.dumps([x[1] for x in tipos]),
+
+        'localidades_labels': json.dumps([x[0] for x in localidades]),
+        'localidades_data': json.dumps([x[1] for x in localidades]),
+
+        'aprobados_mes': json.dumps([
+            {
+                'anio': int(x[0]),
+                'mes': int(x[1]),
+                'cantidad': x[2]
+            }
+            for x in aprobados_mes
+        ]),
+        'vencimientos_mes': json.dumps([
+            {
+                'anio': int(x[0]),
+                'mes': int(x[1]),
+                'cantidad': x[2]
+            }
+            for x in vencimientos_mes
+        ]),
     }
 
     return render(request, 'proveedores/panel.html', context)

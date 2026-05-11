@@ -5,7 +5,7 @@
 <title>Dashboard | SIEMSa</title>
 <!-- Fuente Inter para un look moderno -->
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
     :root {
         
@@ -477,6 +477,60 @@
     color: #94a3b8;
     letter-spacing: 0.05em;
 }
+.dashboard-graficos{
+    display:flex;
+    flex-direction:column;
+    gap:18px;
+    margin-top:20px;
+}
+
+.fila-graficos{
+    display:grid;
+    gap:16px;
+}
+
+.fila-superior{
+    grid-template-columns: 1fr 1fr;
+}
+
+.fila-inferior{
+    grid-template-columns: 1fr;
+}
+
+.grafico-card{
+    background:var(--card-bg);
+    padding:14px;
+    box-shadow:0 2px 10px rgba(0,0,0,0.08);
+    border:1px solid #ececec;
+}
+
+.grafico-titulo{
+    font-size:14px;
+    font-weight:600;
+    color:var(--text-light);
+    margin-bottom:12px;
+}
+
+.grafico-mini{
+    position:relative;
+    height:260px;
+    width:100%;
+}
+
+.grafico-linea{
+    position:relative;
+    height:320px;
+    width:100%;
+}
+
+@media(max-width:900px){
+
+    .fila-superior{
+        grid-template-columns:1fr;
+    }
+
+}
+
 </style>
 {% endblock %}
 
@@ -571,54 +625,213 @@
 
     </section>
 
-    <!-- Table Section -->
-    <section class="data-section">
-        <div class="section-header">
-            <h2 style="font-size: 1rem; font-weight: 700; margin:0;">Proveedores Notificados</h2>
+  <div class="dashboard-graficos">
+
+    <!-- FILA SUPERIOR -->
+    <div class="fila-graficos fila-superior">
+
+        <!-- TIPOS -->
+        <div class="grafico-card">
+
+            <div class="grafico-titulo">
+                Tipos de Proveedor
+            </div>
+
+            <div class="grafico-mini">
+                <canvas id="chartTipos"></canvas>
+            </div>
+
         </div>
 
-        <div style="overflow-x: auto;">
-            <table class="custom-table">
-                <thead>
-                    <tr>
-                        <th>Empresa / Razón Social</th>
-                        <th>CUIT/CUIL</th>
-                        <th>N° Expediente</th>
-                        <th>Vencimiento</th>
-                        <th style="text-align: right;">Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for p in lista_notificados %}
-                    <tr>
-                        <td>
-                            <div style="font-weight: 700; color: var(--accent);">{{ p.nombre_razon_social }}</div>
-                            <span style="font-size: 0.75rem; color: var(--text-light);">Registro Minero</span>
-                        </td>
-                        <td><span class="cuit-code">{{ p.cuit_cuil }}</span></td>
-                        <td style="font-weight: 500;">{{ p.numero_expediente }}</td>
-                        <td>
-                            <div style="color: var(--danger); font-weight: 700; font-size: 0.9rem;">
-                                <i class="far fa-clock me-1"></i> {{ p.fecha_vto|date:"d/m/Y" }}
-                            </div>
-                        </td>
-                        <td style="text-align: right;">
-                            <button class="btn-action">Detalle</button>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="5" style="text-align: center; padding: 4rem; color: var(--text-light);">
-                            <i class="fas fa-check-circle fa-2x mb-3" style="opacity: 0.3;"></i>
-                            <p>No hay proveedores con notificaciones pendientes.</p>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+
+        <!-- LOCALIDADES -->
+        <div class="grafico-card">
+
+            <div class="grafico-titulo">
+                Localidades
+            </div>
+
+            <div class="grafico-mini">
+                <canvas id="chartLocalidades"></canvas>
+            </div>
+
         </div>
-    </section>
+
+    </div>
+
+
+
+    <!-- FILA INFERIOR -->
+    <div class="fila-graficos fila-inferior">
+
+        <div class="grafico-card">
+
+            <div class="grafico-titulo">
+                Altas y Vencimientos
+            </div>
+
+            <div class="grafico-linea">
+                <canvas id="chartAprobados"></canvas>
+            </div>
+
+        </div>
+
+    </div>
+
 </div>
+
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+new Chart(document.getElementById('chartTipos'), {
+    type: 'doughnut',
+    data: {
+        labels: {{ tipos_labels|safe }},
+        datasets: [{
+            data: {{ tipos_data|safe }}
+        }]
+    },
+    options:{
+        responsive:true,
+        maintainAspectRatio:false,
+        plugins:{
+            legend:{
+                position:'bottom',
+                labels:{
+                    boxWidth:12,
+                    padding:10,
+                    font:{
+                        size:11
+                    },
+                }
+            }
+        }
+    }
+});
+
+
+
+new Chart(document.getElementById('chartLocalidades'), {
+    type: 'pie',
+    data: {
+        labels: {{ localidades_labels|safe }},
+        datasets: [{
+            data: {{ localidades_data|safe }}
+        }]
+    },
+    options:{
+        responsive:true,
+        maintainAspectRatio:false,
+        plugins:{
+            legend:{
+                position:'bottom',
+                labels:{
+                    boxWidth:12,
+                    padding:8,
+                    font:{
+                        size:10
+                    }
+                }
+            }
+        }
+    }
+});
+
+
+const aprobados = {{ aprobados_mes|safe }};
+const vencimientos = {{ vencimientos_mes|safe }};
+
+// unir etiquetas únicas
+const todasLabels = [
+    ...new Set([
+        ...aprobados.map(x => `${x.mes}/${x.anio}`),
+        ...vencimientos.map(x => `${x.mes}/${x.anio}`)
+    ])
+];
+
+function obtenerValor(lista, label){
+
+    const item = lista.find(
+        x => `${x.mes}/${x.anio}` === label
+    );
+
+    return item ? item.cantidad : 0;
+}
+
+const dataAprobados = todasLabels.map(
+    label => obtenerValor(aprobados, label)
+);
+
+const dataVencimientos = todasLabels.map(
+    label => obtenerValor(vencimientos, label)
+);
+
+new Chart(document.getElementById('chartAprobados'), {
+
+    type: 'line',
+
+    data: {
+
+        labels: todasLabels,
+
+        datasets: [
+
+            {
+                label: 'Altas',
+                data: dataAprobados,
+                borderColor: '#2563eb',
+                backgroundColor: '#2563eb',
+                tension: 0.3
+            },
+
+            {
+                label: 'Vencimientos',
+                data: dataVencimientos,
+                borderColor: '#dc2626',
+                backgroundColor: '#dc2626',
+                tension: 0.3
+            }
+
+        ]
+    },
+
+    options:{
+        responsive:true,
+        maintainAspectRatio:false,
+
+        plugins:{
+            legend:{
+                labels:{
+                    font:{
+                        size:11
+                    }
+                }
+            }
+        },
+
+        scales:{
+            x:{
+                ticks:{
+                    font:{
+                        size:10
+                    }
+                }
+            },
+            y:{
+                ticks:{
+                    font:{
+                        size:10
+                    }
+                }
+            }
+        }
+    }
+});
+
+</script>
+
 {% endblock %}
 
 {% block nav %}
