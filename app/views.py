@@ -3320,25 +3320,65 @@ def proveedores_view(request):
 
 def panel_proveedores(request):
     with connection.cursor() as cursor:
-        # Consulta para los contadores
+
         query_counts = """
-            WITH Ultimos AS (
-                SELECT DISTINCT ON (cuit_cuil) * 
-                FROM app_registroproveedores 
-                ORDER BY cuit_cuil, creado DESC
-            )
+        WITH proveedores AS (
             SELECT 
-                COUNT(*) FILTER (WHERE tramite = 'APROBADO' AND fecha_vto >= CURRENT_DATE) as vigentes,
-                
-                COUNT(*) FILTER (WHERE tramite IN ('PRESENTADO', 'PARA LA FIRMA', 'NUMERADO SICE', 'JURÍDICO', 'CONTABLE', 'EN TRÁMITE')) as tramite_interno,
-                
-                COUNT(*) FILTER (WHERE tramite = 'NOTIFICADO') as notificados,
-                
-                COUNT(*) FILTER (WHERE (tramite = 'NO VIGENTE')) as vencidos_criticos,
-                
-                COUNT(*) as total_proveedores_unicos
-            FROM Ultimos;
-        """
+                cuit_cuil,
+
+                -- tiene aprobado vigente
+                BOOL_OR(
+                    tramite = 'APROBADO'
+                    AND fecha_vto >= CURRENT_DATE
+                ) as tiene_vigente,
+
+                -- tiene notificado
+                BOOL_OR(tramite = 'NOTIFICADO') as tiene_notificado,
+
+                -- último trámite
+                (
+                    SELECT tramite
+                    FROM app_registroproveedores rp2
+                    WHERE rp2.cuit_cuil = rp.cuit_cuil
+                    ORDER BY creado DESC
+                    LIMIT 1
+                ) as ultimo_tramite
+
+            FROM app_registroproveedores rp
+            GROUP BY cuit_cuil
+        )
+
+        SELECT
+
+            COUNT(*) FILTER (
+                WHERE tiene_vigente = true
+            ) as vigentes,
+
+            COUNT(*) FILTER (
+                WHERE tiene_vigente = false
+                AND ultimo_tramite IN (
+                    'PRESENTADO',
+                    'PARA LA FIRMA',
+                    'NUMERADO SICE',
+                    'JURÍDICO',
+                    'CONTABLE',
+                    'EN TRÁMITE'
+                )
+            ) as tramite_interno,
+
+            COUNT(*) FILTER (
+                WHERE tiene_notificado = true
+            ) as notificados,
+
+            COUNT(*) FILTER (
+                WHERE tiene_vigente = false
+                AND ultimo_tramite = 'NO VIGENTE'
+            ) as vencidos_criticos,
+
+            COUNT(*) as total_proveedores_unicos
+
+        FROM proveedores;
+    """
         cursor.execute(query_counts)
         counts = cursor.fetchone()
 
