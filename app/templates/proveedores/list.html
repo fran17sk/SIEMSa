@@ -169,12 +169,12 @@
             <td>{{ r.fecha_alta|date:"d/m/Y"|default:"-" }}</td>
             <td>{{ r.fecha_vto|date:"d/m/Y"|default:"-" }}</td>
             <td>
-              {% if r.estado == "Si" or r.estado == "Sí" %}
+              {% if r.tramite == "APROBADO" or r.tramite == "Sí" %}
                 ✅
-              {% elif r.estado == "No" %}
+              {% elif r.tramite == "NO VIGENTE" %}
                 ❌
               {% else %}
-                {{ r.estado|default:"-" }}
+                {{ r.tramite|default:"-" }}
               {% endif %}
             </td>
             <td>{{ r.localidad|default:"-" }}</td>
