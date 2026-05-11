@@ -3319,6 +3319,11 @@ def proveedores_view(request):
     return render(request,'proveedores/serch.html',context)
 
 def panel_proveedores(request):
+    RegistroProveedores.objects.filter(
+    tramite='APROBADO',
+    fecha_vto__lt=now().date()
+).update(tramite='NO VIGENTE')
+    
     with connection.cursor() as cursor:
 
         query_counts = """
