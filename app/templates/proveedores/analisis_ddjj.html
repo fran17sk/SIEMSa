@@ -581,7 +581,7 @@
     function ejecutarAuditoria() {
         let params = new URLSearchParams({
             ajax: 1,
-            concesionario: $('#select-concesionario').val() || 'all',
+            concesionario: $('#id-prov').val() || 'all',
             proyecto: $('#select-proyecto').val() || 'all',
             periodo: $('#select-periodo').val() || 'all'
         });
