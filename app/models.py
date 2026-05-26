@@ -373,3 +373,249 @@ class ConsultaPadron(models.Model):
 
     def __str__(self):
         return f"{self.cuit} - {self.apellido or self.razon_social}"
+    
+
+
+
+###################################### REGISTRO UNICO DE PROVEEODORES #########################################
+class EstadoProveedor(models.Model):
+    nombre = models.CharField(
+        max_length=100,
+        unique=True
+    )
+
+    descripcion = models.TextField(
+        blank=True,
+        null=True
+    )
+
+    activo = models.BooleanField(default=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Estado de Proveedor'
+        verbose_name_plural = 'Estados de Proveedores'
+        ordering = ['nombre']
+
+    def __str__(self):
+        return self.nombre
+
+
+class EstadoTramiteProveedor(models.Model):
+    nombre = models.CharField(
+        max_length=100,
+        unique=True
+    )
+
+    descripcion = models.TextField(
+        blank=True,
+        null=True
+    )
+
+    activo = models.BooleanField(default=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Estado de Trámite'
+        verbose_name_plural = 'Estados de Trámites'
+        ordering = ['nombre']
+
+    def __str__(self):
+        return self.nombre
+
+
+class Proveedor(models.Model):
+
+    PERSONA_CHOICES = (
+        ('FISICA', 'Física'),
+        ('JURIDICA', 'Jurídica'),
+        ('UTE', 'Ute')
+    )
+
+    nombre_razon_social = models.CharField(
+        max_length=255
+    )
+
+    estado = models.ForeignKey(
+        EstadoProveedor,
+        on_delete=models.PROTECT,
+        related_name='proveedores',
+        blank=True,
+        null=True
+    )
+
+    cuit_cuil = models.CharField(
+        max_length=20,
+        unique=True
+    )
+
+    tipo_persona = models.CharField(
+        max_length=20,
+        choices=PERSONA_CHOICES,
+        blank=True,
+        null=True
+    )
+
+    documento_identidad = models.CharField(
+        max_length=50,
+        blank=True,
+        null=True
+    )
+
+    numero_certificado = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        unique=True
+    )
+
+    fecha_vto_ult = models.DateField(
+        blank=True,
+        null=True
+    )
+
+    correo_electronico = models.EmailField(
+        blank=True,
+        null=True
+    )
+
+    telefono = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True
+    )
+
+    domicilio_real = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True
+    )
+
+    domicilio_social = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True
+    )
+
+    domicilio_fiscal = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True
+    )
+
+    localidad = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True
+    )
+
+    provincia = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True
+    )
+
+    camara = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True
+    )
+
+    representante_legal = models.TextField(
+        blank=True,
+        null=True
+    )
+
+    activo = models.BooleanField(default=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['nombre_razon_social']
+
+    def __str__(self):
+        return f'{self.nombre_razon_social} - {self.cuit_cuil}'
+
+
+class Rubro(models.Model):
+    nombre = models.CharField(
+        max_length=255
+    )
+
+    def __str__(self):
+        return self.nombre
+
+
+class ProveedorRubro(models.Model):
+    proveedor = models.ForeignKey(
+        Proveedor,
+        on_delete=models.CASCADE
+    )
+
+    rubro = models.ForeignKey(
+        Rubro,
+        on_delete=models.CASCADE
+    )
+
+    class Meta:
+        unique_together = ('proveedor', 'rubro')
+
+    def __str__(self):
+        return f'{self.proveedor} - {self.rubro}'
+
+
+class TramiteProveedor(models.Model):
+
+    proveedor = models.ForeignKey(
+        Proveedor,
+        on_delete=models.CASCADE,
+        related_name='tramites'
+    )
+
+    estado = models.ForeignKey(
+        EstadoTramiteProveedor,
+        on_delete=models.PROTECT,
+        related_name='tramites',
+        blank=True,
+        null=True
+    )
+
+    numero_expediente_adm = models.CharField(
+        max_length=255,
+        unique=True
+    )
+
+    fecha_inicio_tramite = models.DateTimeField(
+        auto_now_add=True
+    )
+
+    fecha_alta = models.DateField(
+        blank=True,
+        null=True
+    )
+
+    observaciones = models.TextField(
+        blank=True,
+        null=True
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    rechazado_by = models.TextField(
+        blank=True,
+        null=True
+    )
+
+    aprobado_by = models.TextField(
+        blank=True,
+        null=True
+    )
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'{self.numero_expediente_adm} - {self.proveedor}'

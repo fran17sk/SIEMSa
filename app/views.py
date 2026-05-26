@@ -309,6 +309,8 @@ def new_exportacion(request,exportacion_id=None):
         'numero_exportacion': id_ultima_exportacion + 1,
     })
 
+
+
 def edit_exportacion(request, id_export):
     exportacion = get_object_or_404(Exportacion, id_export=id_export)
     detalles = MinExport.objects.filter(id_export=exportacion.id_export)
@@ -3539,6 +3541,262 @@ def panel_proveedores(request):
     }
 
     return render(request, 'proveedores/panel.html', context)
+def analisis_proveedores_ddjj(request):
+    """
+    Cruza los proveedores declarados en las DDJJ mineras (SIMSA) 
+    con el Registro de Proveedores local para determinar su estado de vigencia.
+    """
+    # ==========================================
+    # 1. MANEJO DE PETICIÓN AJAX (PROCESAMIENTO)
+    # ==========================================
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.GET.get('ajax') == '1':
+        concesionario = request.GET.get("concesionario", "all")
+        proyecto = request.GET.get("proyecto", "all")
+        periodo = request.GET.get("periodo", "all")
+
+        try:
+            # Query para traer contratistas/proveedores desde SIMSA
+            query_simsa = """
+                SELECT DISTINCT 
+                    TRIM(c."Cuit") as "Cuit",
+                    TRIM(c."BusinessName") as "BusinessName",
+                    p2."Name" as "Project",
+                    c3."Name" as "Company"
+                FROM "Contractors" c
+                INNER JOIN "PresentationContractors" pc ON pc."ContractorId" = c."Id"
+                INNER JOIN "Presentations" p ON p."Id" = pc."PresentationId"
+                INNER JOIN "Periods" p3 ON p."PeriodId" = p3."Id"
+                INNER JOIN "PresentationStates" ps ON ps."Id" = p."PresentationStateId"
+                INNER JOIN "Projects" p2 ON p."ProjectId" = p2."Id"
+                INNER JOIN "CompanyProjects" cp ON cp."ProjectId" = p2."Id"
+                INNER JOIN "Companies" c3 ON c3."Id" = cp."CompanyId"
+                WHERE p."IsDeleted" = false
+                  AND (%s = 'all' OR c3."Id"::text = %s)
+                  AND (%s = 'all' OR p2."Id"::text = %s)
+                  AND (%s = 'all' OR p3."Id"::text = %s)
+                  AND ps."Name" = 'Presentado'
+                  AND p."IsRectification" = false
+                  AND p2."IsDeleted" = false
+                  AND c3."IsDeleted" = false
+                  AND cp."IsDeleted" = false
+            """
+            params = [concesionario, concesionario, proyecto, proyecto, periodo, periodo]
+
+            with connections['simsa'].cursor() as cursor_simsa:
+                cursor_simsa.execute(query_simsa, params)
+                contratistas_ddjj = cursor_simsa.fetchall()
+
+            if not contratistas_ddjj:
+                return JsonResponse({
+                    "resumen": {"vigentes": 0, "no_vigentes": 0, "nunca_inscriptos": 0, "total": 0},
+                    "resultados": []
+                })
+
+            cuits_declarados = list(set([row[0] for row in contratistas_ddjj if row[0]]))
+
+            # Actualizar vencidos locales en lote
+            RegistroProveedores.objects.filter(
+                tramite='APROBADO',
+                fecha_vto__lt=now().date()
+            ).update(tramite='NO VIGENTE')
+
+            registro_local = {}
+            if cuits_declarados:
+                ultimos_tramites = (
+                    RegistroProveedores.objects.filter(cuit_cuil__in=cuits_declarados)
+                    .order_by('cuit_cuil', '-creado')
+                    .distinct('cuit_cuil')
+                )
+                
+                for r in ultimos_tramites:
+                    registro_local[r.cuit_cuil] = {
+                        "tramite": r.tramite,
+                        "fecha_vto": r.fecha_vto.strftime('%d/%m/%Y') if r.fecha_vto else 'Sin Fecha',
+                        "expediente": r.numero_expediente or 'S/D',
+                        "es_vigente": (r.tramite == 'APROBADO' and (not r.fecha_vto or r.fecha_vto >= now().date()))
+                    }
+
+            resultados = []
+            count_vigentes = 0
+            count_no_vigentes = 0
+            count_nunca = 0
+
+            for row in contratistas_ddjj:
+                cuit = row[0]
+                razon_social = row[1]
+                proyecto_nom = row[2]
+                empresa_nom = row[3]
+
+                info_local = registro_local.get(cuit)
+
+                if info_local:
+                    if info_local["es_vigente"]:
+                        estado_analisis = "VIGENTE"
+                        count_vigentes += 1
+                    else:
+                        estado_analisis = "NO VIGENTE"
+                        count_no_vigentes += 1
+                    
+                    tramite_registro = info_local["tramite"]
+                    fecha_vto = info_local["fecha_vto"]
+                    expediente = info_local["expediente"]
+                else:
+                    estado_analisis = "NUNCA INSCRIPTO"
+                    count_nunca += 1
+                    tramite_registro = "SIN REGISTRO"
+                    fecha_vto = "-"
+                    expediente = "-"
+
+                resultados.append({
+                    "cuit": cuit,
+                    "razon_social": razon_social,
+                    "proyecto": proyecto_nom,
+                    "empresa": empresa_nom,
+                    "estado_analisis": estado_analisis,
+                    "ultimo_tramite": tramite_registro,
+                    "fecha_vto": fecha_vto,
+                    "expediente": expediente
+                })
+
+            return JsonResponse({
+                "resumen": {
+                    "vigentes": count_vigentes,
+                    "no_vigentes": count_no_vigentes,
+                    "nunca_inscriptos": count_nunca,
+                    "total": len(resultados)
+                },
+                "resultados": resultados
+            })
+
+        except Exception as e:
+            import traceback
+            return JsonResponse({"error": str(e), "trace": traceback.format_exc()}, status=500)
+
+    # ==========================================
+    # 2. CARGA INICIAL DE LA PÁGINA (GET NORMAL)
+    # ==========================================
+    # Obtenemos las empresas mineras activas desde el entorno 'simsa'
+    try:
+        # Opción A: Usando el ORM si tenés el modelo mapeado
+        empresas_mineras = Companies.objects.using('simsa').filter(isdeleted=False).order_by('name')
+        
+        # Guardamos en una lista estructurada para el template
+        lista_empresas = [{"id": emp.id, "nombre": emp.name} for emp in empresas_mineras]
+        
+    except Exception:
+        # Opción B: Si no tenés el modelo 'Companies' en tu app, usamos SQL nativo por las dudas
+        with connections['simsa'].cursor() as cursor:
+            cursor.execute('SELECT "Id", "Name" FROM "Companies" WHERE "IsDeleted" = false ORDER BY "Name";')
+            lista_empresas = [{"id": row[0], "nombre": row[1]} for row in cursor.fetchall()]
+
+    context = {
+        "empresas": lista_empresas
+    }
+    return render(request, 'proveedores/analisis_ddjj.html', context)
+
+def new_tramite_view(request):
+    return render(
+        request,
+        'proveedores/new_tramite.html'
+    )
+
+
+def proveedor_alta_view(request):
+
+    if request.method == 'POST':
+
+        cuit = request.POST.get('cuit')
+
+        estado_default = EstadoProveedor.objects.filter(
+            nombre='EN TRAMITE'
+        ).first()
+
+        proveedor, created = Proveedor.objects.get_or_create(
+            cuit_cuil=cuit,
+            defaults={
+                'estado': estado_default
+            }
+        )
+
+        proveedor.nombre_razon_social = request.POST.get('razon_social')
+        proveedor.tipo_persona = request.POST.get('tipo_persona')
+
+        proveedor.domicilio_social = request.POST.get('domicilio')
+        proveedor.correo_electronico = request.POST.get('email')
+        proveedor.telefono = request.POST.get('telefono')
+
+        proveedor.provincia = request.POST.get('provincia')
+        proveedor.localidad = request.POST.get('localidad')
+
+        proveedor.save()
+
+        return JsonResponse({
+            'success': True,
+            'message': 'Proveedor guardado correctamente',
+            'proveedor_id': proveedor.id
+        })
+
+    return render(
+        request,
+        'proveedores/proveedor_form.html'
+    )
+
+
+def buscar_proveedor_view(request, cuit):
+
+    proveedor = Proveedor.objects.filter(
+        cuit_cuil=cuit
+    ).first()
+
+    if not proveedor:
+
+        return JsonResponse({
+            'encontrado': False
+        })
+
+    tramites = []
+
+    for tramite in proveedor.tramites.all().order_by('-created_at'):
+
+        tramites.append({
+            'id': tramite.id,
+            'expediente': tramite.numero_expediente_adm,
+            'estado': tramite.estado.nombre if tramite.estado else '',
+            'fecha_inicio': (
+                tramite.fecha_inicio_tramite.strftime('%d/%m/%Y')
+                if tramite.fecha_inicio_tramite else ''
+            ),
+            'fecha_alta': (
+                tramite.fecha_alta.strftime('%d/%m/%Y')
+                if tramite.fecha_alta else ''
+            ),
+            'aprobado_by': tramite.aprobado_by or '',
+        })
+
+    return JsonResponse({
+        'encontrado': True,
+
+        'id': proveedor.id,
+        'cuit': proveedor.cuit_cuil,
+
+        'razon_social': proveedor.nombre_razon_social,
+        'tipo_persona': proveedor.tipo_persona,
+
+        'domicilio': proveedor.domicilio_social,
+        'email': proveedor.correo_electronico,
+        'telefono': proveedor.telefono,
+
+        'provincia': proveedor.provincia,
+        'localidad': proveedor.localidad,
+
+        'estado': (
+            proveedor.estado.nombre
+            if proveedor.estado else ''
+        ),
+
+        'tramites': tramites
+    })
+
 def usuarios_simsa(request):
     # Subconsulta para obtener el nombre de la compañía
     company_name = Companies.objects.using("simsa").filter(
@@ -4879,8 +5137,7 @@ def api_periodos_por_proyecto(request):
 
     except Exception as e:
         print("❌ Error en api_periodos_por_proyecto:")
-        print(traceback.format_exc())
-        return JsonResponse({"error": str(e), "trace": traceback.format_exc()}, status=500)
+        return JsonResponse({"error": str(e)}, status=500)
 
 def generar_informe_proveedores(request):
     concesionario = request.GET.get("concesionario")
@@ -5001,6 +5258,7 @@ def tablero_home(request):
 
 
 def consulta_deuda_expediente(request):
+    
     
     return render(request, 'simsa/consulta_expedietes.html')
 
@@ -5197,7 +5455,7 @@ def sirgen_view(request):
 
     if concesionario:
         expedientes_queryset = expedientes_queryset.filter(expedientecaratula__icontains=concesionario)
-
+    """
     # Anotar último pasedestino
     ultimo_pase_destino_subquery = Pase.objects.filter(
     expedienteid=OuterRef('pk')
@@ -5238,26 +5496,10 @@ def sirgen_view(request):
     query_string = urlencode(query_params)
 
     tipos = Tipo.objects.all()
-
+    """
     context = {
-        'now': timezone.now(),
-        'page_obj': page_obj,
-        'expedientes': page_obj.object_list,
-        'has_previous': page_obj.has_previous(),
-        'has_next': page_obj.has_next(),
-        'previous_page_number': page_obj.previous_page_number() if page_obj.has_previous() else None,
-        'next_page_number': page_obj.next_page_number() if page_obj.has_next() else None,
-        'current_page': page_obj.number,
-        'total_pages': paginator.num_pages,
-        'query_string': query_string,
-        'tipo_opciones': tipos,
-        'filtros': {
-            'nro_exp': nro_exp or '',
-            'anio': anio or '',
-            'tipo': tipo or '',
-            'mina': mina or '',
-            'concesionario': concesionario or '',
-        }
+        'now': timezone.now() ,
+        
     }
 
     return render(request, 'sirgen/serch.html', context)

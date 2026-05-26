@@ -1,0 +1,832 @@
+{% extends 'base.html' %}
+
+{% block nav %}
+    {% include 'proveedores/navbar.html' %}
+{% endblock %}
+
+{% block head %}
+<link href="https://cdn.datatables.net/1.13.7/css/jquery.dataTables.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        /* --- variables de diseño (SaaS Dark Tech) --- */
+        :root {
+            --bg-main: #0f172a;
+            --bg-card: #1e293b;
+            --bg-input: #0f172a;
+            --border-color: #334155;
+            --text-main: #e2e8f0;
+            --text-muted: #94a3b8;
+            --color-success: #10b981;
+            --color-warning: #f59e0b;
+            --color-danger: #ef4444;
+            --color-info: #38bdf8;
+        }
+
+
+        /* --- estructura base --- */
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        /* --- encabezado --- */
+        .header h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin: 0 0 4px 0;
+            color: #fff;
+        }
+        .header p {
+            color: var(--text-muted);
+            margin: 0;
+            font-size: 0.95rem;
+        }
+
+        /* --- tarjetas contenedoras --- */
+        .card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+        }
+
+        /* --- sección filtros --- */
+        .filters-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .filter-group label {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .form-select {
+            background-color: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-main);
+            padding: 10px 12px;
+            font-size: 0.9rem;
+            outline: none;
+            cursor: pointer;
+            transition: border-color 0.2s;
+        }
+        .form-select:focus {
+            border-color: var(--color-info);
+        }
+        .form-select:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        /* --- dashboard grid (kpis y gráfico) --- */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 24px;
+        }
+        @media (max-width: 1024px) {
+            .dashboard-grid { grid-template-columns: 1fr; }
+        }
+
+        .kpis-subgrid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+        }
+        .kpi-card {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 110px;
+            border-left: 5px solid transparent;
+        }
+        .kpi-card .title {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+        .kpi-card .value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin: 8px 0;
+        }
+        .kpi-card .footer {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+        .kpi-vigente { border-left-color: var(--color-success); }
+        .kpi-vigente .value { color: var(--color-success); }
+        .kpi-novigente { border-left-color: var(--color-warning); }
+        .kpi-novigente .value { color: var(--color-warning); }
+        .kpi-nunca { border-left-color: var(--color-danger); }
+        .kpi-nunca .value { color: var(--color-danger); }
+
+        .total-strip {
+            grid-column: 1 / -1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: rgba(255,255,255,0.02);
+            padding: 12px 16px;
+            border-radius: 8px;
+            border: 1px dashed var(--border-color);
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+        .badge-total {
+            background-color: var(--border-color);
+            color: #fff;
+            padding: 6px 12px;
+            border-radius: 4px;
+        }
+
+        /* --- gráfico --- */
+        .chart-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .chart-container h6 {
+            margin: 0 0 16px 0;
+            color: #fff;
+            font-size: 0.95rem;
+        }
+
+        /* --- badges de los estados en la tabla --- */
+        .badge-status {
+            display: inline-block;
+            padding: 4px 8px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            border-radius: 4px;
+            border: 1px solid transparent;
+        }
+        .badge-status.vigente {
+            background-color: rgba(16, 185, 129, 0.1);
+            color: var(--color-success);
+            border-color: rgba(16, 185, 129, 0.2);
+        }
+        .badge-status.no-vigente {
+            background-color: rgba(245, 158, 11, 0.1);
+            color: var(--color-warning);
+            border-color: rgba(245, 158, 11, 0.2);
+        }
+        .badge-status.nunca {
+            background-color: rgba(239, 68, 68, 0.1);
+            color: var(--color-danger);
+            border-color: rgba(239, 68, 68, 0.2);
+        }
+        .badge-tramite {
+            background-color: #0f172a;
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+            padding: 4px 6px;
+            font-size: 0.75rem;
+            border-radius: 4px;
+        }
+
+        /* --- customización de datatables puro --- */
+        .dataTables_wrapper {
+            color: var(--text-main) !important;
+            padding-top: 10px;
+        }
+        table.dataTable {
+            border-collapse: collapse !important;
+            border-bottom: 1px solid var(--border-color) !important;
+        }
+        table.dataTable thead th {
+            background-color: var(--bg-card) !important;
+            color: var(--text-muted) !important;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            border-bottom: 2px solid var(--border-color) !important;
+            padding: 12px 10px !important;
+        }
+        table.dataTable tbody tr {
+            background-color: #1e293b !important;
+        }
+        table.dataTable tbody tr:nth-child(even) {
+            background-color: #151f32 !important;
+        }
+        table.dataTable tbody td {
+            padding: 12px 10px !important;
+            border-top: 1px solid var(--border-color) !important;
+            color: #cbd5e1;
+            font-size: 0.9rem;
+        }
+        .dataTables_wrapper .dataTables_filter input {
+            background-color: var(--bg-input) !important;
+            border: 1px solid var(--border-color) !important;
+            border-radius: 6px !important;
+            color: #fff !important;
+            padding: 8px 12px !important;
+            margin-left: 10px !important;
+            width: 280px;
+        }
+        .dataTables_wrapper .dataTables_length select {
+            background-color: var(--bg-input) !important;
+            border: 1px solid var(--border-color) !important;
+            border-radius: 6px !important;
+            color: #fff !important;
+            padding: 4px 8px !important;
+        }
+        .dataTables_wrapper .dataTables_info { color: var(--text-muted) !important; }
+        .dataTables_wrapper .dataTables_paginate .paginate_button {
+            background: var(--bg-card) !important;
+            border: 1px solid var(--border-color) !important;
+            color: var(--color-info) !important;
+            border-radius: 4px !important;
+        }
+        .dataTables_wrapper .dataTables_paginate .paginate_button.current {
+            background: var(--color-info) !important;
+            color: var(--bg-main) !important;
+            border-color: var(--color-info) !important;
+        }
+        .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+            background: var(--border-color) !important;
+            color: #fff !important;
+        }
+        code {
+            font-family: monospace;
+            color: #f43f5e;
+            background-color: rgba(244, 63, 94, 0.1);
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+        
+    .custom-select, .search-input {
+        width: 100%;
+        background: var(--bg-main);
+        border: 1px solid var(--border-color);
+        color: var(--text-light);
+        padding: 10px 12px;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        outline: none;
+        transition: border-color 0.2s;
+    }
+
+    .custom-select:focus, .search-input:focus {
+        border-color: var(--primary-accent);
+    }
+
+    /* Dropdown Personalizado (Buscador) */
+    .dropdown-container { position: relative; }
+    
+    .dropdown-trigger {
+        background: var(--bg-main);
+        border: 1px solid var(--border-color);
+        padding: 10px 12px;
+        border-radius: 8px;
+        cursor: pointer;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.9rem;
+        color: var(--text-light);
+    }
+
+    .dropdown-panel {
+        display: none;
+        position: absolute;
+        top: 105%;
+        left: 0;
+        right: 0;
+        background: #1e293b;
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        z-index: 100;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        overflow: hidden;
+    }
+
+    .dropdown-panel input {
+        width: 100%;
+        background: transparent;
+        border: none;
+        border-bottom: 1px solid var(--border-color);
+        padding: 10px;
+        color: white;
+    }
+
+    .dropdown-panel ul {
+        list-style: none;
+        max-height: 180px;
+        overflow-y: auto;
+        padding: 0;
+        margin: 0;
+    }
+
+    .dropdown-panel li {
+        padding: 10px 15px;
+        cursor: pointer;
+        font-size: 0.85rem;
+        color: var(--text-muted);
+    }
+
+    .dropdown-panel li:hover {
+        background: var(--primary-accent);
+        color: white;
+    }
+
+    @media (max-width: 768px) {
+        .report-grid { grid-template-columns: 1fr; }
+    }
+    .row{
+        display: flex;
+        justify-content: space-between;
+    }
+    .btn-pdf {
+    background-color: transparent;
+    border: 1px solid var(--color-info);
+    color: var(--color-info);
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    transition: all 0.2s ease;
+}
+    .btn-pdf:hover {
+        background-color: var(--color-info);
+        color: var(--bg-main);
+        box-shadow: 0 0 12px rgba(56, 189, 248, 0.4);
+    }
+
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="header">
+        <div class="row">
+            <h1><i class="fa-solid fa-chart-network text-info" style="color: var(--color-info); margin-right: 8px;"></i>Auditoría Cruzada de Proveedores</h1>
+            <button id="btn-descargar-pdf" class="btn-pdf">
+                <i class="fa-solid fa-file-pdf" style="margin-right: 8px;"></i> Exportar Reporte
+            </button>   
+        </div>
+        <p>Contraste de declaraciones juradas mineras (SIMSA) contra el Registro de Proveedores local.</p>
+    </div>
+
+    <div class="card">
+        <h5 style="margin: 0 0 16px 0; color: #fff; font-size: 1rem;"><i class="fa-solid fa-sliders text-muted" style="margin-right: 8px;"></i>Filtros de Búsqueda</h5>
+        <div class="filters-grid">
+            <div class="filter-group">
+                <label>Empresa Concesionaria</label>
+                <div class="dropdown-container" id="select-concesionario">
+                        <div class="dropdown-trigger">
+                            <span class="selected-val">Seleccionar...</span>
+                            <i data-lucide="chevron-down"></i>
+                        </div>
+                        <div class="dropdown-panel">
+                            <input type="text" placeholder="Buscar...">
+                            <ul>
+                                <li data-id="all">Todos</li>
+                                {% for emp in empresas %}
+                                <li data-id="{{ emp.id }}">{{ emp.nombre }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        <input type="hidden" id="id-prov" value="all">
+                    </div>
+            </div>
+            <div class="filter-group">
+                <label>Proyecto Minero</label>
+                <select id="select-proyecto" class="form-select" disabled>
+                    <option value="all">-- Todos los Proyectos --</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>Período DDJJ</label>
+                <select id="select-periodo" class="form-select" disabled>
+                    <option value="all">-- Todos los Períodos --</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <div class="dashboard-grid">
+        <div class="kpis-subgrid">
+            <div class="card kpi-card kpi-vigente">
+                <span class="title">Vigentes en Registro</span>
+                <div class="value" id="txt-vigentes">0</div>
+                <div class="footer"><i class="fa-solid fa-circle-check" style="margin-right: 4px;"></i>Aprobados activos</div>
+            </div>
+            <div class="card kpi-card kpi-novigente">
+                <span class="title">No Vigentes / Trámite</span>
+                <div class="value" id="txt-no-vigentes">0</div>
+                <div class="footer"><i class="fa-solid fa-circle-exclamation" style="margin-right: 4px;"></i>Vencidos o pendientes</div>
+            </div>
+            <div class="card kpi-card kpi-nunca">
+                <span class="title">Nunca Inscriptos</span>
+                <div class="value" id="txt-nunca">0</div>
+                <div class="footer"><i class="fa-solid fa-triangle-exclamation" style="margin-right: 4px;"></i>Sin legajo local</div>
+            </div>
+            <div class="total-strip">
+                <span>UNIVERSO TOTAL EVALUADO EN ESTA CONSULTA:</span>
+                <span class="badge-total" id="txt-total">0 Proveedores</span>
+            </div>
+        </div>
+
+        <div class="card chart-container">
+            <h6>Distribución Porcentual</h6>
+            <div style="position: relative; height:160px; width:100%">
+                <canvas id="chart-analisis"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="card" style="overflow-x: auto;">
+        <h5 style="margin: 0 0 16px 0; color: #fff; font-size: 1rem;"><i class="fa-solid fa-list-check text-info" style="color: var(--color-info); margin-right: 8px;"></i>Detalle de Contratistas Declarados</h5>
+        <table id="tabla-resultados" class="display style-table w-100">
+            <thead>
+                <tr>
+                    <th>CUIT</th>
+                    <th>RAZÓN SOCIAL</th>
+                    <th>EMPRESA (DDJJ)</th>
+                    <th>PROYECTO (DDJJ)</th>
+                    <th>ESTADO AUDITORÍA</th>
+                    <th>ÚLTIMO TRÁMITE REGISTRO</th>
+                    <th>VENCIMIENTO</th>
+                    <th>EXPEDIENTE</th>
+                </tr>
+            </thead>
+            <tbody>
+                </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block script %}
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/datatables.net@1.13.7/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+
+<script>
+    let tablaResultados;
+    let graficoDona;
+
+    $(document).ready(function() {
+        // Inicializar DataTable nativo en Modo Oscuro
+        tablaResultados = $('#tabla-resultados').DataTable({
+            language: {
+                url: 'https://cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json',
+                search: "",
+                searchPlaceholder: "Buscar por CUIT o Razón Social..."
+            },
+            pageLength: 10,
+            order: [[4, "desc"]]
+        });
+
+        // Configurar gráfico circular de Chart.js
+        const ctx = document.getElementById('chart-analisis').getContext('2d');
+        graficoDona = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Vigente', 'No Vigente', 'Nunca Inscripto'],
+                datasets: [{
+                    data: [0, 0, 0],
+                    backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
+                    borderWidth: 2,
+                    borderColor: '#1e293b'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'right', labels: { color: '#94a3b8', font: { size: 11 } } }
+                }
+            }
+        });
+
+        // --- MANEJO DE SELECTORES DINÁMICOS MEDIANTE TU NUEVA API ---
+        
+        // 1. Cambio en Empresa Concesionaria -> Carga Proyectos
+        $('#id-prov').change(function() {
+    let compId = $(this).val();
+    if(compId !== 'all') {
+        fetch(`/api/proyectos_por_concesionario/?company_id=${compId}`)
+            .then(r => r.json())
+            .then(data => {
+                let html = '<option value="all">-- Todos los Proyectos --</option>';
+                if(data.proyectos) {
+                    data.proyectos.forEach(p => {
+                        html += `<option value="${p.id}">${p.nombre}</option>`;
+                    });
+                }
+                $('#select-proyecto').html(html).prop('disabled', false);
+                $('#select-periodo').html('<option value="all">-- Todos los Períodos --</option>').prop('disabled', true);
+            });
+    } else {
+        $('#select-proyecto').html('<option value="all">-- Todos los Proyectos --</option>').prop('disabled', true);
+        $('#select-periodo').html('<option value="all">-- Todos los Períodos --</option>').prop('disabled', true);
+    }
+    ejecutarAuditoria();
+});
+
+        // 2. Cambio en Proyecto -> Carga Períodos Presentados
+        $('#select-proyecto').change(function() {
+            let projId = $(this).val();
+            if(projId !== 'all') {
+                fetch(`/api/periodos_por_proyecto/?project_id=${projId}`)
+                    .then(r => r.json())
+                    .then(data => {
+                        let html = '<option value="all">-- Todos los Períodos --</option>';
+                        if(data.periodos) {
+                            data.periodos.forEach(pe => {
+                                html += `<option value="${pe.id}">${pe.nombre}</option>`;
+                            });
+                        }
+                        $('#select-periodo').html(html).prop('disabled', false);
+                    });
+            } else {
+                $('#select-periodo').html('<option value="all">-- Todos los Períodos --</option>').prop('disabled', true);
+            }
+            ejecutarAuditoria();
+        });
+
+        // 3. Cambio en Período -> Ejecuta auditoría directamente
+        $('#select-periodo').change(function() {
+            ejecutarAuditoria();
+        });
+
+        // Primera ejecución automática al cargar la vista
+        ejecutarAuditoria();
+    });
+
+    // Envía la consulta cruzada al servidor con el estado de los filtros actuales
+    function ejecutarAuditoria() {
+        let params = new URLSearchParams({
+            ajax: 1,
+            concesionario: $('#select-concesionario').val() || 'all',
+            proyecto: $('#select-proyecto').val() || 'all',
+            periodo: $('#select-periodo').val() || 'all'
+        });
+
+        $('#txt-total').text('Procesando...');
+
+        fetch(`?${params.toString()}`)
+            .then(response => response.json())
+            .then(data => {
+                // Modificar contadores informativos superiores
+                $('#txt-vigentes').text(data.resumen.vigentes);
+                $('#txt-no-vigentes').text(data.resumen.no_vigentes);
+                $('#txt-nunca').text(data.resumen.nunca_inscriptos);
+                $('#txt-total').text(`${data.resumen.total} Proveedores`);
+
+                // Sincronizar gráfico circular
+                graficoDona.data.datasets[0].data = [
+                    data.resumen.vigentes,
+                    data.resumen.no_vigentes,
+                    data.resumen.nunca_inscriptos
+                ];
+                graficoDona.update();
+
+                // Vaciar y repoblar filas dentro de DataTables de forma segura
+                tablaResultados.clear();
+                
+                data.resultados.forEach(item => {
+                    let badge = '';
+                    if(item.estado_analisis === 'VIGENTE') {
+                        badge = '<span class="badge-status vigente">VIGENTE</span>';
+                    } else if(item.estado_analisis === 'NO VIGENTE') {
+                        badge = '<span class="badge-status no-vigente">NO VIGENTE</span>';
+                    } else {
+                        badge = '<span class="badge-status nunca">NUNCA INSCRIPTO</span>';
+                    }
+
+                    tablaResultados.row.add([
+                        `<strong style="color: #fff;">${item.cuit}</strong>`,
+                        item.razon_social,
+                        `<span style="color: var(--text-muted); font-size: 0.85rem;">${item.empresa}</span>`,
+                        `<span style="color: var(--text-muted); font-size: 0.85rem;">${item.proyecto}</span>`,
+                        badge,
+                        `<span class="badge-tramite">${item.ultimo_tramite}</span>`,
+                        item.fecha_vto,
+                        `<code>${item.expediente}</code>`
+                    ]);
+                });
+                
+                tablaResultados.draw();
+            })
+            .catch(error => {
+                console.error("Error en la consulta cruzada:", error);
+                $('#txt-total').text('Error.');
+            });
+    }
+
+     document.querySelectorAll('.dropdown-container').forEach(container => {
+            const trigger = container.querySelector('.dropdown-trigger');
+            const panel = container.querySelector('.dropdown-panel');
+            const search = container.querySelector('input[type="text"]');
+            const hidden = container.querySelector('input[type="hidden"]');
+            const valText = container.querySelector('.selected-val');
+
+            trigger.addEventListener('click', () => {
+                const isVisible = panel.style.display === 'block';
+                document.querySelectorAll('.dropdown-panel').forEach(p => p.style.display = 'none');
+                panel.style.display = isVisible ? 'none' : 'block';
+                if(!isVisible) search.focus();
+            });
+
+            search.addEventListener('input', (e) => {
+                const q = e.target.value.toLowerCase();
+                panel.querySelectorAll('li').forEach(li => {
+                    li.style.display = li.textContent.toLowerCase().includes(q) ? 'block' : 'none';
+                });
+            });
+
+            panel.querySelectorAll('li').forEach(li => {
+                li.addEventListener('click', () => {
+                    valText.textContent = li.textContent;
+                    hidden.value = li.dataset.id;
+                    panel.style.display = 'none';
+                    $(hidden).trigger('change');
+                });
+            });
+        });
+
+        // Click fuera para cerrar
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.dropdown-container')) {
+                document.querySelectorAll('.dropdown-panel').forEach(p => p.style.display = 'none');
+            }
+        });
+        // Escuchar el click del botón de PDF
+$('#btn-descargar-pdf').on('click', function() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF('p', 'mm', 'a4');
+    
+    // Opciones de configuración de fuentes y capturas de datos
+    const nombreEmpresa = $('#select-concesionario .selected-val').text().trim();
+    const proyectoSeleccionado = $('#select-proyecto option:selected').text().trim();
+    const periodoSeleccionado = $('#select-periodo option:selected').text().trim();
+    
+    const kpiVigentes = $('#txt-vigentes').text();
+    const kpiNoVigentes = $('#txt-no-vigentes').text();
+    const kpiNunca = $('#txt-nunca').text();
+    const txtTotal = $('#txt-total').text();
+
+    // --- DISEÑO: Encabezado del Reporte ---
+    doc.setFillColor(15, 23, 42); // #0f172a (Color de fondo corporativo oscuro)
+    doc.rect(0, 0, 210, 38, 'F');
+    
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(16);
+    doc.text("AUDITORÍA CRUZADA DE PROVEEDORES", 14, 16);
+    
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(148, 163, 184); // #94a3b8
+    doc.text("Sistema de Información Centralizada - Secretaría de Minería", 14, 23);
+    
+    // Fecha de generación
+    const fechaHoy = new Date().toLocaleDateString('es-AR', { hour: '2-digit', minute: '2-digit' });
+    doc.text(`Generado: ${fechaHoy}`, 155, 23);
+
+    // --- SECCIÓN: Filtros Aplicados ---
+    doc.setTextColor(15, 23, 42);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.text("PARÁMETROS DE LA CONSULTA", 14, 48);
+    
+    doc.setLineWidth(0.2);
+    doc.setDrawColor(203, 213, 225);
+    doc.line(14, 50, 196, 50);
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9.5);
+    doc.text([
+        `Empresa Concesionaria:  ${nombreEmpresa}`,
+        `Proyecto Minero:             ${proyectoSeleccionado}`,
+        `Período Declarado:         ${periodoSeleccionado}`
+    ], 14, 56);
+
+    // --- SECCIÓN: Cuadro de Métrica / KPIs ---
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.text("RESUMEN DE MÉTRICAS Y AUDITORÍA", 14, 78);
+    doc.line(14, 80, 196, 80);
+
+    // Renderizar bloques simulando los KPI cards
+    let yKpi = 85;
+    // Caja Vigentes
+    doc.setFillColor(240, 253, 250); doc.setDrawColor(16, 185, 129); // Verde exitoso
+    doc.rect(14, yKpi, 56, 18, 'FD');
+    doc.setFontSize(8); doc.setTextColor(16, 185, 129); doc.text("VIGENTES", 18, yKpi + 5);
+    doc.setFontSize(14); doc.text(kpiVigentes, 18, yKpi + 13);
+
+    // Caja No Vigentes
+    doc.setFillColor(254, 243, 199); doc.setDrawColor(245, 199, 11); // Amarillo advertencia
+    doc.rect(75, yKpi, 56, 18, 'FD');
+    doc.setFontSize(8); doc.setTextColor(217, 119, 6); doc.text("NO VIGENTES / TRÁMITE", 79, yKpi + 5);
+    doc.setFontSize(14); doc.text(kpiNoVigentes, 79, yKpi + 13);
+
+    // Caja Nunca Inscriptos
+    doc.setFillColor(254, 226, 226); doc.setDrawColor(239, 68, 68); // Rojo peligro
+    doc.rect(136, yKpi, 60, 18, 'FD');
+    doc.setFontSize(8); doc.setTextColor(220, 38, 38); doc.text("NUNCA INSCRIPTOS", 140, yKpi + 5);
+    doc.setFontSize(14); doc.text(kpiNunca, 140, yKpi + 13);
+
+    // Texto de Universo Total Evaluado
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(9.5);
+    doc.setTextColor(71, 85, 105);
+    doc.text(`Evaluación basada sobre un ${txtTotal}.`, 14, 111);
+
+    // --- SECCIÓN: Detalle de la Tabla de Resultados ---
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.setTextColor(15, 23, 42);
+    doc.text("CONTRATISTAS DECLARADOS Y ESTADOS DE SITUACIÓN", 14, 122);
+
+    // Obtener los datos actuales procesados en la tabla por la consulta cruzada
+    // Se extraen directo del objeto DataTable para respetar filtros o búsquedas en pantalla
+    let filasData = [];
+    tablaResultados.rows({ search: 'applied' }).data().each(function(val) {
+        // Limpiamos los tags HTML que pusimos en los Badges para que salgan como texto limpio en el PDF
+        let cuitClean = val[0].replace(/<[^>]*>/g, "");
+        let estadoClean = val[4].replace(/<[^>]*>/g, "");
+        let tramiteClean = val[5].replace(/<[^>]*>/g, "");
+        let expClean = val[7].replace(/<[^>]*>/g, "");
+
+        filasData.push([
+            cuitClean,
+            val[1], // Razon Social
+            val[2].replace(/<[^>]*>/g, ""), // Empresa DDJJ
+            val[3].replace(/<[^>]*>/g, ""), // Proyecto
+            estadoClean,
+            tramiteClean,
+            val[6], // Vencimiento
+            expClean
+        ]);
+    });
+
+    // Encabezados para la AutoTable
+    const headers = [["CUIT", "Razón Social", "Empresa (DDJJ)", "Proyecto (DDJJ)", "Estado", "Últ. Trámite", "Vto.", "Expediente"]];
+
+    // Generar la tabla estructurada automáticamente en el PDF
+    doc.autoTable({
+        startY: 125,
+        head: headers,
+        body: filasData,
+        theme: 'striped',
+        headStyles: {
+            fillColor: [30, 41, 59], // Gris slate oscuro (#1e293b) para las cabeceras
+            textColor: [255, 255, 255],
+            fontSize: 8,
+            fontStyle: 'bold'
+        },
+        bodyStyles: {
+            fontSize: 7.5,
+            cellPadding: 2.5
+        },
+        columnStyles: {
+            0: { fontStyle: 'bold', cellWidth: 22 }, // CUIT
+            1: { cellWidth: 35 }, // Razón Social
+            4: { fontStyle: 'bold' }  // Estado Auditoría
+        },
+        didParseCell: function(data) {
+            // Dar color al texto de la celda "Estado" según su condición
+            if (data.section === 'body' && data.column.index === 4) {
+                if (data.cell.raw === 'VIGENTE') {
+                    data.cell.styles.textColor = [16, 185, 129];
+                } else if (data.cell.raw === 'NO VIGENTE') {
+                    data.cell.styles.textColor = [245, 158, 11];
+                } else if (data.cell.raw === 'NUNCA INSCRIPTOS' || data.cell.raw.includes('NUNCA')) {
+                    data.cell.styles.textColor = [239, 68, 68];
+                }
+            }
+        }
+    });
+
+    // Guardar archivo descargable estructurando un nombre dinámico inteligente
+    const cleanFileName = nombreEmpresa.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+    doc.save(`reporte_auditoria_${cleanFileName}.pdf`);
+});
+</script>
+{% endblock %}

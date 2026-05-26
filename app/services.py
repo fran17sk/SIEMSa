@@ -176,3 +176,4 @@ def consultar_cuit(cuit):
         # El logger.exception captura el traceback completo (muy útil para debuguear)
         logger.exception(f">>> [AFIP] ERROR NO CONTROLADO consultando CUIT {cuit}: {str(e)}")
         return {"cuit": cuit, "error": str(e)}
+    
