@@ -384,14 +384,14 @@
                 <i class="fa-solid fa-file-pdf" style="margin-right: 8px;"></i> Exportar Reporte
             </button>   
         </div>
-        <p>Contraste de declaraciones juradas mineras (SIMSA) contra el Registro de Proveedores local.</p>
+        <p>Contraste de Declaraciones Juradas (SIMSA) contra el Registro de Proveedores Local.</p>
     </div>
 
     <div class="card">
         <h5 style="margin: 0 0 16px 0; color: #fff; font-size: 1rem;"><i class="fa-solid fa-sliders text-muted" style="margin-right: 8px;"></i>Filtros de Búsqueda</h5>
         <div class="filters-grid">
             <div class="filter-group">
-                <label>Empresa Concesionaria</label>
+                <label>Concesionario</label>
                 <div class="dropdown-container" id="select-concesionario">
                         <div class="dropdown-trigger">
                             <span class="selected-val">Seleccionar...</span>
@@ -427,7 +427,7 @@
     <div class="dashboard-grid">
         <div class="kpis-subgrid">
             <div class="card kpi-card kpi-vigente">
-                <span class="title">Vigentes en Registro</span>
+                <span class="title">Vigentes / Aprobados</span>
                 <div class="value" id="txt-vigentes">0</div>
                 <div class="footer"><i class="fa-solid fa-circle-check" style="margin-right: 4px;"></i>Aprobados activos</div>
             </div>
@@ -437,12 +437,12 @@
                 <div class="footer"><i class="fa-solid fa-circle-exclamation" style="margin-right: 4px;"></i>Vencidos o pendientes</div>
             </div>
             <div class="card kpi-card kpi-nunca">
-                <span class="title">Nunca Inscriptos</span>
+                <span class="title">No Inscriptos</span>
                 <div class="value" id="txt-nunca">0</div>
                 <div class="footer"><i class="fa-solid fa-triangle-exclamation" style="margin-right: 4px;"></i>Sin legajo local</div>
             </div>
             <div class="total-strip">
-                <span>UNIVERSO TOTAL EVALUADO EN ESTA CONSULTA:</span>
+                <span>TOTAL EVALUADO EN ESTA CONSULTA:</span>
                 <span class="badge-total" id="txt-total">0 Proveedores</span>
             </div>
         </div>
@@ -463,10 +463,9 @@
                     <th>CUIT</th>
                     <th>RAZÓN SOCIAL</th>
                     <th>EMPRESA (DDJJ)</th>
-                    <th>PROYECTO (DDJJ)</th>
                     <th>ESTADO AUDITORÍA</th>
-                    <th>ÚLTIMO TRÁMITE REGISTRO</th>
                     <th>VENCIMIENTO</th>
+                    <th>ÚLTIMO TRÁMITE REGISTRO</th>
                     <th>EXPEDIENTE</th>
                 </tr>
             </thead>
@@ -527,24 +526,32 @@
         // 1. Cambio en Empresa Concesionaria -> Carga Proyectos
         $('#id-prov').change(function() {
     let compId = $(this).val();
-    if(compId !== 'all') {
+    
+    if (compId && compId !== 'all') {
+        // Si hay una empresa seleccionada, buscamos sus proyectos específicos
         fetch(`/api/proyectos_por_concesionario/?company_id=${compId}`)
             .then(r => r.json())
             .then(data => {
                 let html = '<option value="all">-- Todos los Proyectos --</option>';
-                if(data.proyectos) {
+                if (data.proyectos && data.proyectos.length > 0) {
                     data.proyectos.forEach(p => {
                         html += `<option value="${p.id}">${p.nombre}</option>`;
                     });
                 }
                 $('#select-proyecto').html(html).prop('disabled', false);
                 $('#select-periodo').html('<option value="all">-- Todos los Períodos --</option>').prop('disabled', true);
+                
+                // Ejecutamos la auditoría con los nuevos selectores disponibles
+                ejecutarAuditoria();
             });
     } else {
-        $('#select-proyecto').html('<option value="all">-- Todos los Proyectos --</option>').prop('disabled', true);
-        $('#select-periodo').html('<option value="all">-- Todos los Períodos --</option>').prop('disabled', true);
+        // Si seleccionó "Todos" (all), reseteamos los selectores dependientes a su estado inicial
+        $('#select-proyecto').html('<option value="all">-- Todos los Proyectos --</option>').prop('disabled', true).val('all');
+        $('#select-periodo').html('<option value="all">-- Todos los Períodos --</option>').prop('disabled', true).val('all');
+        
+        // Ejecutamos la auditoría limpia para traer TODO el universo completo
+        ejecutarAuditoria();
     }
-    ejecutarAuditoria();
 });
 
         // 2. Cambio en Proyecto -> Carga Períodos Presentados
@@ -622,10 +629,9 @@
                         `<strong style="color: #fff;">${item.cuit}</strong>`,
                         item.razon_social,
                         `<span style="color: var(--text-muted); font-size: 0.85rem;">${item.empresa}</span>`,
-                        `<span style="color: var(--text-muted); font-size: 0.85rem;">${item.proyecto}</span>`,
                         badge,
-                        `<span class="badge-tramite">${item.ultimo_tramite}</span>`,
                         item.fecha_vto,
+                        `<span class="badge-tramite">${item.ultimo_tramite}</span>`,
                         `<code>${item.expediente}</code>`
                     ]);
                 });
