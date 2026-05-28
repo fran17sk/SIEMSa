@@ -2,6 +2,7 @@ import datetime
 import base64
 import json
 import os
+import smtplib
 from cryptography import x509
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.serialization import pkcs7
@@ -14,6 +15,12 @@ import tempfile
 import logging
 from django.utils import timezone
 import pytz
+import requests
+import smtplib
+from email.mime.text import MIMEText
+from django.core.management.base import BaseCommand
+from django.conf import settings
+import logging
 
 # Configuramos el logger para que use el canal de errores de gunicorn
 logger = logging.getLogger('gunicorn.error')
@@ -177,3 +184,63 @@ def consultar_cuit(cuit):
         logger.exception(f">>> [AFIP] ERROR NO CONTROLADO consultando CUIT {cuit}: {str(e)}")
         return {"cuit": cuit, "error": str(e)}
     
+class Command(BaseCommand):
+    help = "Monitorea la conectividad con el Datacenter mediante el endpoint de expedientes"
+
+    def handle(self, *args, **options):
+        # 1. Tu URL real del Datacenter
+        url_interna = "http://192.168.0.233/expediente/deuda/?numero=10245"
+        
+        EMAIL_DESTINO = "franciscruz991@gmail.com"
+        EMAIL_REMITENTE = settings.DEFAULT_FROM_EMAIL
+        
+        logger.info("📡 Verificando túnel hacia el Datacenter (192.168.0.233)...")
+
+        try:
+            # Usamos 'requests.head' con un timeout corto (5 segundos). 
+            # Si el enlace institucional cae, este timeout saltará de inmediato.
+            response = requests.head(url_interna, timeout=5)
+            
+            # Si el servidor responde (cualquier status, incluso 200, 302 o 404), la red rutea bien.
+            logger.info(f"✅ Conexión establecida. El Datacenter respondió con status {response.status_code}")
+            
+        except (requests.exceptions.ConnectTimeout, requests.exceptions.ConnectionError) as e:
+            logger.error(f"🚨 ALERTA: No hay respuesta de {url_interna}. Enlace o VPN caídos.")
+            self.enviar_alerta_email(EMAIL_REMITENTE, EMAIL_DESTINO, str(e))
+
+    def enviar_alerta_email(self, remitente, destino, error_msg):
+        asunto = "⚠️ ALERTA: Pérdida de Conexión al Datacenter - Minería"
+        cuerpo = f"""
+        Se ha detectado una falla de conectividad con el OpenVPN.
+        El endpoint interno de expedientes no responde.
+        
+        URL Evaluada: http://192.168.0.233/expediente/deuda/?numero=10245
+        
+        Detalles técnicos del fallo:
+        ---------------------------------------------------------
+        {error_msg}
+        ---------------------------------------------------------
+        
+        Nota: Esto puede deberse a una caída del servicio OpenVPN local, a un corte del enlace 
+        con Telecom o a un cambio de políticas/bloqueo en el firewall perimetral del Datacenter.
+        
+        Monitoreo Automático - SIEMSa.
+        """
+        
+        msg = MIMEText(cuerpo)
+        msg['Subject'] = asunto
+        msg['From'] = remitente
+        msg['To'] = destino
+
+        try:
+            server = smtplib.SMTP(settings.EMAIL_HOST, settings.EMAIL_PORT)
+            if settings.EMAIL_USE_TLS:
+                server.starttls()
+            if settings.EMAIL_HOST_USER and settings.EMAIL_HOST_PASSWORD:
+                server.login(settings.EMAIL_HOST_USER, settings.EMAIL_HOST_PASSWORD)
+                
+            server.sendmail(remitente, [destino], msg.as_string())
+            server.quit()
+            logger.info("📧 Correo de alerta enviado con éxito al administrador.")
+        except Exception as ex:
+            logger.error(f"❌ Error crítico al intentar despachar el email de alerta: {str(ex)}")
