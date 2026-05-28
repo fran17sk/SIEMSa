@@ -5275,15 +5275,7 @@ def consulta_deuda_datos(request):
         return HttpResponse("<p style='color:red;'>Debe ingresar un número o nombre de expediente.</p>")
 
     # Llamamos al servicio centralizado pasando el número dinámico de la web
-    conexion_ok, resultado = verificar_conexion_datacenter(termino=termino)
     
-    if not conexion_ok:
-        # Si falló (el servicio ya mandó el mail), respondemos el error controlado
-        return JsonResponse({
-            "error": "Servicio temporalmente no disponible",
-            "detalle": "La conexión con el Datacenter central se encuentra interrumpida."
-        }, status=503)
-
     # Buscar por número o nombre
     expediente = None
     if termino.isdigit():
