@@ -5113,9 +5113,9 @@ def api_periodos_por_proyecto(request):
             .filter(
                 projectid=project_id,
                 isdeleted=False,
-                presentationstates__name='Presentado'
+                presentationstateid__name='Presentado'
             )
-            .select_related("periodid","presentationstates")
+            .select_related("periodid","presentationstateid")
         )
 
         print(f"📦 Presentaciones encontradas: {presentaciones.count()}")
