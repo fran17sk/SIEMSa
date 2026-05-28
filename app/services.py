@@ -190,20 +190,19 @@ def verificar_conexion_datacenter(termino="10245"):
     url_interna = f"http://192.168.0.233/expediente/deuda/?numero={termino}"
     
     try:
+        logger.info(f"📡 Enviando petición a {url_interna} (Timeout=5s)...")
         response = requests.get(url_interna, timeout=5)
+        
+        # Si el estado es 4xx o 5xx, lanza HTTPError
         response.raise_for_status() 
         
-        # 🛡️ INTENTAMOS PARSEAR EL JSON CON MÁXIMA SEGURIDAD
         try:
             data = response.json()
             logger.info(f"✅ Conexión y JSON validados con el Datacenter. Status {response.status_code}")
             return True, data
         except (ValueError, requests.exceptions.JSONDecodeError) as json_err:
-            # Si responde 200 pero devuelve un HTML o texto plano roto
             error_format = f"El Datacenter respondió 200 OK pero el contenido NO es un JSON válido. Respuesta: {response.text[:300]}"
             logger.error(f"🔴 ERROR DE FORMATO: {error_format}")
-            
-            # Mandamos el mail avisando que la respuesta vino rota
             enviar_alerta_email(error_format, tipo_falla="Respuesta JSON Inválida de la API")
             return False, "La respuesta del servidor central tiene un formato inválido."
         
@@ -211,13 +210,44 @@ def verificar_conexion_datacenter(termino="10245"):
         status_code = response.status_code
         error_msg = f"Error HTTP {status_code} devuelto por el Datacenter. Respuesta: {response.text[:200]}"
         logger.error(f"🔴 ERROR EN APLICACIÓN: {error_msg}")
-        
         enviar_alerta_email(error_msg, tipo_falla=f"Error en Servidor Central (HTTP {status_code})")
         return False, error_msg
 
-    except (requests.exceptions.ConnectTimeout, requests.exceptions.ConnectionError) as net_err:
+    # 🛡️ BLOQUE BLINDADO: Atrapamos cualquier error de Timeout (Connect, Read) o de Conexión de requests
+    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError, requests.exceptions.RequestException) as net_err:
         error_msg = str(net_err)
-        logger.error(f"📶 ERROR DE RED / VPN CAÍDA: {error_msg}")
+        logger.error(f"📶 ERROR DE CONEXIÓN O TIMEOUT (VPN CAÍDA): {error_msg}")
         
-        enviar_alerta_email(error_msg, tipo_falla="Caída de Conexión / VPN Inalcanzable")
+        # Disparamos el correo indicando la caída
+        enviar_alerta_email(error_msg, tipo_falla="Caída de Conexión / VPN Inalcanzable (Timeout)")
         return False, error_msg
+
+
+def enviar_alerta_email(error_msg, tipo_falla):
+    """Despacha el correo dinámico detallando el tipo de falla."""
+    asunto = f"⚠️ ALERTA CRÍTICA: {tipo_falla} - SIEMSa"
+    cuerpo = f"""
+    Se ha detectado una anomalía al intentar conectar con el Datacenter de la Provincia.
+    
+    Tipo de Incidente: {tipo_falla}
+    URL Evaluada: http://192.168.0.233/expediente/deuda/
+    
+    Detalles técnicos del fallo:
+    ---------------------------------------------------------
+    {error_msg}
+    ---------------------------------------------------------
+    
+    Monitoreo Automático - SIEMSa.
+    """
+    
+    try:
+        send_mail(
+            subject=asunto,
+            message=cuerpo,
+            from_email=settings.EMAIL_HOST_USER,
+            recipient_list=["franciscruz991@gmail.com"],
+            fail_silently=False,
+        )
+        logger.info("📧 Correo de alerta enviado con éxito vía Django Mail Backend.")
+    except Exception as ex:
+        logger.error(f"❌ Error crítico al intentar despachar el email de alerta: {str(ex)}")
