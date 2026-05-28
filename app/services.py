@@ -21,6 +21,8 @@ from email.mime.text import MIMEText
 from django.core.management.base import BaseCommand
 from django.conf import settings
 import logging
+from django.conf import settings
+from django.core.mail import send_mail
 
 # Configuramos el logger para que use el canal de errores de gunicorn
 logger = logging.getLogger('gunicorn.error')
@@ -193,25 +195,24 @@ def verificar_conexion_datacenter(termino="10245"):
     url_interna = f"http://192.168.0.233/expediente/deuda/?numero={termino}"
     
     try:
-        # Petición con timeout corto
+        # Petición con timeout de 5 segundos para que la web no se cuelgue
         response = requests.get(url_interna, timeout=5)
         response.raise_for_status()
         
         logger.info(f"✅ Conexión establecida con el Datacenter. Status {response.status_code}")
-        return True, response.json() # Retorna el JSON si todo salió bien
+        return True, response.json()
         
     except (requests.exceptions.ConnectTimeout, requests.exceptions.ConnectionError, requests.exceptions.HTTPError) as e:
         error_msg = str(e)
         logger.error(f"🚨 ALERTA: No hay respuesta de {url_interna}. Enlace o VPN caídos.")
         
-        # Disparamos el correo usando tu lógica original
+        # Disparamos el correo usando la nueva función simplificada
         enviar_alerta_email(error_msg)
         return False, error_msg
 
+
 def enviar_alerta_email(error_msg):
-    EMAIL_DESTINO = "franciscruz991@gmail.com"
-    EMAIL_REMITENTE = settings.DEFAULT_FROM_EMAIL
-    
+    """Despacha el correo usando la configuración de Gmail de settings.py"""
     asunto = "⚠️ ALERTA: Pérdida de Conexión al Datacenter - Minería"
     cuerpo = f"""
     Se ha detectado una falla de conectividad con el OpenVPN.
@@ -230,20 +231,15 @@ def enviar_alerta_email(error_msg):
     Monitoreo Automático - SIEMSa.
     """
     
-    msg = MIMEText(cuerpo)
-    msg['Subject'] = asunto
-    msg['From'] = EMAIL_REMITENTE
-    msg['To'] = EMAIL_DESTINO
-
     try:
-        server = smtplib.SMTP(settings.EMAIL_HOST, settings.EMAIL_PORT)
-        if settings.EMAIL_USE_TLS:
-            server.starttls()
-        if settings.EMAIL_HOST_USER and settings.EMAIL_HOST_PASSWORD:
-            server.login(settings.EMAIL_HOST_USER, settings.EMAIL_HOST_PASSWORD)
-            
-        server.sendmail(EMAIL_REMITENTE, [EMAIL_DESTINO], msg.as_string())
-        server.quit()
-        logger.info("📧 Correo de alerta enviado con éxito al administrador.")
+        # Django se encarga de abrir la conexión con smtp.gmail.com, autenticar y cerrar
+        send_mail(
+            subject=asunto,
+            message=cuerpo,
+            from_email=settings.EMAIL_HOST_USER,          # Remitente: secretariademineriadesalta@gmail.com
+            recipient_list=["franciscruz991@gmail.com"],   # Destinatario: Tu correo personal/de control
+            fail_silently=False,                           # Si falla el SMTP, levantará una excepción para loguearla
+        )
+        logger.info("📧 Correo de alerta enviado con éxito vía Django Mail Backend.")
     except Exception as ex:
         logger.error(f"❌ Error crítico al intentar despachar el email de alerta: {str(ex)}")
