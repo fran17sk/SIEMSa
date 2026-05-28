@@ -189,35 +189,46 @@ def consultar_cuit(cuit):
 def verificar_conexion_datacenter(termino="10245"):
     """
     Verifica la conexión con el Datacenter. 
-    Devuelve (True, data) si conecta exitosamente.
-    Devuelve (False, error_msg) si falla (y envía el correo).
+    Devuelve (True, data) si conecta exitosamente y el estado es 200.
+    Devuelve (False, error_msg) si la VPN está caída o el servidor responde un error (ej: 500).
     """
     url_interna = f"http://192.168.0.233/expediente/deuda/?numero={termino}"
     
     try:
-        # Petición con timeout de 5 segundos para que la web no se cuelgue
         response = requests.get(url_interna, timeout=5)
-        response.raise_for_status()
         
-        logger.info(f"✅ Conexión establecida con el Datacenter. Status {response.status_code}")
+        # 💥 CLAVE: Si el estado es 4xx o 5xx (ej: 500), esto lanza un HTTPError automáticamente
+        response.raise_for_status() 
+        
+        # Si pasó la línea anterior, la respuesta es exitosa (200 OK)
+        logger.info(f"✅ Conexión exitosa con el Datacenter. Status {response.status_code}")
         return True, response.json()
         
-    except (requests.exceptions.ConnectTimeout, requests.exceptions.ConnectionError, requests.exceptions.HTTPError) as e:
-        error_msg = str(e)
-        logger.error(f"🚨 ALERTA: No hay respuesta de {url_interna}. Enlace o VPN caídos.")
+    except requests.exceptions.HTTPError as http_err:
+        # 🚨 Captura errores del servidor (500 Internal Server Error, 404, etc.)
+        status_code = response.status_code
+        error_msg = f"Error HTTP {status_code} devuelto por el Datacenter. Respuesta: {response.text[:200]}"
+        logger.error(f"🔴 ERROR EN APLICACIÓN: {error_msg}")
         
-        # Disparamos el correo usando la nueva función simplificada
-        enviar_alerta_email(error_msg)
+        enviar_alerta_email(error_msg, tipo_falla=f"Error en Servidor Central (HTTP {status_code})")
+        return False, error_msg
+
+    except (requests.exceptions.ConnectTimeout, requests.exceptions.ConnectionError) as net_err:
+        # 🚨 Captura caídas de red (VPN caída, timeout de 5 segundos)
+        error_msg = str(net_err)
+        logger.error(f"📶 ERROR DE RED / VPN CAÍDA: {error_msg}")
+        
+        enviar_alerta_email(error_msg, tipo_falla="Caída de Conexión / VPN Inalcanzable")
         return False, error_msg
 
 
-def enviar_alerta_email(error_msg):
-    """Despacha el correo usando la configuración de Gmail de settings.py"""
-    asunto = "⚠️ ALERTA: Pérdida de Conexión al Datacenter - Minería"
+def enviar_alerta_email(error_msg, tipo_falla):
+    """Despacha el correo dinámico detallando el tipo de falla."""
+    asunto = f"⚠️ ALERTA CRÍTICA: {tipo_falla} - SIEMSa"
     cuerpo = f"""
-    Se ha detectado una falla de conectividad con el OpenVPN.
-    El endpoint interno de expedientes no responde.
+    Se ha detectado una anomalía al intentar conectar con el Datacenter de la Provincia.
     
+    Tipo de Incidente: {tipo_falla}
     URL Evaluada: http://192.168.0.233/expediente/deuda/
     
     Detalles técnicos del fallo:
@@ -225,20 +236,16 @@ def enviar_alerta_email(error_msg):
     {error_msg}
     ---------------------------------------------------------
     
-    Nota: Esto puede deberse a una caída del servicio OpenVPN local, a un corte del enlace 
-    con Telecom o a un cambio de políticas/bloqueo en el firewall perimetral del Datacenter.
-    
     Monitoreo Automático - SIEMSa.
     """
     
     try:
-        # Django se encarga de abrir la conexión con smtp.gmail.com, autenticar y cerrar
         send_mail(
             subject=asunto,
             message=cuerpo,
-            from_email=settings.EMAIL_HOST_USER,          # Remitente: secretariademineriadesalta@gmail.com
-            recipient_list=["franciscruz991@gmail.com"],   # Destinatario: Tu correo personal/de control
-            fail_silently=False,                           # Si falla el SMTP, levantará una excepción para loguearla
+            from_email=settings.EMAIL_HOST_USER,
+            recipient_list=["franciscruz991@gmail.com"],
+            fail_silently=False,
         )
         logger.info("📧 Correo de alerta enviado con éxito vía Django Mail Backend.")
     except Exception as ex:
