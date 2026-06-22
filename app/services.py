@@ -57,7 +57,10 @@ def obtener_token_sign():
 
         # AFIP es estricta: restamos 2 minutos para asegurar que para ellos NO sea el futuro
         # IMPORTANTE: Reemplazamos microsegundos a 0 para evitar errores de parseo en AFIP
-        generation_time = (now_ar - datetime.timedelta(minutes=2)).replace(microsecond=0)
+        # Cambia el desfase de -2 minutos a -10 minutos
+        generation_time = (now_ar - datetime.timedelta(minutes=10)).replace(microsecond=0)
+
+        # Asegúrate de mantener la expiración en un rango normal (ej: 2 horas adelante de la actual)
         expiration_time = (now_ar + datetime.timedelta(hours=2)).replace(microsecond=0) # 2 horas es el estándar recomendado
 
         # Formatear con Offset de Zona Horaria (ej: 2026-06-22T10:35:22-03:00)
