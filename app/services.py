@@ -56,21 +56,36 @@ def obtener_token_sign():
         now_ar = datetime.datetime.now(tz_ar)
 
         # AFIP es estricta: restamos 2 minutos para asegurar que para ellos NO sea el futuro
-        generation_time = now_ar - datetime.timedelta(minutes=2)
-        expiration_time = now_ar + datetime.timedelta(hours=12)
+        # IMPORTANTE: Reemplazamos microsegundos a 0 para evitar errores de parseo en AFIP
+        generation_time = (now_ar - datetime.timedelta(minutes=2)).replace(microsecond=0)
+        expiration_time = (now_ar + datetime.timedelta(hours=2)).replace(microsecond=0) # 2 horas es el estándar recomendado
+
+        # Formatear con Offset de Zona Horaria (ej: 2026-06-22T10:35:22-03:00)
+        # Reemplazamos el %z final de Python (ej: -0300) por el formato ISO requerido (-03:00)
+        gen_str = generation_time.strftime('%Y-%m-%dT%H:%M:%S%z')
+        gen_str = gen_str[:-2] + ":" + gen_str[-2:]
+        
+        exp_str = expiration_time.strftime('%Y-%m-%dT%H:%M:%S%z')
+        exp_str = exp_str[:-2] + ":" + exp_str[-2:]
+
+        # --- CONTROL DE LOGS EXPLICITO ---
+        logger.info("================ [MONITORAFIP] ================")
+        logger.info(f"Hora actual AR:  {now_ar.isoformat()}")
+        logger.info(f"generationTime:  {gen_str}")
+        logger.info(f"expirationTime:  {exp_str}")
+        logger.info(f"Unique ID (TS):  {int(now_ar.timestamp())}")
+        logger.info("===============================================")
 
         # IMPORTANTE: XML sin indentación a la izquierda (pegado al borde)
         tra_xml = f"""<?xml version="1.0" encoding="UTF-8"?>
 <loginTicketRequest version="1.0">
 <header>
 <uniqueId>{int(now_ar.timestamp())}</uniqueId>
-<generationTime>{generation_time.strftime('%Y-%m-%dT%H:%M:%S')}</generationTime>
-<expirationTime>{expiration_time.strftime('%Y-%m-%dT%H:%M:%S')}</expirationTime>
+<generationTime>{gen_str}</generationTime>
+<expirationTime>{exp_str}</expirationTime>
 </header>
 <service>ws_sr_padron_a13</service>
 </loginTicketRequest>""".strip().encode("utf-8")
-
-        logger.info(f">>> [WSAA] Generando ticket con hora AR: {generation_time.strftime('%H:%M:%S')}")
 
         # --- Resto de tu lógica de firma (Carga de certs, PKCS7, etc.) ---
         with open(CERT_FILE, "rb") as f:
@@ -87,8 +102,14 @@ def obtener_token_sign():
 
         cms_base64 = base64.b64encode(signature).decode()
         client = Client("https://wsaa.afip.gov.ar/ws/services/LoginCms?wsdl")
-        response_xml = client.service.loginCms(cms_base64)
         
+        # Intentar llamada al WS controlando la respuesta exacta
+        try:
+            response_xml = client.service.loginCms(cms_base64)
+        except Exception as ws_err:
+            logger.error(f">>> [WSAA] Error directo en la llamada SOAP a AFIP: {ws_err}")
+            raise ws_err
+
         xml_obj = etree.fromstring(response_xml.encode("utf-8"))
         token = xml_obj.find(".//token").text
         sign = xml_obj.find(".//sign").text
@@ -106,10 +127,6 @@ def obtener_token_sign():
             logger.error(f">>> [WSAA] No se pudo guardar caché: {e}")
         
         return token, sign
-
-    except Exception as e:
-        logger.exception(f">>> [WSAA] ERROR CRÍTICO: {str(e)}")
-        raise e
 
     except Exception as e:
         logger.exception(f">>> [WSAA] ERROR CRÍTICO en la obtención del ticket: {str(e)}")
