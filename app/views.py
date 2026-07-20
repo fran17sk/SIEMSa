@@ -5405,7 +5405,7 @@ def consulta_deuda_datos(request):
         Canons.objects.using("simsa")
         .filter(expedientid=expediente, isdeleted=False)
         .select_related('canonperiodid', 'canonstateid')
-        .order_by('-canonperiodid__startdate')
+        .order_by('-canonperiodid__autoid')
     )
 
 # 2. Filtrar los Vepdetails asociados y no eliminados
@@ -5418,6 +5418,7 @@ def consulta_deuda_datos(request):
             paiddate__isnull=False        # Garantiza que tengan fecha de pago
         )
         .select_related('vepid', 'canonid', 'canonstateid')
+        .order_by('-canonid__canonperiodid__startdate')
     )
     context = {
         'expediente': expediente,
@@ -5463,7 +5464,7 @@ def expedientes_concesionario(request):
                 Canons.objects.using("simsa")
                 .filter(expedientid=exp, isdeleted=False)
                 .select_related('canonperiodid', 'canonstateid')
-                .order_by('-canonperiodid__startdate')
+                .order_by('-canonperiodid__autoid')
             )
 
         # 2. Filtrar los Vepdetails asociados y no eliminados
@@ -5476,6 +5477,7 @@ def expedientes_concesionario(request):
                 paiddate__isnull=False        # Garantiza que tengan fecha de pago
             )
             .select_related('vepid', 'canonid', 'canonstateid')
+            .order_by('-canonid__canonperiodid__startdate')
         )
 
         data_expedientes.append({
