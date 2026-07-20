@@ -3541,27 +3541,46 @@ def panel_proveedores(request):
     }
 
     return render(request, 'proveedores/panel.html', context)
+
+
+import traceback
+from collections import Counter
+from django.http import JsonResponse
+from django.shortcuts import render
+from django.db import connections
+from django.utils.timezone import now
+from .models import RegistroProveedores  # Asegurate de que la importación sea correcta según tu app
 def analisis_proveedores_ddjj(request):
     """
     Cruza los proveedores declarados en las DDJJ mineras (SIMSA) 
     con el Registro de Proveedores local para determinar su estado de vigencia.
+    - Los gráficos geográficos muestran la totalidad de orígenes (Nacionales vs Internacionales).
+    - Los proveedores internacionales sin jerarquía ascendente se identifican directamente por su nodo raíz.
+    - El análisis de estados y nómina detallada se acota exclusivamente a proveedores de Salta.
     """
+    
     # ==========================================
     # 1. MANEJO DE PETICIÓN AJAX (PROCESAMIENTO)
     # ==========================================
     if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.GET.get('ajax') == '1':
-        concesionario = request.GET.get("concesionario", "all")
-        proyecto = request.GET.get("proyecto", "all")
-        periodo = request.GET.get("periodo", "all")
+        concesionario = request.GET.get("concesionario") or "all"
+        proyecto = request.GET.get("proyecto") or "all"
+        periodo = request.GET.get("periodo") or "all"
 
         try:
-            # Query para traer contratistas/proveedores desde SIMSA
+            # Traemos el contratista y resolvemos hasta 5 niveles de la jerarquía de Zones
             query_simsa = """
                 SELECT DISTINCT 
                     TRIM(c."Cuit") as "Cuit",
                     TRIM(c."BusinessName") as "BusinessName",
                     p2."Name" as "Project",
-                    c3."Name" as "Company"
+                    c3."Name" as "Company",
+                    z."Level" as "ZoneLevel",
+                    z."Name" as "ZonaDirecta",
+                    zp."Name" as "ZonaPadre",
+                    zpp."Name" as "ZonaAbuelo",
+                    zppp."Name" as "ZonaBisabuelo",
+                    zpppp."Name" as "ZonaTatarabuelo"
                 FROM "Contractors" c
                 INNER JOIN "PresentationContractors" pc ON pc."ContractorId" = c."Id"
                 INNER JOIN "Presentations" p ON p."Id" = pc."PresentationId"
@@ -3570,11 +3589,18 @@ def analisis_proveedores_ddjj(request):
                 INNER JOIN "Projects" p2 ON p."ProjectId" = p2."Id"
                 INNER JOIN "CompanyProjects" cp ON cp."ProjectId" = p2."Id"
                 INNER JOIN "Companies" c3 ON c3."Id" = cp."CompanyId"
+                LEFT JOIN "Zones" z ON z."Id" = c."ZoneId"
+                LEFT JOIN "Zones" zp ON zp."Id" = z."ParentId"
+                LEFT JOIN "Zones" zpp ON zpp."Id" = zp."ParentId"
+                LEFT JOIN "Zones" zppp ON zppp."Id" = zpp."ParentId"
+                LEFT JOIN "Zones" zpppp ON zpppp."Id" = zppp."ParentId"
                 WHERE p."IsDeleted" = false
+                  AND c."IsDeleted" = false
                   AND (%s = 'all' OR c3."Id"::text = %s)
                   AND (%s = 'all' OR p2."Id"::text = %s)
                   AND (%s = 'all' OR p3."Id"::text = %s)
                   AND ps."Name" = 'Presentado'
+                  AND pc."IsDeleted" = false
                   AND p."IsRectification" = false
                   AND p2."IsDeleted" = false
                   AND c3."IsDeleted" = false
@@ -3588,18 +3614,20 @@ def analisis_proveedores_ddjj(request):
 
             if not contratistas_ddjj:
                 return JsonResponse({
-                    "resumen": {"vigentes": 0, "no_vigentes": 0, "nunca_inscriptos": 0, "total": 0},
+                    "resumen": {"vigentes": 0, "no_vigentes": 0, "nunca_inscriptos": 0, "total": 0, "nacionales": 0, "internacionales": 0},
+                    "geo": {"paises": {}, "provincias": {}, "localidades": {}, "municipios": {}},
                     "resultados": []
                 })
 
+            # --- Inicializadores Geográficos ---
+            list_paises = []
+            list_provincias = []
+            list_localidades = []
+            list_municipios = []
+
             cuits_declarados = list(set([row[0] for row in contratistas_ddjj if row[0]]))
 
-            # Actualizar vencidos locales en lote
-            RegistroProveedores.objects.filter(
-                tramite='APROBADO',
-                fecha_vto__lt=now().date()
-            ).update(tramite='NO VIGENTE')
-
+            # Registro Local de Proveedores
             registro_local = {}
             if cuits_declarados:
                 ultimos_tramites = (
@@ -3607,7 +3635,6 @@ def analisis_proveedores_ddjj(request):
                     .order_by('cuit_cuil', '-creado')
                     .distinct('cuit_cuil')
                 )
-                
                 for r in ultimos_tramites:
                     registro_local[r.cuit_cuil] = {
                         "tramite": r.tramite,
@@ -3617,74 +3644,151 @@ def analisis_proveedores_ddjj(request):
                     }
 
             resultados = []
-            count_vigentes = 0
-            count_no_vigentes = 0
-            count_nunca = 0
+            nomina = []
+            count_vigentes, count_no_vigentes, count_nunca = 0, 0, 0
+            count_total = 0
 
             for row in contratistas_ddjj:
-                cuit = row[0]
-                razon_social = row[1]
-                proyecto_nom = row[2]
-                empresa_nom = row[3]
-
-                info_local = registro_local.get(cuit)
-
-                if info_local:
-                    if info_local["es_vigente"]:
-                        estado_analisis = "VIGENTE"
-                        count_vigentes += 1
+                cuit, razon_social, proyecto_nom, empresa_nom = row[0], row[1], row[2], row[3]
+                level, z_directa, z_padre, z_abuelo, z_bisabuelo, z_tatarabuelo = row[4], row[5], row[6], row[7], row[8], row[9]
+                count_total = count_total + 1
+                
+                # --- LÓGICA DE DETECCIÓN GEOGRÁFICA RECURSIVA ---
+                pais, provincia, departamento, municipio, localidad = "Desconocido", "Desconocido", "Desconocido", "Desconocido", "Desconocido"
+                camino = [z for z in [z_tatarabuelo, z_bisabuelo, z_abuelo, z_padre, z_directa] if z]
+                
+                if camino:
+                    if len(camino) == 1:
+                        pais = camino[0]
                     else:
-                        estado_analisis = "NO VIGENTE"
-                        count_no_vigentes += 1
-                    
-                    tramite_registro = info_local["tramite"]
-                    fecha_vto = info_local["fecha_vto"]
-                    expediente = info_local["expediente"]
-                else:
-                    estado_analisis = "NUNCA INSCRIPTO"
-                    count_nunca += 1
-                    tramite_registro = "SIN REGISTRO"
-                    fecha_vto = "-"
-                    expediente = "-"
+                        pais = camino[0]
+                        if len(camino) > 1: provincia = camino[1]
+                        if len(camino) > 2: departamento = camino[2]
+                        if len(camino) > 3: municipio = camino[3]
+                        if len(camino) > 4: localidad = camino[4]
+                
+                pais_limpio = pais.lower().strip()
+                list_paises.append(pais_limpio)
 
-                resultados.append({
+                # Definimos banderas booleanas claras para la segmentación
+                es_argentina = "argentina" in pais_limpio
+                es_de_salta = es_argentina and provincia and "salta" in provincia.lower()
+
+                # --- ASIGNACIÓN DE ESTADOS POR DEFECTO (FUERA DE SALTA) ---
+                if es_argentina:
+                    if provincia and provincia != "Desconocido":
+                        list_provincias.append(provincia)
+                    
+                    if es_de_salta:
+                        if localidad and localidad != "Desconocido": list_localidades.append(localidad)
+                        if municipio and municipio != "Desconocido": list_municipios.append(municipio)
+                        
+                        # Valores iniciales temporales para Salta (serán pisados en el bloque B)
+                        estado_analisis = "SIN REGISTRO"
+                        tramite_registro = "SIN REGISTRO"
+                    else:
+                        # Proveedor nacional de otra provincia
+                        estado_analisis = "NACIONAL"
+                        tramite_registro = "N/A"
+                else:
+                    # Proveedor fuera del país
+                    estado_analisis = "INTERNACIONAL"
+                    tramite_registro = "N/A"
+
+                fecha_vto = "-"
+                expediente = "-"
+
+                # ========================================================
+                # B. FILTRO DE DETALLE Y EVALUACIÓN EXCLUSIVA DE SALTA
+                # ========================================================
+                if es_de_salta:
+                    info_local = registro_local.get(cuit)
+                    if info_local:
+                        if info_local["es_vigente"]:
+                            estado_analisis = "VIGENTE"
+                            count_vigentes += 1
+                        else:
+                            estado_analisis = "NO VIGENTE"
+                            count_no_vigentes += 1
+                        tramite_registro = info_local["tramite"]
+                        fecha_vto = info_local["fecha_vto"]
+                        expediente = info_local["expediente"]
+                    else:
+                        estado_analisis = "NUNCA INSCRIPTO"
+                        count_nunca += 1
+                        tramite_registro = "SIN REGISTRO"
+                        fecha_vto = "-"
+                        expediente = "-"
+
+                    # Almacenamos en el array exclusivo detallado de Salta
+                    resultados.append({
+                        "cuit": cuit,
+                        "razon_social": razon_social,
+                        "proyecto": proyecto_nom,
+                        "empresa": empresa_nom,
+                        "estado_analisis": estado_analisis,
+                        "ultimo_tramite": tramite_registro,
+                        "fecha_vto": fecha_vto,
+                        "expediente": expediente
+                    })
+
+                # ========================================================
+                # A. ADICIÓN A LA NÓMINA GENERAL (Al final, con datos ya firmes)
+                # ========================================================
+                nomina.append({
                     "cuit": cuit,
                     "razon_social": razon_social,
                     "proyecto": proyecto_nom,
                     "empresa": empresa_nom,
-                    "estado_analisis": estado_analisis,
-                    "ultimo_tramite": tramite_registro,
-                    "fecha_vto": fecha_vto,
-                    "expediente": expediente
+                    "estado_analisis": estado_analisis,     # Guardará: VIGENTE/NO VIGENTE/NUNCA INSCRIPTO o NACIONAL o INTERNACIONAL
+                    "ultimo_tramite": tramite_registro,     # Datos del Registro Local o 'N/A'
+                    "fecha_vto": fecha_vto,                 # Fecha del Registro Local o '-'
+                    "expediente": expediente                # Nro Expediente o '-'
                 })
+                    
+            # ========================================================
+            # C. PROCESAMIENTO DE RECUENTOS GEOGRÁFICOS TOTALES
+            # ========================================================
+            total_paises = Counter(list_paises)
+            count_nacionales = total_paises.get("argentina", 0)
+            count_internacionales = sum(v for k, v in total_paises.items() if "argentina" not in k)
+
+            # Formateamos con inicial mayúscula para la interfaz del dashboard
+            paises_formateados = {k.title(): v for k, v in total_paises.items() if k}
 
             return JsonResponse({
                 "resumen": {
                     "vigentes": count_vigentes,
                     "no_vigentes": count_no_vigentes,
                     "nunca_inscriptos": count_nunca,
-                    "total": len(resultados)
+                    "total_salta": len(resultados),  # Total de la nómina detallada (Salta)
+                    "nacionales": count_nacionales,
+                    "internacionales": count_internacionales,
+                    "total": count_total
+
                 },
-                "resultados": resultados
+                "geo": {
+                    "paises": paises_formateados,
+                    "provincias": dict(Counter(list_provincias)),
+                    "localidades": dict(Counter(list_localidades)),
+                    "municipios": dict(Counter(list_municipios))
+                },
+                "resultados": resultados,
+                "nomina" : nomina
             })
 
         except Exception as e:
-            import traceback
             return JsonResponse({"error": str(e), "trace": traceback.format_exc()}, status=500)
 
     # ==========================================
     # 2. CARGA INICIAL DE LA PÁGINA (GET NORMAL)
     # ==========================================
-    # Obtenemos las empresas mineras activas desde el entorno 'simsa'
+    lista_empresas = []
     try:
-        # Opción A: Usando el ORM si tenés el modelo mapeado
+        from .models import Companies
         empresas_mineras = Companies.objects.using('simsa').filter(isdeleted=False).order_by('name')
-        
-        # Guardamos en una lista estructurada para el template
         lista_empresas = [{"id": emp.id, "nombre": emp.name} for emp in empresas_mineras]
-        
     except Exception:
-        # Opción B: Si no tenés el modelo 'Companies' en tu app, usamos SQL nativo por las dudas
         with connections['simsa'].cursor() as cursor:
             cursor.execute('SELECT "Id", "Name" FROM "Companies" WHERE "IsDeleted" = false ORDER BY "Name";')
             lista_empresas = [{"id": row[0], "nombre": row[1]} for row in cursor.fetchall()]
@@ -5095,49 +5199,53 @@ def api_proyectos_por_concesionario(request):
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
 
-
 def api_periodos_por_proyecto(request):
     print("➡️ Iniciando api_periodos_por_proyecto")
 
     project_id = request.GET.get("project_id")
     print(f"🟢 Parámetro recibido project_id={project_id}")
 
-    if not project_id:
-        print("🔴 Error: falta project_id")
-        return JsonResponse({"error": "Falta el parámetro project_id"}, status=400)
-
     try:
         print("🔍 Consultando presentaciones...")
-        presentaciones = (
+        
+        # Filtros base comunes a cualquier consulta
+        filtros = {
+            'isdeleted': False,
+            'presentationstateid__name': 'Presentado',
+            'periodid__isnull': False  # Evitamos registros con períodos huérfanos
+        }
+        
+        # Si viene un proyecto específico y no es la bandera 'all', acotamos el filtro
+        if project_id and project_id != 'all':
+            filtros['projectid'] = project_id
+            print(f"📌 Filtrando por un único proyecto: {project_id}")
+        else:
+            print("🌐 Modo global detectado: trayendo el universo completo de períodos presentados.")
+
+        # Realizamos la consulta agrupando y obteniendo valores únicos directo desde la BD (SIMSA)
+        # Esto nos evita el bucle for en Python y es muchísimo más rápido
+        periodos_queryset = (
             Presentations.objects.using('simsa')
-            .filter(
-                projectid=project_id,
-                isdeleted=False,
-                presentationstateid__name='Presentado'
-            )
-            .select_related("periodid","presentationstateid")
+            .filter(**filtros)
+            .values('periodid__id', 'periodid__name')
+            .distinct()
+            .order_by('-periodid__name')  # O el orden cronológico que prefieras
         )
 
-        print(f"📦 Presentaciones encontradas: {presentaciones.count()}")
+        # Mapeamos al formato JSON esperado por el frontend
+        periodos = [
+            {
+                "id": item['periodid__id'],
+                "nombre": item['periodid__name']
+            }
+            for item in periodos_queryset
+        ]
 
-        # Evitamos duplicados usando un set de periodos
-        periodos = []
-        vistos = set()
-
-        for p in presentaciones:
-            print(f"➡️ Procesando presentación {p.id} | Periodo={getattr(p.periodid, 'name', None)}")
-            if p.periodid and p.periodid.name not in vistos:
-                periodos.append({
-                    "id": p.periodid.id,
-                    "nombre": p.periodid.name,
-                })
-                vistos.add(p.periodid.name)
-
-        print(f"✅ Total de periodos distintos: {len(periodos)}")
+        print(f"✅ Total de períodos distintos encontrados: {len(periodos)}")
         return JsonResponse({"periodos": periodos})
 
     except Exception as e:
-        print("❌ Error en api_periodos_por_proyecto:")
+        print(f"❌ Error en api_periodos_por_proyecto: {str(e)}")
         return JsonResponse({"error": str(e)}, status=500)
 
 def generar_informe_proveedores(request):
@@ -5293,13 +5401,24 @@ def consulta_deuda_datos(request):
         .values_list('companyid__name', flat=True)
     )
 
-    pagos = (
+    pagos_aux = (
         Canons.objects.using("simsa")
         .filter(expedientid=expediente, isdeleted=False)
         .select_related('canonperiodid', 'canonstateid')
         .order_by('-canonperiodid__startdate')
     )
 
+# 2. Filtrar los Vepdetails asociados y no eliminados
+# Si quieres solo los pagados, puedes agregar filtros como paiddate__isnull=False o balance=0
+    pagos = (
+        Vepdetails.objects.using("simsa")
+        .filter(
+            canonid__in=pagos_aux,            # Utiliza la subconsulta
+            isdeleted=False,              # Excluye borrados lógicos
+            paiddate__isnull=False        # Garantiza que tengan fecha de pago
+        )
+        .select_related('vepid', 'canonid', 'canonstateid')
+    )
     context = {
         'expediente': expediente,
         'concesionarios': concesionarios,

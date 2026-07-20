@@ -1,295 +1,401 @@
 {% extends 'base.html' %}
 
 {% block nav %}
-    {% include 'proveedores/navbar.html' %}
+{% include 'proveedores/navbar.html' %}
 {% endblock %}
 
 {% block head %}
 <link href="https://cdn.datatables.net/1.13.7/css/jquery.dataTables.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
-    
-    <style>
-        /* --- variables de diseño (SaaS Dark Tech) --- */
-        :root {
-            --bg-main: #0f172a;
-            --bg-card: #1e293b;
-            --bg-input: #0f172a;
-            --border-color: #334155;
-            --text-main: #e2e8f0;
-            --text-muted: #94a3b8;
-            --color-success: #10b981;
-            --color-warning: #f59e0b;
-            --color-danger: #ef4444;
-            --color-info: #38bdf8;
-        }
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
 
+<style>
+    :root {
 
-        /* --- estructura base --- */
-        .container {
-            max-width: 1600px;
-            margin: 0 auto;
-            display: flex;
-            flex-direction: column;
-            gap: 24px;
-        }
+        --color-success: #10b981;
+        --color-warning: #f59e0b;
+        --color-danger: #ef4444;
+        --color-info: #38bdf8;
+    }
 
-        /* --- encabezado --- */
-        .header h1 {
-            font-size: 1.8rem;
-            font-weight: 700;
-            margin: 0 0 4px 0;
-            color: #fff;
-        }
-        .header p {
-            color: var(--text-muted);
-            margin: 0;
-            font-size: 0.95rem;
-        }
+    .container {
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+    }
 
-        /* --- tarjetas contenedoras --- */
-        .card {
-            background-color: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 24px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
-        }
+    .header h1 {
+        font-size: 1.8rem;
+        font-weight: 700;
+        margin: 0 0 4px 0;
+        color: #fff;
+    }
 
-        /* --- sección filtros --- */
-        .filters-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 20px;
-        }
-        .filter-group {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-        .filter-group label {
-            font-size: 0.75rem;
-            font-weight: 700;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .form-select {
-            background-color: var(--bg-input);
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            color: var(--text-main);
-            padding: 10px 12px;
-            font-size: 0.9rem;
-            outline: none;
-            cursor: pointer;
-            transition: border-color 0.2s;
-        }
-        .form-select:focus {
-            border-color: var(--color-info);
-        }
-        .form-select:disabled {
-            opacity: 0.4;
-            cursor: not-allowed;
-        }
+    .header p {
+        color: var(--text-muted);
+        margin: 0;
+        font-size: 0.95rem;
+    }
 
-        /* --- dashboard grid (kpis y gráfico) --- */
-        .dashboard-grid {
-            display: grid;
-            grid-template-columns: 2fr 1fr;
-            gap: 24px;
-        }
-        @media (max-width: 1024px) {
-            .dashboard-grid { grid-template-columns: 1fr; }
-        }
-
-        .kpis-subgrid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 16px;
-        }
-        .kpi-card {
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            min-height: 110px;
-            border-left: 5px solid transparent;
-        }
-        .kpi-card .title {
-            font-size: 0.75rem;
-            font-weight: 700;
-            color: var(--text-muted);
-            text-transform: uppercase;
-        }
-        .kpi-card .value {
-            font-size: 2rem;
-            font-weight: 700;
-            margin: 8px 0;
-        }
-        .kpi-card .footer {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-        }
-        .kpi-vigente { border-left-color: var(--color-success); }
-        .kpi-vigente .value { color: var(--color-success); }
-        .kpi-novigente { border-left-color: var(--color-warning); }
-        .kpi-novigente .value { color: var(--color-warning); }
-        .kpi-nunca { border-left-color: var(--color-danger); }
-        .kpi-nunca .value { color: var(--color-danger); }
-
-        .total-strip {
-            grid-column: 1 / -1;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background-color: rgba(255,255,255,0.02);
-            padding: 12px 16px;
-            border-radius: 8px;
-            border: 1px dashed var(--border-color);
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: var(--text-muted);
-        }
-        .badge-total {
-            background-color: var(--border-color);
-            color: #fff;
-            padding: 6px 12px;
-            border-radius: 4px;
-        }
-
-        /* --- gráfico --- */
-        .chart-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-        }
-        .chart-container h6 {
-            margin: 0 0 16px 0;
-            color: #fff;
-            font-size: 0.95rem;
-        }
-
-        /* --- badges de los estados en la tabla --- */
-        .badge-status {
-            display: inline-block;
-            padding: 4px 8px;
-            font-size: 0.75rem;
-            font-weight: 700;
-            border-radius: 4px;
-            border: 1px solid transparent;
-        }
-        .badge-status.vigente {
-            background-color: rgba(16, 185, 129, 0.1);
-            color: var(--color-success);
-            border-color: rgba(16, 185, 129, 0.2);
-        }
-        .badge-status.no-vigente {
-            background-color: rgba(245, 158, 11, 0.1);
-            color: var(--color-warning);
-            border-color: rgba(245, 158, 11, 0.2);
-        }
-        .badge-status.nunca {
-            background-color: rgba(239, 68, 68, 0.1);
-            color: var(--color-danger);
-            border-color: rgba(239, 68, 68, 0.2);
-        }
-        .badge-tramite {
-            background-color: #0f172a;
-            color: var(--text-main);
-            border: 1px solid var(--border-color);
-            padding: 4px 6px;
-            font-size: 0.75rem;
-            border-radius: 4px;
-        }
-
-        /* --- customización de datatables puro --- */
-        .dataTables_wrapper {
-            color: var(--text-main) !important;
-            padding-top: 10px;
-        }
-        table.dataTable {
-            border-collapse: collapse !important;
-            border-bottom: 1px solid var(--border-color) !important;
-        }
-        table.dataTable thead th {
-            background-color: var(--bg-card) !important;
-            color: var(--text-muted) !important;
-            font-size: 0.8rem;
-            text-transform: uppercase;
-            border-bottom: 2px solid var(--border-color) !important;
-            padding: 12px 10px !important;
-        }
-        table.dataTable tbody tr {
-            background-color: #1e293b !important;
-        }
-        table.dataTable tbody tr:nth-child(even) {
-            background-color: #151f32 !important;
-        }
-        table.dataTable tbody td {
-            padding: 12px 10px !important;
-            border-top: 1px solid var(--border-color) !important;
-            color: #cbd5e1;
-            font-size: 0.9rem;
-        }
-        .dataTables_wrapper .dataTables_filter input {
-            background-color: var(--bg-input) !important;
-            border: 1px solid var(--border-color) !important;
-            border-radius: 6px !important;
-            color: #fff !important;
-            padding: 8px 12px !important;
-            margin-left: 10px !important;
-            width: 280px;
-        }
-        .dataTables_wrapper .dataTables_length select {
-            background-color: var(--bg-input) !important;
-            border: 1px solid var(--border-color) !important;
-            border-radius: 6px !important;
-            color: #fff !important;
-            padding: 4px 8px !important;
-        }
-        .dataTables_wrapper .dataTables_info { color: var(--text-muted) !important; }
-        .dataTables_wrapper .dataTables_paginate .paginate_button {
-            background: var(--bg-card) !important;
-            border: 1px solid var(--border-color) !important;
-            color: var(--color-info) !important;
-            border-radius: 4px !important;
-        }
-        .dataTables_wrapper .dataTables_paginate .paginate_button.current {
-            background: var(--color-info) !important;
-            color: var(--bg-main) !important;
-            border-color: var(--color-info) !important;
-        }
-        .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
-            background: var(--border-color) !important;
-            color: #fff !important;
-        }
-        code {
-            font-family: monospace;
-            color: #f43f5e;
-            background-color: rgba(244, 63, 94, 0.1);
-            padding: 2px 6px;
-            border-radius: 4px;
-        }
-        
-    .custom-select, .search-input {
-        width: 100%;
-        background: var(--bg-main);
+    .card {
+        background-color: var(--bg-card);
         border: 1px solid var(--border-color);
-        color: var(--text-light);
+        border-radius: 12px;
+        padding: 24px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Filtros */
+    .filters-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 20px;
+    }
+
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .filter-group label {
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .form-select {
+        background-color: var(--bg-input);
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        color: var(--text-main);
         padding: 10px 12px;
-        border-radius: 8px;
         font-size: 0.9rem;
         outline: none;
-        transition: border-color 0.2s;
+        cursor: pointer;
     }
 
-    .custom-select:focus, .search-input:focus {
-        border-color: var(--primary-accent);
+    /* ---- LAYOUT DASHBOARD ORIGINAL (Fila 1) ---- */
+    .main-dashboard-layout {
+        display: grid;
+        grid-template-columns: 350px 1fr;
+        gap: 24px;
     }
 
-    /* Dropdown Personalizado (Buscador) */
-    .dropdown-container { position: relative; }
+    .kpi-vertical-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .kpi-card-row {
+        background-color: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        padding: 16px 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-left: 5px solid transparent;
+    }
+
+    .kpi-card-row .info {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .kpi-card-row .info .title {
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: var(--text-muted);
+        text-transform: uppercase;
+    }
+
+    .kpi-card-row .info .desc {
+        font-size: 0.8rem;
+        color: rgba(148, 163, 184, 0.7);
+        margin-top: 2px;
+    }
+
+    .kpi-card-row .value {
+        font-size: 2rem;
+        font-weight: 800;
+    }
+
+    .kpi-vigente {
+        border-left-color: var(--color-success);
+    }
+
+    .kpi-vigente .value {
+        color: var(--color-success);
+    }
+
+    .kpi-novigente {
+        border-left-color: var(--color-warning);
+    }
+
+    .kpi-novigente .value {
+        color: var(--color-warning);
+    }
+
+    .kpi-nunca {
+        border-left-color: var(--color-danger);
+    }
+
+    .kpi-nunca .value {
+        color: var(--color-danger);
+    }
+
+    .total-strip-box {
+        background-color: rgba(15, 23, 42, 0.6);
+        border: 1px dashed var(--border-color);
+        padding: 14px 20px;
+        border-radius: 8px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--text-muted);
+    }
+
+    .badge-total-count {
+        background: #fff;
+        color: #0f172a;
+        padding: 4px 10px;
+        border-radius: 4px;
+        font-weight: 700;
+        font-size: 0.9rem;
+    }
+
+    /* ---- LAYOUT NUEVA SECCIÓN GEO REESTRUCTURADA (Fila 2) ---- */
+    .geo-dashboard-layout {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 24px;
+    }
+
+    .geo-cards-split {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+    }
+
+    .geo-kpi-box {
+        background: rgba(30, 41, 59, 0.5);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 16px;
+        text-align: center;
+        border-top: 4px solid var(--color-info);
+    }
+
+    .geo-kpi-box .val {
+        font-size: 1.8rem;
+        font-weight: 800;
+        color: #fff;
+        margin-top: 4px;
+    }
+
+    .geo-kpi-box .lbl {
+        font-size: 0.72rem;
+        color: var(--text-muted);
+        font-weight: 700;
+        text-transform: uppercase;
+    }
+
+    /* Estructura Vertical de Gráficos Grandes + Tablas Laterales */
+    .geo-vertical-charts-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+    }
+
+    .geo-row-item {
+        background: rgba(15, 23, 42, 0.3);
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        padding: 20px;
+        display: grid;
+        grid-template-columns: 1fr 350px;
+        gap: 20px;
+        align-items: start;
+    }
+
+    .geo-row-item .chart-wrapper {
+        position: relative;
+        height: 280px;
+        /* Gráficos mucho más grandes */
+        width: 100%;
+    }
+
+    .geo-row-item .table-wrapper {
+        background: rgba(30, 41, 59, 0.4);
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        padding: 12px;
+        max-height: 280px;
+        overflow-y: auto;
+    }
+
+    .geo-row-item h6 {
+        grid-column: 1 / -1;
+        margin: 0 0 8px 0;
+        color: var(--color-info);
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 8px;
+    }
+
+    /* Min tablas geo */
+    .mini-table-geo {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.8rem;
+    }
+
+    .mini-table-geo th {
+        text-align: left;
+        color: var(--text-muted);
+        padding: 6px 8px;
+        border-bottom: 1px solid var(--border-color);
+        font-weight: 700;
+    }
+
+    .mini-table-geo td {
+        padding: 6px 8px;
+        border-bottom: 1px solid rgba(51, 65, 85, 0.4);
+        color: var(--text-main);
+    }
+
+    .mini-table-geo tr:last-child td {
+        border-bottom: none;
+    }
+
+    .mini-table-geo .count-badge {
+        background: var(--border-color);
+        color: #fff;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-weight: 600;
+    }
+
+    @media (max-width: 1200px) {
+
+        .main-dashboard-layout,
+        .geo-dashboard-layout {
+            grid-template-columns: 1fr;
+        }
+
+        .geo-row-item {
+            grid-template-columns: 1fr;
+        }
+
+        .geo-row-item .chart-wrapper {
+            height: 220px;
+        }
+    }
+
+    /* Tabla & Badges */
+    .badge-status {
+        display: inline-block;
+        padding: 4px 8px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        border-radius: 4px;
+        border: 1px solid transparent;
+    }
+
+    .badge-status.vigente {
+        background-color: rgba(16, 185, 129, 0.1);
+        color: var(--color-success);
+        border-color: rgba(16, 185, 129, 0.2);
+    }
+
+    .badge-status.no-vigente {
+        background-color: rgba(245, 158, 11, 0.1);
+        color: var(--color-warning);
+        border-color: rgba(245, 158, 11, 0.2);
+    }
+
+    .badge-status.nunca {
+        background-color: rgba(239, 68, 68, 0.1);
+        color: var(--color-danger);
+        border-color: rgba(239, 68, 68, 0.2);
+    }
+    .badge-status.nacional {
+        background-color: rgba(63, 118, 190, 0.2);
+        color: var(--color-info);
+        border-color: rgba(63, 118, 190, 0.2);
+    }
+    .badge-status.internacional {
+        background-color: rgba(199, 53, 187, 0.1);
     
+        border-color: rgba(199, 53, 187, 0.3);
+    }
+
+    .badge-tramite {
+        background-color: #0f172a;
+        color: var(--text-main);
+        border: 1px solid var(--border-color);
+        padding: 4px 6px;
+        font-size: 0.75rem;
+        border-radius: 4px;
+    }
+
+    .dataTables_wrapper {
+        color: var(--text-main) !important;
+        padding-top: 10px;
+    }
+
+    table.dataTable {
+        border-collapse: collapse !important;
+        border-bottom: 1px solid var(--border-color) !important;
+    }
+
+    table.dataTable thead th {
+        background-color: var(--bg-card) !important;
+        color: var(--text-muted) !important;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        border-bottom: 2px solid var(--border-color) !important;
+        padding: 12px 10px !important;
+    }
+
+    table.dataTable tbody tr {
+        background-color: #1e293b !important;
+    }
+
+    table.dataTable tbody tr:nth-child(even) {
+        background-color: #151f32 !important;
+    }
+
+    table.dataTable tbody td {
+        padding: 12px 10px !important;
+        border-top: 1px solid var(--border-color) !important;
+        color: #cbd5e1;
+        font-size: 0.9rem;
+    }
+
+    .dataTables_wrapper .dataTables_filter input {
+        background-color: var(--bg-input) !important;
+        border: 1px solid var(--border-color) !important;
+        border-radius: 6px !important;
+        color: #fff !important;
+        padding: 8px 12px !important;
+        width: 280px;
+    }
+
+    /* Dropdown personalizado */
+    .dropdown-container {
+        position: relative;
+    }
+
     .dropdown-trigger {
         background: var(--bg-main);
         border: 1px solid var(--border-color);
@@ -300,7 +406,7 @@
         justify-content: space-between;
         align-items: center;
         font-size: 0.9rem;
-        color: var(--text-light);
+        color: var(--text-main);
     }
 
     .dropdown-panel {
@@ -313,7 +419,7 @@
         border: 1px solid var(--border-color);
         border-radius: 10px;
         z-index: 100;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
         overflow: hidden;
     }
 
@@ -324,6 +430,7 @@
         border-bottom: 1px solid var(--border-color);
         padding: 10px;
         color: white;
+        outline: none;
     }
 
     .dropdown-panel ul {
@@ -342,72 +449,281 @@
     }
 
     .dropdown-panel li:hover {
-        background: var(--primary-accent);
-        color: white;
+        background: var(--color-info);
+        color: #0f172a;
     }
 
-    @media (max-width: 768px) {
-        .report-grid { grid-template-columns: 1fr; }
-    }
-    .row{
+    .flex-row-header {
         display: flex;
         justify-content: space-between;
+        align-items: center;
     }
+
     .btn-pdf {
-    background-color: transparent;
-    border: 1px solid var(--color-info);
-    color: var(--color-info);
-    padding: 10px 20px;
-    border-radius: 8px;
-    font-size: 0.9rem;
-    font-weight: 600;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    transition: all 0.2s ease;
-}
+        background-color: transparent;
+        border: 1px solid var(--color-info);
+        color: var(--color-info);
+        padding: 10px 20px;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        transition: all 0.2s ease;
+    }
+
     .btn-pdf:hover {
         background-color: var(--color-info);
         color: var(--bg-main);
         box-shadow: 0 0 12px rgba(56, 189, 248, 0.4);
     }
 
-    </style>
+    code {
+        font-family: monospace;
+        color: #f43f5e;
+        background-color: rgba(244, 63, 94, 0.1);
+        padding: 2px 6px;
+        border-radius: 4px;
+    }
+
+    @media print {
+
+        /* Forzar fondo blanco y texto oscuro para legibilidad y ahorro de tinta */
+        body,
+        .container,
+        .card,
+        .geo-row-item,
+        .table-wrapper,
+        table.dataTable tbody tr {
+            background: #ffffff !important;
+            color: #0f172a !important;
+            box-shadow: none !important;
+            border-color: #cbd5e2 !important;
+        }
+
+        /* Ocultar elementos innecesarios en el papel (Navbars, Filtros y Botones) */
+        nav,
+        .navbar,
+        #btn-descargar-pdf,
+        .card:has(.filters-grid),
+        .dataTables_length,
+        .dataTables_filter,
+        .dataTables_info,
+        .dataTables_paginate {
+            display: none !important;
+        }
+
+        /* Ajustar contenedores para ocupar el 100% del ancho de página */
+        .container {
+            width: 100% !important;
+            max-width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            gap: 16px !important;
+        }
+
+        /* Forzar a DataTables a expandir TODAS las filas ocultas en el papel */
+        table.dataTable {
+            width: 100% !important;
+            height: auto !important;
+            display: table !important;
+        }
+
+        table.dataTable tbody tr {
+            display: table-row !important;
+        }
+
+        /* Modificar los textos de los gráficos activos para que contrasten en blanco */
+        canvas {
+            filter: invert(1) hue-rotate(180deg) brightness(0.6);
+            /* Invierte colores oscuros de Chart.js de forma limpia */
+            max-width: 100% !important;
+        }
+
+        /* Cabecera del reporte emulando un documento formal */
+        .header h1 {
+            color: #0f172a !important;
+            font-size: 1.6rem !important;
+            border-bottom: 2px solid #0f172a;
+            padding-bottom: 8px;
+        }
+
+        /* Evitar que los gráficos o bloques KPI se corten a la mitad entre páginas */
+        .main-dashboard-layout,
+        .geo-row-item,
+        .card {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+        }
+
+        /* Forzar saltos de página prolijos */
+        .card:has(#tabla-resultados) {
+            page-break-before: always !important;
+            break-before: always !important;
+        }
+    }
+
+    /* ---- DISEÑO DEL DASHBOARD EXACTO A LA IMAGEN ---- */
+    .dashboard-kpi-container {
+        display: grid;
+        grid-template-columns: 1fr 350px;
+        gap: 24px;
+        align-items: start;
+    }
+
+    .kpi-cards-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+    }
+
+    .kpi-card-saas {
+        background-color: #1a2332;
+        /* Fondo oscuro exacto */
+        border: 1px solid #2e3a4e;
+        border-radius: 12px;
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        border-left: 4px solid transparent;
+    }
+
+    .kpi-card-saas .title {
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: #94a3b8;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .kpi-card-saas .value {
+        font-size: 2.8rem;
+        font-weight: 800;
+        line-height: 1;
+    }
+
+    .kpi-card-saas .footer-desc {
+        font-size: 0.85rem;
+        color: #64748b;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    /* Colores de bordes y fuentes específicos */
+    .card-vigente {
+        border-left-color: var(--color-success);
+    }
+
+    .card-vigente .value {
+        color: var(--color-success);
+    }
+
+    .card-novigente {
+        border-left-color: var(--color-warning);
+    }
+
+    .card-novigente .value {
+        color: var(--color-warning);
+    }
+
+    .card-nunca {
+        border-left-color: var(--color-danger);
+    }
+
+    .card-nunca .value {
+        color: var(--color-danger);
+    }
+
+    /* Contenedor Inferior del Total General */
+    .total-footer-strip {
+        grid-column: 1 / -1;
+        /* Ocupa el ancho completo de las 3 columnas */
+        background-color: rgba(15, 23, 42, 0.4);
+        border: 1px dashed #2e3a4e;
+        border-radius: 8px;
+        padding: 16px 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: #94a3b8;
+        letter-spacing: 0.5px;
+    }
+
+    .badge-total-saas {
+        background-color: #2e3a4e;
+        color: #fff;
+        padding: 6px 14px;
+        border-radius: 6px;
+        font-weight: 800;
+        font-size: 0.95rem;
+    }
+
+    /* Caja del Gráfico de Distribución */
+    .chart-distribution-box {
+        background-color: #1a2332;
+        border: 1px solid #2e3a4e;
+        border-radius: 12px;
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        height: 100%;
+        box-sizing: border-box;
+    }
+
+    .chart-distribution-box h5 {
+        margin: 0 0 16px 0;
+        color: #fff;
+        font-size: 0.95rem;
+        font-weight: 700;
+        text-align: center;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
 <div class="container">
     <div class="header">
-        <div class="row">
-            <h1><i class="fa-solid fa-chart-network text-info" style="color: var(--color-info); margin-right: 8px;"></i>Auditoría Cruzada de Proveedores</h1>
+        <div class="flex-row-header">
+            <div>
+                <h1><i class="fa-solid fa-shield-halved text-info"
+                        style="color: var(--color-info); margin-right: 8px;"></i>Auditoría Avanzada de Proveedores</h1>
+                <p>Análisis y cruzamiento de Declaraciones Juradas contra el Registro Provincial de Proveedores Libres.
+                </p>
+            </div>
             <button id="btn-descargar-pdf" class="btn-pdf">
-                <i class="fa-solid fa-file-pdf" style="margin-right: 8px;"></i> Exportar Reporte
-            </button>   
+                <i class="fa-solid fa-file-pdf" style="margin-right: 8px;"></i> Generar Reporte PDF
+            </button>
         </div>
-        <p>Contraste de Declaraciones Juradas (SIMSA) contra el Registro de Proveedores Local.</p>
     </div>
 
     <div class="card">
-        <h5 style="margin: 0 0 16px 0; color: #fff; font-size: 1rem;"><i class="fa-solid fa-sliders text-muted" style="margin-right: 8px;"></i>Filtros de Búsqueda</h5>
+        <h5 style="margin: 0 0 16px 0; color: #fff; font-size: 1rem;"><i class="fa-solid fa-sliders text-muted"
+                style="margin-right: 8px;"></i>Parámetros de Auditoría</h5>
         <div class="filters-grid">
             <div class="filter-group">
-                <label>Concesionario</label>
+                <label>Empresa Concesionaria</label>
                 <div class="dropdown-container" id="select-concesionario">
-                        <div class="dropdown-trigger">
-                            <span class="selected-val">Seleccionar...</span>
-                            <i data-lucide="chevron-down"></i>
-                        </div>
-                        <div class="dropdown-panel">
-                            <input type="text" placeholder="Buscar...">
-                            <ul>
-                                <li data-id="all">Todos</li>
-                                {% for emp in empresas %}
-                                <li data-id="{{ emp.id }}">{{ emp.nombre }}</li>
-                                {% endfor %}
-                            </ul>
-                        </div>
-                        <input type="hidden" id="id-prov" value="all">
+                    <div class="dropdown-trigger">
+                        <span class="selected-val">-- Todas las Empresas --</span>
+                        <i class="fa-solid fa-chevron-down" style="font-size:0.8rem;"></i>
                     </div>
+                    <div class="dropdown-panel">
+                        <input type="text" placeholder="Buscar concesionario...">
+                        <ul>
+                            <li data-id="all">-- Todas las Empresas --</li>
+                            {% for emp in empresas %}
+                            <li data-id="{{ emp.id }}">{{ emp.nombre }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    <input type="hidden" id="id-prov" value="all">
+                </div>
             </div>
             <div class="filter-group">
                 <label>Proyecto Minero</label>
@@ -416,48 +732,190 @@
                 </select>
             </div>
             <div class="filter-group">
-                <label>Período DDJJ</label>
-                <select id="select-periodo" class="form-select" disabled>
+                <label>Período Declarado</label>
+                <select id="select-periodo" class="form-select">
                     <option value="all">-- Todos los Períodos --</option>
                 </select>
             </div>
         </div>
     </div>
 
-    <div class="dashboard-grid">
-        <div class="kpis-subgrid">
-            <div class="card kpi-card kpi-vigente">
-                <span class="title">Vigentes / Aprobados</span>
-                <div class="value" id="txt-vigentes">0</div>
-                <div class="footer"><i class="fa-solid fa-circle-check" style="margin-right: 4px;"></i>Aprobados activos</div>
+<span class="title">INFORMACION GENERAL</span>
+<div class="dashboard-kpi-container" style="margin-bottom: 32px;">
+    <div class="kpi-cards-grid">
+        <div class="kpi-card-saas card-vigente">
+            <span class="title">Proveedores Locales</span>
+            <div style="display: flex; align-items: baseline; justify-content: space-between;">
+                <div class="value" id="txt-local">0</div>
+                <span class="badge-status vigente" id="pct-local" style="font-size: 0.85rem; padding: 4px 8px;">0%</span>
             </div>
-            <div class="card kpi-card kpi-novigente">
-                <span class="title">No Vigentes / Trámite</span>
-                <div class="value" id="txt-no-vigentes">0</div>
-                <div class="footer"><i class="fa-solid fa-circle-exclamation" style="margin-right: 4px;"></i>Vencidos o pendientes</div>
-            </div>
-            <div class="card kpi-card kpi-nunca">
-                <span class="title">No Inscriptos</span>
-                <div class="value" id="txt-nunca">0</div>
-                <div class="footer"><i class="fa-solid fa-triangle-exclamation" style="margin-right: 4px;"></i>Sin legajo local</div>
-            </div>
-            <div class="total-strip">
-                <span>TOTAL EVALUADO EN ESTA CONSULTA:</span>
-                <span class="badge-total" id="txt-total">0 Proveedores</span>
-            </div>
+            <div class="footer-desc"><i class="fa-solid fa-circle-check"></i> Origen Salta</div>
         </div>
 
-        <div class="card chart-container">
-            <h6>Distribución Porcentual</h6>
-            <div style="position: relative; height:160px; width:100%">
-                <canvas id="chart-analisis"></canvas>
+        <div class="kpi-card-saas card-novigente">
+            <span class="title">Proveedores Nacionales</span>
+            <div style="display: flex; align-items: baseline; justify-content: space-between;">
+                <div class="value" id="txt-nacionales">0</div>
+                <span class="badge-status no-vigente" id="pct-nacionales" style="font-size: 0.85rem; padding: 4px 8px;">0%</span>
+            </div>
+            <div class="footer-desc"><i class="fa-solid fa-circle-info"></i> Resto del País</div>
+        </div>
+
+        <div class="kpi-card-saas card-nunca">
+            <span class="title">Internacionales</span>
+            <div style="display: flex; align-items: baseline; justify-content: space-between;">
+                <div class="value" id="txt-internacionales">0</div>
+                <span class="badge-status nunca" id="pct-internacionales" style="font-size: 0.85rem; padding: 4px 8px;">0%</span>
+            </div>
+            <div class="footer-desc"><i class="fa-solid fa-earth-americas"></i> Fuera de Argentina</div>
+        </div>
+
+        <div class="total-footer-strip">
+            <span>TOTAL EVALUADO EN ESTA CONSULTA:</span>
+            <span class="badge-total-saas" id="txt-total">0 Proveedores</span>
+        </div>
+    </div>
+
+    <div class="chart-distribution-box">
+        <h5>Distribución por Origen</h5>
+        <div style="position: relative; height: 180px; width: 100%;"><canvas id="chart-origen"></canvas></div>
+    </div>
+</div>
+<span class="title">ANALISIS DETALLADO DE PROVEEDORES LOCALES</span>
+<div class="dashboard-kpi-container" style="margin-top: 12px;">
+    <div class="kpi-cards-grid">
+        <div class="kpi-card-saas card-vigente">
+            <span class="title">Vigentes / Aprobados</span>
+            <div style="display: flex; align-items: baseline; justify-content: space-between;">
+                <div class="value" id="txt-vigentes">0</div>
+                <span class="badge-status vigente" id="pct-vigentes" style="font-size: 0.85rem; padding: 4px 8px;">0%</span>
+            </div>
+            <div class="footer-desc"><i class="fa-solid fa-circle-check"></i> Aprobados activos</div>
+        </div>
+
+        <div class="kpi-card-saas card-novigente">
+            <span class="title">No Vigentes / Trámite</span>
+            <div style="display: flex; align-items: baseline; justify-content: space-between;">
+                <div class="value" id="txt-no-vigentes">0</div>
+                <span class="badge-status no-vigente" id="pct-novigentes" style="font-size: 0.85rem; padding: 4px 8px;">0%</span>
+            </div>
+            <div class="footer-desc"><i class="fa-solid fa-circle-exclamation"></i> Vencidos o pendientes</div>
+        </div>
+
+        <div class="kpi-card-saas card-nunca">
+            <span class="title">No Inscriptos</span>
+            <div style="display: flex; align-items: baseline; justify-content: space-between;">
+                <div class="value" id="txt-nunca">0</div>
+                <span class="badge-status nunca" id="pct-nunca-salta" style="font-size: 0.85rem; padding: 4px 8px;">0%</span>
+            </div>
+            <div class="footer-desc"><i class="fa-solid fa-triangle-exclamation"></i> Sin legajo local</div>
+        </div>
+
+        <div class="total-footer-strip">
+            <span>TOTAL EVALUADO EN SALTA:</span>
+            <span class="badge-total-saas" id="txt-total-salta">0 Proveedores</span>
+        </div>
+    </div>
+
+    <div class="chart-distribution-box">
+        <h5>Distribución Porcentual</h5>
+        <div style="position: relative; width: 100%; height: 180px;"><canvas id="chart-analisis"></canvas></div>
+    </div>
+</div>
+    
+    <div class="geo-dashboard-layout">
+
+
+        <div class="card" style="display: flex; flex-direction: column; gap: 16px;">
+            <h5 style="margin: 0; color: #fff; font-size: 0.9rem; text-transform: uppercase;"><i
+                    class="fa-solid fa-map-location-dot"
+                    style="color: var(--color-info); margin-right: 8px;"></i>Distribución Geográfica Detallada</h5>
+
+            <div class="geo-vertical-charts-stack">
+                <div class="geo-row-item">
+                    <h6>Provincias (Argentina)</h6>
+                    <div class="chart-wrapper">
+                        <canvas id="chart-provincias"></canvas>
+                    </div>
+                    <div class="table-wrapper">
+                        <table class="mini-table-geo" id="table-geo-provincias">
+                            <thead>
+                                <tr>
+                                    <th>Jurisdicción</th>
+                                    <th style="width: 60px; text-align: center;">Cant.</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="geo-row-item">
+                    <h6>Localidades (Salta)</h6>
+                    <div class="chart-wrapper">
+                        <canvas id="chart-localidades"></canvas>
+                    </div>
+                    <div class="table-wrapper">
+                        <table class="mini-table-geo" id="table-geo-localidades">
+                            <thead>
+                                <tr>
+                                    <th>Localidad</th>
+                                    <th style="width: 60px; text-align: center;">Cant.</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="geo-row-item">
+                    <h6>Municipios (Salta)</h6>
+                    <div class="chart-wrapper">
+                        <canvas id="chart-municipios"></canvas>
+                    </div>
+                    <div class="table-wrapper">
+                        <table class="mini-table-geo" id="table-geo-municipios">
+                            <thead>
+                                <tr>
+                                    <th>Municipio</th>
+                                    <th style="width: 60px; text-align: center;">Cant.</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="main-dashboard-layout">
+        <!-- LADO DERECHO: La Tabla Detallada (toma el resto del espacio) -->
+        <div class="tabla-wrapper" style="flex: 1; background: #1e293b; padding: 16px; border-radius: 8px;">
+            <table class="table" id="table-geo-paises" style="width: 100%; color: #e2e8f0;">
+                <thead>
+                    <tr style="border-bottom: 1px solid #334155; color: #94a3b8;">
+                        <th>Ubicación</th>
+                        <th style="text-align: center;">Cantidad</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Se rellena dinámicamente -->
+                </tbody>
+            </table>
+            
+        </div>
+        <!-- LADO IZQUIERDO: El Gráfico (fijo o con un ancho controlado) -->
+        <div class="grafico-wrapper"
+            style="flex: 0 0 45%; min-height: 250px; background: #1e293b; padding: 16px; border-radius: 8px;">
+            <canvas id="chart-paises"></canvas>
+        </div>
+        
+    </div>
             </div>
         </div>
     </div>
 
     <div class="card" style="overflow-x: auto;">
-        <h5 style="margin: 0 0 16px 0; color: #fff; font-size: 1rem;"><i class="fa-solid fa-list-check text-info" style="color: var(--color-info); margin-right: 8px;"></i>Detalle de Contratistas Declarados</h5>
-        <table id="tabla-resultados" class="display style-table w-100">
+        <h5 style="margin: 0 0 16px 0; color: #fff; font-size: 1rem;"><i class="fa-solid fa-list-check text-info"
+                style="margin-right: 8px;"></i>Nómina Detallada de Contratistas</h5>
+        <table id="tabla-resultados" class="display w-100">
             <thead>
                 <tr>
                     <th>CUIT</th>
@@ -469,384 +927,668 @@
                     <th>EXPEDIENTE</th>
                 </tr>
             </thead>
-            <tbody>
-                </tbody>
+            <tbody></tbody>
         </table>
     </div>
 </div>
 {% endblock %}
-
 {% block script %}
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/datatables.net@1.13.7/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
-
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
 <script>
-    let tablaResultados;
-    let graficoDona;
+    // 1. REGISTRO GLOBAL DEL PLUGIN (Crucial para que funcione)
+    Chart.register(ChartDataLabels);
 
-    $(document).ready(function() {
-        // Inicializar DataTable nativo en Modo Oscuro
+    let tablaResultados;
+    let chartEstado, chartOrigen, chartPaises, chartProvincias, chartLocalidades, chartMunicipios;
+
+    function ordenarPeriodos(arrayPeriodos) {
+        if (!arrayPeriodos || arrayPeriodos.length === 0) return [];
+        const pesoTrimestre = {
+            'octubre': 4, 'julio': 3, 'abril': 2, 'enero': 1,
+            'octubre-diciembre': 4, 'julio-septiembre': 3, 'abril-junio': 2, 'enero-marzo': 1
+        };
+
+        return arrayPeriodos.sort((a, b) => {
+            const anioA = parseInt(a.nombre.split('/').pop()) || 0;
+            const anioB = parseInt(b.nombre.split('/').pop()) || 0;
+            if (anioB !== anioA) return anioB - anioA;
+
+            const nombreTrimA = a.nombre.split('/')[0].toLowerCase().trim();
+            const nombreTrimB = b.nombre.split('/')[0].toLowerCase().trim();
+            const pesoA = pesoTrimestre[nombreTrimA] || 0;
+            const pesoB = pesoTrimestre[nombreTrimB] || 0;
+            return pesoB - pesoA;
+        });
+    }
+
+    // Modificado para apagar explicitamente las etiquetas numéricas flotantes en las barras
+    function crearGraficoBarras(canvasId) {
+        return new Chart(document.getElementById(canvasId).getContext('2d'), {
+            type: 'bar',
+            data: { labels: [], datasets: [{ data: [], backgroundColor: '#38bdf8', borderRadius: 4, barThickness: 16 }] },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    datalabels: { display: false } // Desactivado para no saturar las barras geo
+                },
+                scales: {
+                    x: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { color: '#334155' } },
+                    y: { ticks: { color: '#e2e8f0', font: { size: 11, weight: '600' } }, grid: { display: false } }
+                }
+            }
+        });
+    }
+
+    $(document).ready(function () {
         tablaResultados = $('#tabla-resultados').DataTable({
-            language: {
-                url: 'https://cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json',
-                search: "",
-                searchPlaceholder: "Buscar por CUIT o Razón Social..."
-            },
+            language: { url: 'https://cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json', search: "", searchPlaceholder: "Buscar proveedor..." },
             pageLength: 10,
-            order: [[4, "desc"]]
+            order: [[1, "asc"]]
         });
 
-        // Configurar gráfico circular de Chart.js
-        const ctx = document.getElementById('chart-analisis').getContext('2d');
-        graficoDona = new Chart(ctx, {
+        // Configuración Doughnut de Estado con porcentajes internos instalados
+        chartEstado = new Chart(document.getElementById('chart-analisis').getContext('2d'), {
             type: 'doughnut',
+            data: { labels: ['Vigente', 'No Vigente', 'No Inscripto'], datasets: [{ data: [0, 0, 0], backgroundColor: ['#10b981', '#f59e0b', '#ef4444'], borderWidth: 0 }] },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom', labels: { color: '#e2e8f0', font: { size: 11 } } },
+                    datalabels: {
+                        color: '#fff',
+                        font: { weight: 'bold', size: 11 },
+                        formatter: (value, ctx) => {
+                            let sum = 0;
+                            let dataArr = ctx.chart.data.datasets[0].data;
+                            dataArr.forEach(data => { sum += data; });
+                            return sum > 0 ? ((value * 100) / sum).toFixed(1) + "%" : "";
+                        }
+                    }
+                }
+            }
+        });
+
+        // Configuración Pie de Origen con porcentajes internos corregido
+        chartOrigen = new Chart(document.getElementById('chart-origen').getContext('2d'), {
+            type: 'pie',
             data: {
-                labels: ['Vigente', 'No Vigente', 'Nunca Inscripto'],
-                datasets: [{
-                    data: [0, 0, 0],
-                    backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
-                    borderWidth: 2,
-                    borderColor: '#1e293b'
-                }]
+                labels: ['Nacionales', 'Internacionales', 'Locales'],
+                datasets: [{ data: [0, 0, 0], backgroundColor: ['#f59e0b', '#ef4444', '#10b981'], borderWidth: 0 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
-                    legend: { position: 'right', labels: { color: '#94a3b8', font: { size: 11 } } }
+                    legend: {
+                        position: 'bottom',
+                        labels: { color: '#e2e8f0', font: { size: 11 } }
+                    },
+                    datalabels: {
+                        color: '#fff',
+                        font: { weight: 'bold', size: 12 },
+                        formatter: (value, ctx) => {
+                            let sum = 0;
+                            let dataArr = ctx.chart.data.datasets[0].data;
+                            dataArr.forEach(data => { sum += data; });
+                            return sum > 0 ? ((value * 100) / sum).toFixed(1) + "%" : "";
+                        }
+                    }
                 }
             }
         });
 
-        // --- MANEJO DE SELECTORES DINÁMICOS MEDIANTE TU NUEVA API ---
-        
-        // 1. Cambio en Empresa Concesionaria -> Carga Proyectos
-        $('#id-prov').change(function() {
-    let compId = $(this).val();
-    
-    if (compId && compId !== 'all') {
-        // Si hay una empresa seleccionada, buscamos sus proyectos específicos
-        fetch(`/api/proyectos_por_concesionario/?company_id=${compId}`)
-            .then(r => r.json())
-            .then(data => {
-                let html = '<option value="all">-- Todos los Proyectos --</option>';
-                if (data.proyectos && data.proyectos.length > 0) {
-                    data.proyectos.forEach(p => {
-                        html += `<option value="${p.id}">${p.nombre}</option>`;
-                    });
-                }
-                $('#select-proyecto').html(html).prop('disabled', false);
-                $('#select-periodo').html('<option value="all">-- Todos los Períodos --</option>').prop('disabled', true);
-                
-                // Ejecutamos la auditoría con los nuevos selectores disponibles
-                ejecutarAuditoria();
-            });
-    } else {
-        // Si seleccionó "Todos" (all), reseteamos los selectores dependientes a su estado inicial
-        $('#select-proyecto').html('<option value="all">-- Todos los Proyectos --</option>').prop('disabled', true).val('all');
-        $('#select-periodo').html('<option value="all">-- Todos los Períodos --</option>').prop('disabled', true).val('all');
-        
-        // Ejecutamos la auditoría limpia para traer TODO el universo completo
-        ejecutarAuditoria();
-    }
-});
+        // Gráficos Geográficos (Incluido el de Países)
+        chartPaises = crearGraficoBarras('chart-paises');
+        chartProvincias = crearGraficoBarras('chart-provincias');
+        chartLocalidades = crearGraficoBarras('chart-localidades');
+        chartMunicipios = crearGraficoBarras('chart-municipios');
 
-        // 2. Cambio en Proyecto -> Carga Períodos Presentados
-        $('#select-proyecto').change(function() {
+        function cargarPeriodosGlobales() {
+            fetch('/api/periodos_por_proyecto/?project_id=all')
+                .then(r => r.json())
+                .then(data => {
+                    if (data.periodos) {
+                        ordenarPeriodos(data.periodos);
+                        let html = '<option value="all">-- Todos los Períodos --</option>';
+                        data.periodos.forEach(pe => { html += `<option value="${pe.id}">${pe.nombre}</option>`; });
+                        $('#select-periodo').html(html).prop('disabled', false);
+                    }
+                });
+        }
+
+        cargarPeriodosGlobales();
+
+        // Control del cambio en el Dropdown Customizado (Concesionario)
+        $('#id-prov').change(function () {
+            let compId = $(this).val();
+            if (compId && compId !== 'all') {
+                fetch(`/api/proyectos_por_concesionario/?company_id=${compId}`)
+                    .then(r => r.json())
+                    .then(data => {
+                        let html = '<option value="all">-- Todos los Proyectos --</option>';
+                        if (data.proyectos) {
+                            data.proyectos.forEach(p => { html += `<option value="${p.id}">${p.nombre}</option>`; });
+                        }
+                        $('#select-proyecto').html(html).prop('disabled', false).val('all');
+                        cargarPeriodosGlobales(); // Mantiene consistencia de períodos globales al limpiar proyecto
+                        ejecutarAuditoria();
+                    });
+            } else {
+                $('#select-proyecto').html('<option value="all">-- Todos los Proyectos --</option>').prop('disabled', true).val('all');
+                cargarPeriodosGlobales();
+                ejecutarAuditoria();
+            }
+        });
+
+        $('#select-proyecto').change(function () {
             let projId = $(this).val();
-            if(projId !== 'all') {
+            if (projId !== 'all') {
                 fetch(`/api/periodos_por_proyecto/?project_id=${projId}`)
                     .then(r => r.json())
                     .then(data => {
-                        let html = '<option value="all">-- Todos los Períodos --</option>';
-                        if(data.periodos) {
-                            data.periodos.forEach(pe => {
-                                html += `<option value="${pe.id}">${pe.nombre}</option>`;
-                            });
+                        if (data.periodos) {
+                            ordenarPeriodos(data.periodos);
+                            let html = '<option value="all">-- Todos los Períodos --</option>';
+                            data.periodos.forEach(pe => { html += `<option value="${pe.id}">${pe.nombre}</option>`; });
+                            $('#select-periodo').html(html);
                         }
-                        $('#select-periodo').html(html).prop('disabled', false);
+                        ejecutarAuditoria();
                     });
             } else {
-                $('#select-periodo').html('<option value="all">-- Todos los Períodos --</option>').prop('disabled', true);
+                cargarPeriodosGlobales();
+                ejecutarAuditoria();
             }
-            ejecutarAuditoria();
         });
 
-        // 3. Cambio en Período -> Ejecuta auditoría directamente
-        $('#select-periodo').change(function() {
-            ejecutarAuditoria();
-        });
-
-        // Primera ejecución automática al cargar la vista
+        $('#select-periodo').change(ejecutarAuditoria);
         ejecutarAuditoria();
+
+        // PDF Action
+        $('#btn-descargar-pdf').click(function () {
+    const { jsPDF } = window.jspdf;
+    // Crear documento A4
+    const doc = new jsPDF({
+        orientation: 'p',
+        unit: 'mm',
+        format: 'a4',
+        putOnlyUsedFonts: true
     });
 
-    // Envía la consulta cruzada al servidor con el estado de los filtros actuales
-    function ejecutarAuditoria() {
-        let params = new URLSearchParams({
-            ajax: 1,
-            concesionario: $('#id-prov').val() || 'all',
-            proyecto: $('#select-proyecto').val() || 'all',
-            periodo: $('#select-periodo').val() || 'all'
-        });
+    const nombreEmpresa = $('.selected-val').text().trim() || "EMPRESA NO ESPECIFICADA";
+    const proyecto = $('#select-proyecto option:selected').text().trim() || "N/A";
+    const periodo = $('#select-periodo option:selected').text().trim() || "N/A";
+    const fechaEmision = new Date().toLocaleDateString('es-AR');
 
-        $('#txt-total').text('Procesando...');
+    // --- CONFIGURACIÓN DE COLORES (Paleta Ejecutiva / Slate Slate) ---
+    const colors = {
+        primary: [15, 23, 42],     // Slate 900 (Fondo Principal)
+        secondary: [71, 85, 105],  // Slate 600 (Subtítulos / Datos)
+        lightBg: [248, 250, 252],  // Slate 50  (Fondos claros)
+        border: [226, 232, 240],   // Slate 200 (Líneas finas)
+        textDark: [30, 41, 59],    // Slate 800 (Cuerpo de Texto)
+        success: [16, 185, 129],   // Emerald 500
+        warning: [245, 158, 11],   // Amber 500
+        danger: [220, 38, 38]      // Red 600
+    };
 
-        fetch(`?${params.toString()}`)
-            .then(response => response.json())
-            .then(data => {
-                // Modificar contadores informativos superiores
-                $('#txt-vigentes').text(data.resumen.vigentes);
-                $('#txt-no-vigentes').text(data.resumen.no_vigentes);
-                $('#txt-nunca').text(data.resumen.nunca_inscriptos);
-                $('#txt-total').text(`${data.resumen.total} Proveedores`);
+    // ==========================================
+    // ENCABEZADO PRINCIPAL (PÁGINA 1)
+    // ==========================================
+    doc.setFillColor(...colors.primary);
+    doc.rect(0, 0, 210, 38, 'F');
 
-                // Sincronizar gráfico circular
-                graficoDona.data.datasets[0].data = [
-                    data.resumen.vigentes,
-                    data.resumen.no_vigentes,
-                    data.resumen.nunca_inscriptos
-                ];
-                graficoDona.update();
+    // Texto del Banner
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.text("SIEMSa • SECRETARÍA DE MINERÍA DE SALTA", 14, 15);
+    
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9.5);
+    doc.text("INFORME DE AUDITORÍA CRUZADA Y CONTROL GEOGRÁFICO", 14, 23);
+    
+    doc.setTextColor(148, 163, 184); // Gris claro institucional
+    doc.setFontSize(8.5);
+    doc.text(`Fecha de Emisión: ${fechaEmision}`, 14, 30);
 
-                // Vaciar y repoblar filas dentro de DataTables de forma segura
-                tablaResultados.clear();
-                
-                data.resultados.forEach(item => {
-                    let badge = '';
-                    if(item.estado_analisis === 'VIGENTE') {
-                        badge = '<span class="badge-status vigente">VIGENTE</span>';
-                    } else if(item.estado_analisis === 'NO VIGENTE') {
-                        badge = '<span class="badge-status no-vigente">NO VIGENTE</span>';
-                    } else {
-                        badge = '<span class="badge-status nunca">NUNCA INSCRIPTO</span>';
-                    }
+    // ==========================================
+    // SECCIÓN 1: METADATOS Y PARÁMETROS
+    // ==========================================
+    let currentY = 48;
+    
+    doc.setTextColor(...colors.primary);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.text("PARÁMETROS DE LA CONSULTA EJECUTIVA", 14, currentY);
+    
+    currentY += 6;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(...colors.textDark);
+    doc.text(`Empresa Concesionaria :  ${nombreEmpresa}`, 14, currentY);
+    
+    currentY += 5;
+    doc.text(`Proyecto Minero             :  ${proyecto}`, 14, currentY);
+    doc.text(`Período Evaluado :  ${periodo}`, 110, currentY);
 
-                    tablaResultados.row.add([
-                        `<strong style="color: #fff;">${item.cuit}</strong>`,
-                        item.razon_social,
-                        `<span style="color: var(--text-muted); font-size: 0.85rem;">${item.empresa}</span>`,
-                        badge,
-                        item.fecha_vto,
-                        `<span class="badge-tramite">${item.ultimo_tramite}</span>`,
-                        `<code>${item.expediente}</code>`
-                    ]);
-                });
-                
-                tablaResultados.draw();
-            })
-            .catch(error => {
-                console.error("Error en la consulta cruzada:", error);
-                $('#txt-total').text('Error.');
-            });
+    currentY += 6;
+    doc.setDrawColor(...colors.border);
+    doc.setLineWidth(0.4);
+    doc.line(14, currentY, 196, currentY);
+
+    // ==========================================
+    // SECCIÓN 2: RESUMEN ANALÍTICO Y GRÁFICOS
+    // ==========================================
+    currentY += 10;
+    doc.setTextColor(...colors.primary);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.text("RESUMEN DE SITUACIÓN LEGAL", 14, currentY);
+    doc.text("COMPOSICIÓN DE ORIGEN", 110, currentY);
+
+    // Caja de Estadísticas (Izquierda)
+    currentY += 6;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(...colors.textDark);
+    doc.text(`• Vigentes: ${$('#txt-vigentes').text() || 0}`, 14, currentY);
+    doc.text(`• Proveedores Nacionales: ${$('#txt-nacionales').text() || 0}`, 110, currentY);
+    
+    currentY += 5;
+    doc.text(`• No Vigentes: ${$('#txt-no-vigentes').text() || 0}`, 14, currentY);
+    doc.text(`• Proveedores Internac.: ${$('#txt-internacionales').text() || 0}`, 110, currentY);
+    
+    currentY += 5;
+    doc.text(`• No Registrados: ${$('#txt-nunca').text() || 0}`, 14, currentY);
+    
+    currentY += 6;
+    doc.setFont('helvetica', 'bold');
+    doc.text(`Total Contratistas: ${$('#txt-total').text() || 0}`, 14, currentY);
+    doc.text(`Total Origen Salta: ${$('#txt-total-salta').text() || 0}`, 14, currentY + 5);
+
+    // Renderizado de Gráficos Primarios (Alineación Ejecutiva)
+    try {
+        const imgAnalisis = document.getElementById('chart-analisis').toDataURL('image/png', 1.0);
+        const imgOrigen = document.getElementById('chart-origen').toDataURL('image/png', 1.0);
+        
+        // Colocados al lado del texto de manera limpia
+        doc.addImage(imgAnalisis, 'PNG', 64, 64, 38, 38);
+        doc.addImage(imgOrigen, 'PNG', 158, 64, 38, 38);
+    } catch (e) {
+        console.warn("Aviso: Gráficos primarios omitidos o no disponibles en el DOM.");
     }
 
-     document.querySelectorAll('.dropdown-container').forEach(container => {
-            const trigger = container.querySelector('.dropdown-trigger');
-            const panel = container.querySelector('.dropdown-panel');
-            const search = container.querySelector('input[type="text"]');
-            const hidden = container.querySelector('input[type="hidden"]');
-            const valText = container.querySelector('.selected-val');
+    // Separador Intermedio
+    currentY += 16;
+    doc.setDrawColor(...colors.border);
+    doc.line(14, currentY, 196, currentY);
 
-            trigger.addEventListener('click', () => {
-                const isVisible = panel.style.display === 'block';
-                document.querySelectorAll('.dropdown-panel').forEach(p => p.style.display = 'none');
-                panel.style.display = isVisible ? 'none' : 'block';
-                if(!isVisible) search.focus();
-            });
+    // ==========================================
+    // SECCIÓN 3: DISTRIBUCIÓN GEOGRÁFICA (TABLAS)
+    // ==========================================
+    currentY += 8;
+    doc.setTextColor(...colors.primary);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.text("DESGLOSE GEOGRÁFICO DETALLADO", 14, currentY);
 
-            search.addEventListener('input', (e) => {
-                const q = e.target.value.toLowerCase();
-                panel.querySelectorAll('li').forEach(li => {
-                    li.style.display = li.textContent.toLowerCase().includes(q) ? 'block' : 'none';
-                });
-            });
-
-            panel.querySelectorAll('li').forEach(li => {
-                li.addEventListener('click', () => {
-                    valText.textContent = li.textContent;
-                    hidden.value = li.dataset.id;
-                    panel.style.display = 'none';
-                    $(hidden).trigger('change');
-                });
-            });
-        });
-
-        // Click fuera para cerrar
-        document.addEventListener('click', (e) => {
-            if (!e.target.closest('.dropdown-container')) {
-                document.querySelectorAll('.dropdown-panel').forEach(p => p.style.display = 'none');
+    const extraerDatosGeo = (tableId) => {
+        const data = [];
+        $(`#${tableId} tbody tr`).each(function () {
+            const row = $(this);
+            const nombre = row.find('td:nth-child(1)').text().trim();
+            const cantidad = row.find('td:nth-child(2)').text().trim();
+            if (nombre && !nombre.includes("Sin datos")) {
+                data.push([nombre, cantidad]);
             }
         });
-        // Escuchar el click del botón de PDF
-$('#btn-descargar-pdf').on('click', function() {
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF('p', 'mm', 'a4');
+        return data;
+    };
+
+    const tableStylesConfig = {
+        theme: 'striped',
+        startY: currentY + 4,
+        styles: { fontSize: 7.5, cellPadding: 2, textColor: colors.textDark },
+        headStyles: { fillColor: colors.secondary, textColor: [255, 255, 255], fontStyle: 'bold' },
+        columnStyles: { 1: { halign: 'center', fontStyle: 'bold', cellWidth: 14 } }
+    };
+
+    // Tabla 1: Provincias
+    doc.autoTable({
+        ...tableStylesConfig,
+        margin: { left: 14, right: 140 },
+        head: [['PROVINCIA', 'CANT']],
+        body: extraerDatosGeo('table-geo-provincias').slice(0, 6)
+    });
+    const finalYProvincias = doc.lastAutoTable.finalY;
+
+    // Tabla 2: Localidades
+    doc.autoTable({
+        ...tableStylesConfig,
+        margin: { left: 77, right: 77 },
+        head: [['LOCALIDAD (SALTA)', 'CANT']],
+        body: extraerDatosGeo('table-geo-localidades').slice(0, 6)
+    });
+    const finalYLocalidades = doc.lastAutoTable.finalY;
+
+    // Tabla 3: Municipios
+    doc.autoTable({
+        ...tableStylesConfig,
+        margin: { left: 140, right: 14 },
+        head: [['MUNICIPIO (SALTA)', 'CANT']],
+        body: extraerDatosGeo('table-geo-municipios').slice(0, 6)
+    });
+    const finalYMunicipios = doc.lastAutoTable.finalY;
+
+    // Calcular base de manera dinámica para evitar colisiones
+    const baseTablasGeo = Math.max(finalYProvincias, finalYLocalidades, finalYMunicipios);
+
+    // Gráficos de barras asociados abajo de las mini-tablas
+    try {
+        const imgProv = document.getElementById('chart-provincias').toDataURL('image/png', 1.0);
+        const imgLoc = document.getElementById('chart-localidades').toDataURL('image/png', 1.0);
+        const imgMun = document.getElementById('chart-municipios').toDataURL('image/png', 1.0);
+
+        const yGraficosBarras = baseTablasGeo + 5;
+        // Validación para no pasarse del límite inferior de la pág 1
+        if (yGraficosBarras < 260) {
+            doc.addImage(imgProv, 'PNG', 14, yGraficosBarras, 52, 28);
+            doc.addImage(imgLoc, 'PNG', 77, yGraficosBarras, 52, 28);
+            doc.addImage(imgMun, 'PNG', 140, yGraficosBarras, 52, 28);
+        }
+    } catch (e) {
+        console.warn("Aviso: Gráficos de barras detallados no disponibles.");
+    }
+
+    // ==========================================
+    // PÁGINA 2 EN ADELANTE: NÓMINA DE CONTRATISTAS
+    // ==========================================
+    doc.addPage();
+
+    const rowsContratistas = [];
+    tablaResultados.rows({ search: 'applied' }).data().each(function (val) {
+        rowsContratistas.push([
+            val[0].replace(/<[^>]*>/g, '').trim(), // CUIT
+            val[1].replace(/<[^>]*>/g, '').trim(), // RAZÓN SOCIAL
+            val[2].replace(/<[^>]*>/g, '').trim(), // EMPRESA DDJJ
+            val[3].replace(/<[^>]*>/g, '').trim(), // ESTADO
+            val[4].replace(/<[^>]*>/g, '').trim(), // VENCIMIENTO
+            val[5].replace(/<[^>]*>/g, '').trim(), // TRÁMITE
+            val[6].replace(/<[^>]*>/g, '').trim()  // EXPEDIENTE
+        ]);
+    });
+
+    doc.autoTable({
+        startY: 20, // Margen superior elegante para el inicio de hojas de datos
+        margin: { left: 14, right: 14 },
+        head: [['CUIT', 'RAZÓN SOCIAL', 'EMPRESA DDJJ', 'ESTADO AUDITORÍA', 'VENCIMIENTO', 'ÚLTIMO TRÁMITE', 'EXPEDIENTE']],
+        body: rowsContratistas,
+        theme: 'striped',
+        headStyles: { fillColor: colors.primary, fontSize: 8, fontStyle: 'bold', cellPadding: 3 },
+        styles: { fontSize: 7, cellPadding: 2.5, valign: 'middle', textColor: colors.textDark },
+        columnStyles: {
+            0: { fontStyle: 'bold', cellWidth: 24 },
+            1: { cellWidth: 40 },
+            2: { cellWidth: 32 },
+            3: { fontStyle: 'bold', cellWidth: 25 },
+            4: { cellWidth: 20, halign: 'center' },
+            5: { cellWidth: 26 },
+            6: { cellWidth: 21 }
+        },
+        didParseCell: function (data) {
+            if (data.section === 'body' && data.column.index === 3) {
+                const statusText = data.cell.raw.toUpperCase();
+                if (statusText.includes('VIGENTE') && !statusText.includes('NO')) {
+                    data.cell.styles.textColor = colors.success;
+                } else if (statusText.includes('NO VIGENTE')) {
+                    data.cell.styles.textColor = colors.warning;
+                } else if (statusText.includes('NUNCA') || statusText.includes('REGISTRO') || statusText.includes('SIN')) {
+                    data.cell.styles.textColor = colors.danger;
+                }
+            }
+        },
+        // Hook para renderizar el encabezado de página dinámico y pie de página institucional en hojas de datos
+        didDrawPage: function (data) {
+            // No dibujar en la página 1 (ya tiene el banner principal completo)
+            if (data.pageNumber > 1) {
+                doc.setFillColor(...colors.primary);
+                doc.rect(0, 0, 210, 12, 'F');
+                
+                doc.setTextColor(255, 255, 255);
+                doc.setFontSize(8.5);
+                doc.setFont('helvetica', 'bold');
+                doc.text("NÓMINA DETALLADA DE CONTRATISTAS AUDITADOS", 14, 8);
+            }
+        }
+    });
+
+    // ==========================================
+    // RENDERIZADO FINAL DE PIE DE PÁGINA (CÓMPUTO TOTAL DE HOJAS)
+    // ==========================================
+    const totalPages = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(7.5);
+        doc.setTextColor(...colors.secondary);
+        
+        // Línea sutil de pie de página
+        doc.setDrawColor(...colors.border);
+        doc.line(14, 287, 196, 287);
+        
+        // Izquierda: Documento Oficial
+        doc.text("SIEMSa - Reporte de Control Minero y Auditoría Geográfica", 14, 291);
+        // Derecha: Paginación Dinámica Ejecutiva
+        doc.text(`Página ${i} de ${totalPages}`, 196, 291, { align: 'right' });
+    }
+
+    // Guardado seguro del archivo corporativo
+    const cleanFileName = nombreEmpresa.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+    doc.save(`Auditoria_Proveedores_${cleanFileName}.pdf`);
+});
+    });
+
+    // Función unificada para ordenar, inyectar tablas de datos y renderizar gráficos de barras
+    function actualizarSeccionGeoIndividual(chartObj, tableId, dataDict) {
+        const itemsOrdenados = Object.entries(dataDict || {}).sort((a, b) => b[1] - a[1]);
+
+        const labels = itemsOrdenados.map(item => item[0]);
+        const values = itemsOrdenados.map(item => item[1]);
+
+        chartObj.data.labels = labels;
+        chartObj.data.datasets[0].data = values;
+        chartObj.update();
+
+        let tbodyHtml = '';
+        if (itemsOrdenados.length === 0) {
+            tbodyHtml = '<tr><td colspan="2" style="text-align:center; color:var(--text-muted);">Sin datos en este período</td></tr>';
+        } else {
+            itemsOrdenados.forEach(([key, val]) => {
+                tbodyHtml += `
+                    <tr>
+                        <td><strong>${key}</strong></td>
+                        <td style="text-align: center;"><span class="count-badge">${val}</span></td>
+                    </tr>
+                `;
+            });
+        }
+        $(`#${tableId} tbody`).html(tbodyHtml);
+    }
+
+    function ejecutarAuditoria() {
+    let params = new URLSearchParams({
+        ajax: 1,
+        concesionario: $('#id-prov').val() || 'all',
+        proyecto: $('#select-proyecto').val() || 'all',
+        periodo: $('#select-periodo').val() || 'all'
+    });
+
+    // Indicador de carga inicial
+    $('#txt-total').text('...');
+    $('#txt-total-salta').text('...');
+
+    fetch(`?${params.toString()}`)
+        .then(r => r.json())
+        .then(data => {
+            // ==========================================
+            // 1. CÁLCULOS METRICOS E INYECCIÓN DE PORCENTAJES (INFORMACIÓN GENERAL)
+            // ==========================================
+            // Desglosamos las cantidades según el backend
+            const cantLocal = parseInt(data.resumen.total_salta || 0); // En la view, data.resumen.total es el total de Salta
+            const cantNacionalesTotal = parseInt(data.resumen.nacionales || 0);
+            const cantNacionalesResto = cantNacionalesTotal - cantLocal; // Resto de Argentina menos Salta
+            const cantInternacionales = parseInt(data.resumen.internacionales || 0);
             
-            // --- 1. CAPTURA Y SANITIZACIÓN DE FILTROS ---
-            const empresaRaw = $('#select-concesionario .selected-val').text().trim();
-            const nombreEmpresa = (empresaRaw === "Todos" || empresaRaw === "Seleccionar..." || !empresaRaw) 
-                ? "Todas las Empresas Concesionarias" 
-                : empresaRaw;
+            // El universo completo es la suma de todos los países (Nacionales + Internacionales)
+            const totalGlobal = cantNacionalesTotal + cantInternacionales;
 
-            const proyectoRaw = $('#select-proyecto option:selected').text().trim();
-            const proyectoSeleccionado = (proyectoRaw.includes('--') || $('#select-proyecto').is(':disabled')) 
-                ? "Todos los Proyectos Mineros" 
-                : proyectoRaw;
+            // Inyectamos los números grandes en las tarjetas
+            $('#txt-local').text(cantLocal);
+            $('#txt-nacionales').text(cantNacionalesResto);
+            $('#txt-internacionales').text(cantInternacionales);
+            $('#txt-total').text(totalGlobal + ' Proveedores');
 
-            const periodoRaw = $('#select-periodo option:selected').text().trim();
-            const periodoSeleccionado = (periodoRaw.includes('--') || $('#select-periodo').is(':disabled')) 
-                ? "Todos los Períodos Declarados" 
-                : periodoRaw;
+            // Calculamos y seteamos los porcentajes de Origen de forma segura
+            if (totalGlobal > 0) {
+                const pctLocal = ((cantLocal * 100) / totalGlobal).toFixed(1);
+                const pctNacionales = ((cantNacionalesResto * 100) / totalGlobal).toFixed(1);
+                const pctInternacionales = ((cantInternacionales * 100) / totalGlobal).toFixed(1);
+
+                $('#pct-local').text(pctLocal + '%');
+                $('#pct-nacionales').text(pctNacionales + '%');
+                $('#pct-internacionales').text(pctInternacionales + '%');
+            } else {
+                $('#pct-local').text('0%');
+                $('#pct-nacionales').text('0%');
+                $('#pct-internacionales').text('0%');
+            }
+
+            // ==========================================
+            // 2. AUDITORÍA LEGAL DE TRÁMITES (VIGENCIAS EN SALTA)
+            // ==========================================
+            $('#txt-vigentes').text(data.resumen.vigentes);
+            $('#txt-no-vigentes').text(data.resumen.no_vigentes);
+            $('#txt-nunca').text(data.resumen.nunca_inscriptos);
+            $('#txt-total-salta').text(cantLocal + ' Proveedores');
+
+            // Si quisieras agregar porcentajes también a la sección legal abajo, se calcularía sobre cantLocal:
+            if (cantLocal > 0) {
+                $('#pct-vigentes').text(((data.resumen.vigentes * 100) / cantLocal).toFixed(1) + '%');
+                $('#pct-novigentes').text(((data.resumen.no_vigentes * 100) / cantLocal).toFixed(1) + '%');
+                $('#pct-nunca-salta').text(((data.resumen.nunca_inscriptos * 100) / cantLocal).toFixed(1) + '%');
+            }
+
+            // ==========================================
+            // 3. ACTUALIZACIÓN DE GRÁFICOS DE DONAS / TORTAS
+            // ==========================================
+            // Gráfico de Estados Legales
+            chartEstado.data.datasets[0].data = [data.resumen.vigentes, data.resumen.no_vigentes, data.resumen.nunca_inscriptos];
+            chartEstado.update();
+
+            // Gráfico de Origen (Alineado estrictamente con los números de los KPIs superiores)
+            chartOrigen.data.datasets[0].data = [cantNacionalesResto, cantInternacionales, cantLocal];
+            chartOrigen.update();
+
+            // ==========================================
+            // 4. DESGLOSE GEOGRÁFICO DETALLADO
+            // ==========================================
+            actualizarSeccionGeoIndividual(chartPaises, 'table-geo-paises', data.geo.paises);
+            actualizarSeccionGeoIndividual(chartProvincias, 'table-geo-provincias', data.geo.provincias);
+            actualizarSeccionGeoIndividual(chartLocalidades, 'table-geo-localidades', data.geo.localidades);
+            actualizarSeccionGeoIndividual(chartMunicipios, 'table-geo-municipios', data.geo.municipios);
+
+            // ==========================================
+            // 5. POBLAR DATATABLE DE NÓMINA (SÓLO SALTA)
+            // ==========================================
+            tablaResultados.clear();
+            data.nomina.forEach(item => {
+                // 1. Definimos las clases CSS según el estado de análisis
+                let badgeClass = '';
+                
+                switch (item.estado_analisis) {
+                    case 'VIGENTE':
+                        badgeClass = 'vigente';
+                        break;
+                    case 'NO VIGENTE':
+                        badgeClass = 'no-vigente';
+                        break;
+                    case 'NUNCA INSCRIPTO':
+                        badgeClass = 'nunca';
+                        break;
+                    case 'NACIONAL':
+                        badgeClass = 'nacional';
+                        break;
+                    case 'INTERNACIONAL':
+                        badgeClass = 'internacional';
+                        break;
+                    default:
+                        badgeClass = 'desconocido';
+                }
+
+                // 2. Generamos el HTML del badge de forma limpia
+                let badge = `<span class="badge-status ${badgeClass}">${item.estado_analisis}</span>`;
+                
+                // ... aquí continúa el resto de tu lógica para insertar en la tabla
             
-            const kpiVigentes = $('#txt-vigentes').text().trim();
-            const kpiNoVigentes = $('#txt-no-vigentes').text().trim();
-            const kpiNunca = $('#txt-nunca').text().trim();
-            const txtTotal = $('#txt-total').text().trim();
-
-            // --- DISEÑO: Encabezado del Reporte ---
-            doc.setFillColor(15, 23, 42); // #0f172a (Color de fondo corporativo oscuro)
-            doc.rect(0, 0, 210, 38, 'F');
-            
-            doc.setTextColor(255, 255, 255);
-            doc.setFont("helvetica", "bold");
-            doc.setFontSize(16);
-            doc.text("AUDITORÍA CRUZADA DE PROVEEDORES", 14, 16);
-            
-            doc.setFont("helvetica", "normal");
-            doc.setFontSize(9);
-            doc.setTextColor(148, 163, 184); // #94a3b8
-            doc.text("Sistema de Información Centralizada - Secretaría de Minería", 14, 23);
-            
-            // Fecha de generación
-            const fechaHoy = new Date().toLocaleDateString('es-AR', { hour: '2-digit', minute: '2-digit' });
-            doc.text(`Generado: ${fechaHoy}`, 155, 23);
-
-            // --- SECCIÓN: Filtros Aplicados ---
-            doc.setTextColor(15, 23, 42);
-            doc.setFont("helvetica", "bold");
-            doc.setFontSize(11);
-            doc.text("PARÁMETROS DE LA CONSULTA", 14, 48);
-            
-            doc.setLineWidth(0.2);
-            doc.setDrawColor(203, 213, 225);
-            doc.line(14, 50, 196, 50);
-
-            doc.setFont("helvetica", "normal");
-            doc.setFontSize(9.5);
-            doc.text([
-                `Empresa Concesionaria:  ${nombreEmpresa}`,
-                `Proyecto Minero:             ${proyectoSeleccionado}`,
-                `Período Declarado:         ${periodoSeleccionado}`
-            ], 14, 56);
-
-            // --- SECCIÓN: Cuadro de Métrica / KPIs ---
-            doc.setFont("helvetica", "bold");
-            doc.setFontSize(11);
-            doc.text("RESUMEN DE MÉTRICAS Y AUDITORÍA", 14, 78);
-            doc.line(14, 80, 196, 80);
-
-            // Renderizar bloques simulando los KPI cards
-            let yKpi = 85;
-            // Caja Vigentes
-            doc.setFillColor(240, 253, 250); doc.setDrawColor(16, 185, 129); // Verde exitoso
-            doc.rect(14, yKpi, 56, 18, 'FD');
-            doc.setFontSize(8); doc.setTextColor(16, 185, 129); doc.text("VIGENTES", 18, yKpi + 5);
-            doc.setFontSize(14); doc.text(kpiVigentes, 18, yKpi + 13);
-
-            // Caja No Vigentes
-            doc.setFillColor(254, 243, 199); doc.setDrawColor(245, 199, 11); // Amarillo advertencia
-            doc.rect(75, yKpi, 56, 18, 'FD');
-            doc.setFontSize(8); doc.setTextColor(217, 119, 6); doc.text("NO VIGENTES / TRÁMITE", 79, yKpi + 5);
-            doc.setFontSize(14); doc.text(kpiNoVigentes, 79, yKpi + 13);
-
-            // Caja Nunca Inscriptos
-            doc.setFillColor(254, 226, 226); doc.setDrawColor(239, 68, 68); // Rojo peligro
-            doc.rect(136, yKpi, 60, 18, 'FD');
-            doc.setFontSize(8); doc.setTextColor(220, 38, 38); doc.text("NUNCA INSCRIPTOS", 140, yKpi + 5);
-            doc.setFontSize(14); doc.text(kpiNunca, 140, yKpi + 13);
-
-            // Texto de Universo Total Evaluado
-            doc.setFont("helvetica", "italic");
-            doc.setFontSize(9.5);
-            doc.setTextColor(71, 85, 105);
-            doc.text(`Evaluación basada sobre un ${txtTotal}.`, 14, 111);
-
-            // --- SECCIÓN: Detalle de la Tabla de Resultados ---
-            doc.setFont("helvetica", "bold");
-            doc.setFontSize(11);
-            doc.setTextColor(15, 23, 42);
-            doc.text("CONTRATISTAS DECLARADOS Y ESTADOS DE SITUACIÓN", 14, 122);
-
-            // --- 2. EXTRACCIÓN CORREGIDA Y ALINEADA CON LAS 7 COLUMNAS REALES ---
-            let filasData = [];
-            tablaResultados.rows({ search: 'applied' }).data().each(function(val) {
-                // Saneamiento estricto de etiquetas HTML insertadas dinámicamente
-                let cuitClean = val[0].replace(/<[^>]*>/g, "").trim();
-                let razonSocial = val[1];
-                let empresaClean = val[2].replace(/<[^>]*>/g, "").trim();
-                let estadoClean = val[3].replace(/<[^>]*>/g, "").trim();
-                let vencimiento = val[4];
-                let tramiteClean = val[5].replace(/<[^>]*>/g, "").trim();
-                let expClean = val[6].replace(/<[^>]*>/g, "").trim();
-
-                filasData.push([
-                    cuitClean,
-                    razonSocial,
-                    empresaClean,
-                    estadoClean,
-                    vencimiento,
-                    tramiteClean,
-                    expClean
+                tablaResultados.row.add([
+                    `<strong style="color: #fff;">${item.cuit}</strong>`,
+                    item.razon_social,
+                    `<span style="color: var(--text-muted); font-size: 0.85rem;">${item.empresa}</span>`,
+                    badge,
+                    item.fecha_vto,
+                    `<span class="badge-tramite">${item.ultimo_tramite}</span>`,
+                    `<code>${item.expediente}</code>`
                 ]);
             });
+            tablaResultados.draw();
+        })
+        .catch(err => console.error("Error en auditoría:", err));
+}
+    // Buscador y Manejo del Dropdown Personalizado de Concesionarios
+    document.querySelectorAll('.dropdown-container').forEach(container => {
+        const trigger = container.querySelector('.dropdown-trigger');
+        const panel = container.querySelector('.dropdown-panel');
+        const search = container.querySelector('input[type="text"]');
+        const hidden = container.querySelector('input[type="hidden"]');
+        const valText = container.querySelector('.selected-val');
 
-            // Encabezados exactos para las 7 columnas
-            const headers = [["CUIT", "Razón Social", "Empresa (DDJJ)", "Estado", "Vencimiento", "Últ. Trámite", "Expediente"]];
-
-            // Generar la tabla estructurada automáticamente en el PDF
-            doc.autoTable({
-                startY: 127,
-                head: headers,
-                body: filasData,
-                theme: 'striped',
-                headStyles: {
-                    fillColor: [30, 41, 59], // Gris slate oscuro (#1e293b)
-                    textColor: [255, 255, 255],
-                    fontSize: 8,
-                    fontStyle: 'bold'
-                },
-                bodyStyles: {
-                    fontSize: 7.5,
-                    cellPadding: 2.5
-                },
-                columnStyles: {
-                    0: { fontStyle: 'bold', cellWidth: 24 }, // CUIT
-                    1: { cellWidth: 42 },                    // Razón Social
-                    3: { fontStyle: 'bold', cellWidth: 25 }, // Estado Auditoría
-                    4: { cellWidth: 20 },                    // Vencimiento
-                    5: { cellWidth: 28 }                     // Último Trámite
-                },
-                didParseCell: function(data) {
-                    // El índice de la columna Estado ahora es el 3
-                    if (data.section === 'body' && data.column.index === 3) {
-                        if (data.cell.raw === 'VIGENTE') {
-                            data.cell.styles.textColor = [16, 185, 129];
-                        } else if (data.cell.raw === 'NO VIGENTE') {
-                            data.cell.styles.textColor = [245, 158, 11];
-                        } else if (data.cell.raw.includes('NUNCA')) {
-                            data.cell.styles.textColor = [239, 68, 68];
-                        }
-                    }
-                }
-            });
-
-            // Guardar archivo descargable estructurando un nombre dinámico inteligente
-            const cleanFileName = nombreEmpresa.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-            doc.save(`reporte_auditoria_${cleanFileName}.pdf`);
+        trigger.addEventListener('click', () => {
+            let vis = panel.style.display === 'block';
+            document.querySelectorAll('.dropdown-panel').forEach(p => p.style.display = 'none'); // Cierra otros
+            panel.style.display = vis ? 'none' : 'block';
+            if (!vis) search.focus();
         });
+
+        search.addEventListener('input', (e) => {
+            let q = e.target.value.toLowerCase();
+            panel.querySelectorAll('li').forEach(li => {
+                li.style.display = li.textContent.toLowerCase().includes(q) ? 'block' : 'none';
+            });
+        });
+
+        panel.querySelectorAll('li').forEach(li => {
+            li.addEventListener('click', () => {
+                valText.textContent = li.textContent;
+                hidden.value = li.dataset.id;
+                panel.style.display = 'none';
+                $(hidden).trigger('change'); // Dispara el evento change de jQuery para actualizar cascada
+            });
+        });
+    });
+
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.dropdown-container')) {
+            document.querySelectorAll('.dropdown-panel').forEach(p => p.style.display = 'none');
+        }
+    });
 </script>
 {% endblock %}
