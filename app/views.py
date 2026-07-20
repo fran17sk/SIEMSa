@@ -5459,12 +5459,25 @@ def expedientes_concesionario(request):
     data_expedientes = []
     for exp in otros_expedientes_qs:
         concesionarios = exp.companyexpedients_set.filter(isdeleted=False).select_related('companyid').values_list('companyid__name', flat=True)
+        pagos_aux = (
+                Canons.objects.using("simsa")
+                .filter(expedientid=exp, isdeleted=False)
+                .select_related('canonperiodid', 'canonstateid')
+                .order_by('-canonperiodid__startdate')
+            )
+
+        # 2. Filtrar los Vepdetails asociados y no eliminados
+        # Si quieres solo los pagados, puedes agregar filtros como paiddate__isnull=False o balance=0
         pagos = (
-            Canons.objects.using("simsa")
-            .filter(expedientid=exp, isdeleted=False)
-            .select_related('canonperiodid', 'canonstateid')
-            .order_by('-canonperiodid__startdate')
+            Vepdetails.objects.using("simsa")
+            .filter(
+                canonid__in=pagos_aux,            # Utiliza la subconsulta
+                isdeleted=False,              # Excluye borrados lógicos
+                paiddate__isnull=False        # Garantiza que tengan fecha de pago
+            )
+            .select_related('vepid', 'canonid', 'canonstateid')
         )
+
         data_expedientes.append({
             'expediente': exp,
             'concesionarios': concesionarios,
