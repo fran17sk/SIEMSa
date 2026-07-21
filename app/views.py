@@ -3601,7 +3601,6 @@ def analisis_proveedores_ddjj(request):
                   AND (%s = 'all' OR p3."Id"::text = %s)
                   AND ps."Name" = 'Presentado'
                   AND pc."IsDeleted" = false
-                  AND p."IsRectification" = false
                   AND p2."IsDeleted" = false
                   AND c3."IsDeleted" = false
                   AND cp."IsDeleted" = false
