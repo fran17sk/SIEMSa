@@ -40,7 +40,7 @@ def obtener_token_sign():
             with open(TOKEN_FILE, "r") as f:
                 cache = json.load(f)
             
-            # Hacer que la comparación sea "timezone aware" en UTC
+            # Hacer que la comparación sea "timezone aware"
             expira = datetime.datetime.fromisoformat(cache["expiration"])
             if datetime.datetime.now(pytz.utc) < expira - datetime.timedelta(minutes=5):
                 logger.info(">>> [WSAA] Token válido recuperado del caché local.")
@@ -49,39 +49,48 @@ def obtener_token_sign():
             logger.error(f">>> [WSAA] Error al leer caché: {e}")
             pass
 
-    # 2. Solicitar nuevo ticket a AFIP
+    # 2. Solicitar nuevo a la AFIP
     try:
-        # Usamos UTC estándar sin microsegundos
-        now_utc = datetime.datetime.now(pytz.utc).replace(microsecond=0)
+        # Forzamos la zona horaria de Argentina (UTC-3)
+        tz_ar = pytz.timezone('America/Argentina/Buenos_Aires')
+        now_ar = datetime.datetime.now(tz_ar)
 
-        # Margen de tolerancia de -2 min (evita el error de 'fecha en el futuro' sin pasarse del límite de 24h/10m)
-        generation_time = now_utc - datetime.timedelta(minutes=2)
-        expiration_time = now_utc + datetime.timedelta(hours=2)
+        # AFIP es estricta: restamos 2 minutos para asegurar que para ellos NO sea el futuro
+        # IMPORTANTE: Reemplazamos microsegundos a 0 para evitar errores de parseo en AFIP
+        # Cambia el desfase de -2 minutos a -10 minutos
+        generation_time = (now_ar - datetime.timedelta(minutes=10)).replace(microsecond=0)
 
-        # Formato ISO 8601 estricto con 'Z' (UTC)
-        gen_str = generation_time.strftime('%Y-%m-%dT%H:%M:%SZ')
-        exp_str = expiration_time.strftime('%Y-%m-%dT%H:%M:%SZ')
+        # Asegúrate de mantener la expiración en un rango normal (ej: 2 horas adelante de la actual)
+        expiration_time = (now_ar + datetime.timedelta(hours=2)).replace(microsecond=0) # 2 horas es el estándar recomendado
 
-        # --- CONTROL DE LOGS ---
+        # Formatear con Offset de Zona Horaria (ej: 2026-06-22T10:35:22-03:00)
+        # Reemplazamos el %z final de Python (ej: -0300) por el formato ISO requerido (-03:00)
+        gen_str = generation_time.strftime('%Y-%m-%dT%H:%M:%S%z')
+        gen_str = gen_str[:-2] + ":" + gen_str[-2:]
+        
+        exp_str = expiration_time.strftime('%Y-%m-%dT%H:%M:%S%z')
+        exp_str = exp_str[:-2] + ":" + exp_str[-2:]
+
+        # --- CONTROL DE LOGS EXPLICITO ---
         logger.info("================ [MONITORAFIP] ================")
-        logger.info(f"Hora actual UTC: {now_utc.isoformat()}")
+        logger.info(f"Hora actual AR:  {now_ar.isoformat()}")
         logger.info(f"generationTime:  {gen_str}")
         logger.info(f"expirationTime:  {exp_str}")
-        logger.info(f"Unique ID (TS):  {int(now_utc.timestamp())}")
+        logger.info(f"Unique ID (TS):  {int(now_ar.timestamp())}")
         logger.info("===============================================")
 
-        # XML TRA sin sangría
+        # IMPORTANTE: XML sin indentación a la izquierda (pegado al borde)
         tra_xml = f"""<?xml version="1.0" encoding="UTF-8"?>
 <loginTicketRequest version="1.0">
 <header>
-<uniqueId>{int(now_utc.timestamp())}</uniqueId>
+<uniqueId>{int(now_ar.timestamp())}</uniqueId>
 <generationTime>{gen_str}</generationTime>
 <expirationTime>{exp_str}</expirationTime>
 </header>
 <service>ws_sr_padron_a13</service>
 </loginTicketRequest>""".strip().encode("utf-8")
 
-        # Carga de certificados y firma PKCS#7
+        # --- Resto de tu lógica de firma (Carga de certs, PKCS7, etc.) ---
         with open(CERT_FILE, "rb") as f:
             cert = x509.load_pem_x509_certificate(f.read())
         with open(KEY_FILE, "rb") as f:
@@ -97,7 +106,7 @@ def obtener_token_sign():
         cms_base64 = base64.b64encode(signature).decode()
         client = Client("https://wsaa.afip.gov.ar/ws/services/LoginCms?wsdl")
         
-        # Llamada SOAP a WSAA
+        # Intentar llamada al WS controlando la respuesta exacta
         try:
             response_xml = client.service.loginCms(cms_base64)
         except Exception as ws_err:
@@ -108,7 +117,7 @@ def obtener_token_sign():
         token = xml_obj.find(".//token").text
         sign = xml_obj.find(".//sign").text
 
-        # 3. Guardar en caché local
+        # 3. Guardar en caché (Guardamos en ISO con zona horaria)
         try:
             os.makedirs(os.path.dirname(TOKEN_FILE), exist_ok=True)
             with open(TOKEN_FILE, "w") as f:
@@ -196,69 +205,4 @@ def consultar_cuit(cuit):
         # El logger.exception captura el traceback completo (muy útil para debuguear)
         logger.exception(f">>> [AFIP] ERROR NO CONTROLADO consultando CUIT {cuit}: {str(e)}")
         return {"cuit": cuit, "error": str(e)}
-    
-def verificar_conexion_datacenter(termino="10245"):
-    url_interna = f"http://192.168.0.233/expediente/deuda/?numero={termino}"
-    
-    try:
-        logger.info(f"📡 Enviando petición a {url_interna} (Timeout=5s)...")
-        response = requests.get(url_interna, timeout=5)
-        
-        # Si el estado es 4xx o 5xx, lanza HTTPError
-        response.raise_for_status() 
-        
-        try:
-            data = response.json()
-            logger.info(f"✅ Conexión y JSON validados con el Datacenter. Status {response.status_code}")
-            return True, data
-        except (ValueError, requests.exceptions.JSONDecodeError) as json_err:
-            error_format = f"El Datacenter respondió 200 OK pero el contenido NO es un JSON válido. Respuesta: {response.text[:300]}"
-            logger.error(f"🔴 ERROR DE FORMATO: {error_format}")
-            enviar_alerta_email(error_format, tipo_falla="Respuesta JSON Inválida de la API")
-            return False, "La respuesta del servidor central tiene un formato inválido."
-        
-    except requests.exceptions.HTTPError as http_err:
-        status_code = response.status_code
-        error_msg = f"Error HTTP {status_code} devuelto por el Datacenter. Respuesta: {response.text[:200]}"
-        logger.error(f"🔴 ERROR EN APLICACIÓN: {error_msg}")
-        enviar_alerta_email(error_msg, tipo_falla=f"Error en Servidor Central (HTTP {status_code})")
-        return False, error_msg
-
-    # 🛡️ BLOQUE BLINDADO: Atrapamos cualquier error de Timeout (Connect, Read) o de Conexión de requests
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError, requests.exceptions.RequestException) as net_err:
-        error_msg = str(net_err)
-        logger.error(f"📶 ERROR DE CONEXIÓN O TIMEOUT (VPN CAÍDA): {error_msg}")
-        
-        # Disparamos el correo indicando la caída
-        enviar_alerta_email(error_msg, tipo_falla="Caída de Conexión / VPN Inalcanzable (Timeout)")
-        return False, error_msg
-
-
-def enviar_alerta_email(error_msg, tipo_falla):
-    """Despacha el correo dinámico detallando el tipo de falla."""
-    asunto = f"⚠️ ALERTA CRÍTICA: {tipo_falla} - SIEMSa"
-    cuerpo = f"""
-    Se ha detectado una anomalía al intentar conectar con el Datacenter de la Provincia.
-    
-    Tipo de Incidente: {tipo_falla}
-    URL Evaluada: http://192.168.0.233/expediente/deuda/
-    
-    Detalles técnicos del fallo:
-    ---------------------------------------------------------
-    {error_msg}
-    ---------------------------------------------------------
-    
-    Monitoreo Automático - SIEMSa.
-    """
-    
-    try:
-        send_mail(
-            subject=asunto,
-            message=cuerpo,
-            from_email=settings.EMAIL_HOST_USER,
-            recipient_list=["franciscruz991@gmail.com"],
-            fail_silently=False,
-        )
-        logger.info("📧 Correo de alerta enviado con éxito vía Django Mail Backend.")
-    except Exception as ex:
-        logger.error(f"❌ Error crítico al intentar despachar el email de alerta: {str(ex)}")
+ 
