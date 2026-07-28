@@ -178,8 +178,8 @@ EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
-EMAIL_HOST_USER = 'secretariademineriadesalta@gmail.com'
-EMAIL_HOST_PASSWORD = 'coja wtju azwh kaxv'  # Contraseña de aplicación (segura)
+EMAIL_HOST_USER = 'interno.secmin@gmail.com'
+EMAIL_HOST_PASSWORD = 'dhbg rhyq vuyn yhah'  # Contraseña de aplicación (segura)
 
 #EMAIL_HOST_USER = "mesadeayudasimsa@gmail.com"
 #EMAIL_HOST_PASSWORD = "rkfw qytu qntg auua"
