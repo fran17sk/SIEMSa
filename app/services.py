@@ -40,7 +40,7 @@ def obtener_token_sign():
             with open(TOKEN_FILE, "r") as f:
                 cache = json.load(f)
             
-            # Hacer que la comparación sea "timezone aware"
+            # Hacer que la comparación sea "timezone aware" en UTC
             expira = datetime.datetime.fromisoformat(cache["expiration"])
             if datetime.datetime.now(pytz.utc) < expira - datetime.timedelta(minutes=5):
                 logger.info(">>> [WSAA] Token válido recuperado del caché local.")
@@ -49,20 +49,20 @@ def obtener_token_sign():
             logger.error(f">>> [WSAA] Error al leer caché: {e}")
             pass
 
-    # 2. Solicitar nuevo a la AFIP
+    # 2. Solicitar nuevo ticket a AFIP
     try:
-        # Usamos UTC estándar, que es el formato ideal aceptado por AFIP
+        # Usamos UTC estándar sin microsegundos
         now_utc = datetime.datetime.now(pytz.utc).replace(microsecond=0)
 
-        # Margen de tolerancia seguro: 2 minutos al pasado (evita "fecha en el futuro")
+        # Margen de tolerancia de -2 min (evita el error de 'fecha en el futuro' sin pasarse del límite de 24h/10m)
         generation_time = now_utc - datetime.timedelta(minutes=2)
-        # Expiración: AFIP permite un máximo de 12 horas, 2-12 horas en UTC es correcto
         expiration_time = now_utc + datetime.timedelta(hours=2)
 
-        # Formato ISO 8601 en UTC (Ej: 2026-07-28T13:26:46Z)
+        # Formato ISO 8601 estricto con 'Z' (UTC)
         gen_str = generation_time.strftime('%Y-%m-%dT%H:%M:%SZ')
         exp_str = expiration_time.strftime('%Y-%m-%dT%H:%M:%SZ')
 
+        # --- CONTROL DE LOGS ---
         logger.info("================ [MONITORAFIP] ================")
         logger.info(f"Hora actual UTC: {now_utc.isoformat()}")
         logger.info(f"generationTime:  {gen_str}")
@@ -70,18 +70,18 @@ def obtener_token_sign():
         logger.info(f"Unique ID (TS):  {int(now_utc.timestamp())}")
         logger.info("===============================================")
 
-        # IMPORTANTE: XML sin indentación a la izquierda (pegado al borde)
+        # XML TRA sin sangría
         tra_xml = f"""<?xml version="1.0" encoding="UTF-8"?>
 <loginTicketRequest version="1.0">
 <header>
-<uniqueId>{int(now_ar.timestamp())}</uniqueId>
+<uniqueId>{int(now_utc.timestamp())}</uniqueId>
 <generationTime>{gen_str}</generationTime>
 <expirationTime>{exp_str}</expirationTime>
 </header>
 <service>ws_sr_padron_a13</service>
 </loginTicketRequest>""".strip().encode("utf-8")
 
-        # --- Resto de tu lógica de firma (Carga de certs, PKCS7, etc.) ---
+        # Carga de certificados y firma PKCS#7
         with open(CERT_FILE, "rb") as f:
             cert = x509.load_pem_x509_certificate(f.read())
         with open(KEY_FILE, "rb") as f:
@@ -97,7 +97,7 @@ def obtener_token_sign():
         cms_base64 = base64.b64encode(signature).decode()
         client = Client("https://wsaa.afip.gov.ar/ws/services/LoginCms?wsdl")
         
-        # Intentar llamada al WS controlando la respuesta exacta
+        # Llamada SOAP a WSAA
         try:
             response_xml = client.service.loginCms(cms_base64)
         except Exception as ws_err:
@@ -108,7 +108,7 @@ def obtener_token_sign():
         token = xml_obj.find(".//token").text
         sign = xml_obj.find(".//sign").text
 
-        # 3. Guardar en caché (Guardamos en ISO con zona horaria)
+        # 3. Guardar en caché local
         try:
             os.makedirs(os.path.dirname(TOKEN_FILE), exist_ok=True)
             with open(TOKEN_FILE, "w") as f:
