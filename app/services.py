@@ -51,32 +51,23 @@ def obtener_token_sign():
 
     # 2. Solicitar nuevo a la AFIP
     try:
-        # Forzamos la zona horaria de Argentina (UTC-3)
-        tz_ar = pytz.timezone('America/Argentina/Buenos_Aires')
-        now_ar = datetime.datetime.now(tz_ar)
+        # Usamos UTC estándar, que es el formato ideal aceptado por AFIP
+        now_utc = datetime.datetime.now(pytz.utc).replace(microsecond=0)
 
-        # AFIP es estricta: restamos 2 minutos para asegurar que para ellos NO sea el futuro
-        # IMPORTANTE: Reemplazamos microsegundos a 0 para evitar errores de parseo en AFIP
-        # Cambia el desfase de -2 minutos a -10 minutos
-        generation_time = (now_ar - datetime.timedelta(minutes=10)).replace(microsecond=0)
+        # Margen de tolerancia seguro: 2 minutos al pasado (evita "fecha en el futuro")
+        generation_time = now_utc - datetime.timedelta(minutes=2)
+        # Expiración: AFIP permite un máximo de 12 horas, 2-12 horas en UTC es correcto
+        expiration_time = now_utc + datetime.timedelta(hours=2)
 
-        # Asegúrate de mantener la expiración en un rango normal (ej: 2 horas adelante de la actual)
-        expiration_time = (now_ar + datetime.timedelta(hours=2)).replace(microsecond=0) # 2 horas es el estándar recomendado
+        # Formato ISO 8601 en UTC (Ej: 2026-07-28T13:26:46Z)
+        gen_str = generation_time.strftime('%Y-%m-%dT%H:%M:%SZ')
+        exp_str = expiration_time.strftime('%Y-%m-%dT%H:%M:%SZ')
 
-        # Formatear con Offset de Zona Horaria (ej: 2026-06-22T10:35:22-03:00)
-        # Reemplazamos el %z final de Python (ej: -0300) por el formato ISO requerido (-03:00)
-        gen_str = generation_time.strftime('%Y-%m-%dT%H:%M:%S%z')
-        gen_str = gen_str[:-2] + ":" + gen_str[-2:]
-        
-        exp_str = expiration_time.strftime('%Y-%m-%dT%H:%M:%S%z')
-        exp_str = exp_str[:-2] + ":" + exp_str[-2:]
-
-        # --- CONTROL DE LOGS EXPLICITO ---
         logger.info("================ [MONITORAFIP] ================")
-        logger.info(f"Hora actual AR:  {now_ar.isoformat()}")
+        logger.info(f"Hora actual UTC: {now_utc.isoformat()}")
         logger.info(f"generationTime:  {gen_str}")
         logger.info(f"expirationTime:  {exp_str}")
-        logger.info(f"Unique ID (TS):  {int(now_ar.timestamp())}")
+        logger.info(f"Unique ID (TS):  {int(now_utc.timestamp())}")
         logger.info("===============================================")
 
         # IMPORTANTE: XML sin indentación a la izquierda (pegado al borde)
