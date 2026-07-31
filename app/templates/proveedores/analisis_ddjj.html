@@ -683,6 +683,71 @@
         font-weight: 700;
         text-align: center;
     }
+
+    .geo-accordion-item {
+        background: rgba(15, 23, 42, 0.4);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        margin-bottom: 12px;
+        overflow: hidden;
+        transition: border-color 0.2s ease;
+    }
+
+    .geo-accordion-item[open] {
+        border-color: var(--color-info);
+    }
+
+    .geo-accordion-title {
+        padding: 14px 18px;
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: var(--color-info);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        cursor: pointer;
+        user-select: none;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: rgba(30, 41, 59, 0.5);
+    }
+
+    .geo-accordion-title:hover {
+        background: rgba(30, 41, 59, 0.8);
+    }
+
+    .geo-accordion-title::after {
+        content: '\f078'; /* Ícono fa-chevron-down */
+        font-family: 'Font Awesome 6 Free';
+        font-weight: 900;
+        font-size: 0.85rem;
+        transition: transform 0.3s ease;
+    }
+
+    .geo-accordion-item[open] .geo-accordion-title::after {
+        transform: rotate(180deg);
+    }
+
+    .geo-accordion-content {
+        padding: 20px;
+        display: grid;
+        grid-template-columns: 1fr 350px;
+        gap: 20px;
+        align-items: start;
+        border-top: 1px solid var(--border-color);
+    }
+
+    @media (max-width: 1200px) {
+        .geo-accordion-content {
+            grid-template-columns: 1fr;
+        }
+    }
+    .title-principal{
+        font-size: 1.8rem;
+        font-weight: 700;
+        margin: 0 0 4px 0;
+        color: #fff;
+    }
 </style>
 {% endblock %}
 
@@ -692,7 +757,7 @@
         <div class="flex-row-header">
             <div>
                 <h1><i class="fa-solid fa-shield-halved text-info"
-                        style="color: var(--color-info); margin-right: 8px;"></i>Auditoría Avanzada de Proveedores</h1>
+                        style="color: var(--color-info); margin-right: 8px;"></i>Auditoría de Empleo y Proveedores</h1>
                 <p>Análisis y cruzamiento de Declaraciones Juradas contra el Registro Provincial de Proveedores Libres.
                 </p>
             </div>
@@ -740,7 +805,165 @@
         </div>
     </div>
 
-<span class="title">INFORMACION GENERAL</span>
+<span class="title-principal">INFORMACION DE EMPLEO</span>
+<div class="dashboard-kpi-container" style="margin-bottom: 32px;">
+    <div class="kpi-cards-grid">
+        <div class="kpi-card-saas card-vigente">
+            <span class="title">Empleo Local</span>
+            <div style="display: flex; align-items: baseline; justify-content: space-between;">
+                <div class="value" id="empleo-txt-local">0</div>
+                <span class="badge-status vigente" id="empleo-pct-local" style="font-size: 0.85rem; padding: 4px 8px;">0%</span>
+            </div>
+            <div class="footer-desc"><i class="fa-solid fa-circle-check"></i> Origen Salta</div>
+        </div>
+
+        <div class="kpi-card-saas card-novigente">
+            <span class="title">Empleo Nacional</span>
+            <div style="display: flex; align-items: baseline; justify-content: space-between;">
+                <div class="value" id="empleo-txt-nacionales">0</div>
+                <span class="badge-status no-vigente" id="empleo-pct-nacionales" style="font-size: 0.85rem; padding: 4px 8px;">0%</span>
+            </div>
+            <div class="footer-desc"><i class="fa-solid fa-circle-info"></i> Resto del País</div>
+        </div>
+
+        <div class="kpi-card-saas card-nunca">
+            <span class="title">Empleo Internacional</span>
+            <div style="display: flex; align-items: baseline; justify-content: space-between;">
+                <div class="value" id="empleo-txt-internacionales">0</div>
+                <span class="badge-status nunca" id="empleo-pct-internacionales" style="font-size: 0.85rem; padding: 4px 8px;">0%</span>
+            </div>
+            <div class="footer-desc"><i class="fa-solid fa-earth-americas"></i> Fuera de Argentina</div>
+        </div>
+        <div class="total-footer-strip">
+            <span>SIN ESPECIFICAR:</span>
+            <span class="badge-total-saas" id="empleo-txt-total-desconocido">0 Proveedores</span>
+        </div>
+        <div class="total-footer-strip">
+            <span>TOTAL EVALUADO EN ESTA CONSULTA:</span>
+            <span class="badge-total-saas" id="empleo-txt-total">0 Proveedores</span>
+        </div>
+    </div>
+
+    <div class="chart-distribution-box">
+        <h5>Distribución de Empleo por Origen</h5>
+        <div style="position: relative; height: 180px; width: 100%;"><canvas id="empleo-chart-origen"></canvas></div>
+    </div>
+</div>
+
+
+
+
+<div class="geo-dashboard-layout">
+    <div class="card" style="display: flex; flex-direction: column; gap: 16px;">
+        <h5 style="margin: 0; color: #fff; font-size: 0.9rem; text-transform: uppercase;">
+            <i class="fa-solid fa-map-location-dot" style="color: var(--color-info); margin-right: 8px;"></i>
+            Distribución Geográfica Detallada | Empleados
+        </h5>
+
+        <div class="geo-vertical-charts-stack">
+            
+            <!-- 1. PAÍSES -->
+            <details class="geo-accordion-item">
+                <summary class="geo-accordion-title">
+                    <span><i class="fa-solid fa-earth-americas" style="margin-right: 8px;"></i> Países</span>
+                </summary>
+                <div class="geo-accordion-content">
+                    <div class="chart-wrapper">
+                        <canvas id="chart-empleo-paises"></canvas>
+                    </div>
+                    <div class="table-wrapper">
+                        <table class="mini-table-geo" id="table-empleo-geo-paises">
+                            <thead>
+                                <tr>
+                                    <th>Ubicación</th>
+                                    <th style="width: 60px; text-align: center;">Cant.</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </details>
+
+            <!-- 2. PROVINCIAS -->
+            <details class="geo-accordion-item">
+                <summary class="geo-accordion-title">
+                    <span><i class="fa-solid fa-map" style="margin-right: 8px;"></i> Provincias (Argentina)</span>
+                </summary>
+                <div class="geo-accordion-content">
+                    <div class="chart-wrapper">
+                        <canvas id="chart-empleo-provincias"></canvas>
+                    </div>
+                    <div class="table-wrapper">
+                        <table class="mini-table-geo" id="table-empleo-geo-provincias">
+                            <thead>
+                                <tr>
+                                    <th>Jurisdicción</th>
+                                    <th style="width: 60px; text-align: center;">Cant.</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </details>
+
+<!-- 4. DEPARTAMENTOS -->
+            <details class="geo-accordion-item">
+                <summary class="geo-accordion-title">
+                    <span><i class="fa-solid fa-building-flag" style="margin-right: 8px;"></i> DEPATAMENTOS (Salta)</span>
+                </summary>
+                <div class="geo-accordion-content">
+                    <div class="chart-wrapper">
+                        <canvas id="chart-empleo-localidades"></canvas>
+                    </div>
+                    <div class="table-wrapper">
+                        <table class="mini-table-geo" id="table-empleo-geo-localidades">
+                            <thead>
+                                <tr>
+                                    <th>Departamentos</th>
+                                    <th style="width: 60px; text-align: center;">Cant.</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </details>
+
+            <!-- 3. MUNICIPIOS -->
+            <details class="geo-accordion-item">
+                <summary class="geo-accordion-title">
+                    <span><i class="fa-solid fa-city" style="margin-right: 8px;"></i> Municipios (Salta)</span>
+                </summary>
+                <div class="geo-accordion-content">
+                    <div class="chart-wrapper">
+                        <canvas id="chart-empleo-municipios"></canvas>
+                    </div>
+                    <div class="table-wrapper">
+                        <table class="mini-table-geo" id="table-empleo-geo-municipios">
+                            <thead>
+                                <tr>
+                                    <th>Localidad</th>
+                                    <th style="width: 60px; text-align: center;">Cant.</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </details>
+
+            
+
+        </div>
+    </div>
+</div>
+
+
+
+
+<span class="title-principal">INFORMACION DE PROVEEDORES</span>
 <div class="dashboard-kpi-container" style="margin-bottom: 32px;">
     <div class="kpi-cards-grid">
         <div class="kpi-card-saas card-vigente">
@@ -824,16 +1047,43 @@
 </div>
     
     <div class="geo-dashboard-layout">
+    <div class="card" style="display: flex; flex-direction: column; gap: 16px;">
+        <h5 style="margin: 0; color: #fff; font-size: 0.9rem; text-transform: uppercase;">
+            <i class="fa-solid fa-map-location-dot" style="color: var(--color-info); margin-right: 8px;"></i>
+            Distribución Geográfica Detallada | Proveedores
+        </h5>
 
+        <div class="geo-vertical-charts-stack">
+            
+            <!-- 1. PAÍSES -->
+            <details class="geo-accordion-item">
+                <summary class="geo-accordion-title">
+                    <span><i class="fa-solid fa-earth-americas" style="margin-right: 8px;"></i> Países</span>
+                </summary>
+                <div class="geo-accordion-content">
+                    <div class="chart-wrapper">
+                        <canvas id="chart-paises"></canvas>
+                    </div>
+                    <div class="table-wrapper">
+                        <table class="mini-table-geo" id="table-geo-paises">
+                            <thead>
+                                <tr>
+                                    <th>Ubicación</th>
+                                    <th style="width: 60px; text-align: center;">Cant.</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </details>
 
-        <div class="card" style="display: flex; flex-direction: column; gap: 16px;">
-            <h5 style="margin: 0; color: #fff; font-size: 0.9rem; text-transform: uppercase;"><i
-                    class="fa-solid fa-map-location-dot"
-                    style="color: var(--color-info); margin-right: 8px;"></i>Distribución Geográfica Detallada</h5>
-
-            <div class="geo-vertical-charts-stack">
-                <div class="geo-row-item">
-                    <h6>Provincias (Argentina)</h6>
+            <!-- 2. PROVINCIAS -->
+            <details class="geo-accordion-item">
+                <summary class="geo-accordion-title">
+                    <span><i class="fa-solid fa-map" style="margin-right: 8px;"></i> Provincias (Argentina)</span>
+                </summary>
+                <div class="geo-accordion-content">
                     <div class="chart-wrapper">
                         <canvas id="chart-provincias"></canvas>
                     </div>
@@ -849,9 +1099,38 @@
                         </table>
                     </div>
                 </div>
+            </details>
 
-                <div class="geo-row-item">
-                    <h6>Localidades (Salta)</h6>
+
+            <!-- 4. DEPARTAMENTO -->
+            <details class="geo-accordion-item">
+                <summary class="geo-accordion-title">
+                    <span><i class="fa-solid fa-building-flag" style="margin-right: 8px;"></i> Departamentos (Salta)</span>
+                </summary>
+                <div class="geo-accordion-content">
+                    <div class="chart-wrapper">
+                        <canvas id="chart-municipios"></canvas>
+                    </div>
+                    <div class="table-wrapper">
+                        <table class="mini-table-geo" id="table-geo-municipios">
+                            <thead>
+                                <tr>
+                                    <th>Departamentos</th>
+                                    <th style="width: 60px; text-align: center;">Cant.</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </details>
+
+            <!-- 3. LOCALIDADES -->
+            <details class="geo-accordion-item">
+                <summary class="geo-accordion-title">
+                    <span><i class="fa-solid fa-city" style="margin-right: 8px;"></i> Localidades (Salta)</span>
+                </summary>
+                <div class="geo-accordion-content">
                     <div class="chart-wrapper">
                         <canvas id="chart-localidades"></canvas>
                     </div>
@@ -867,50 +1146,13 @@
                         </table>
                     </div>
                 </div>
+            </details>
 
-                <div class="geo-row-item">
-                    <h6>Municipios (Salta)</h6>
-                    <div class="chart-wrapper">
-                        <canvas id="chart-municipios"></canvas>
-                    </div>
-                    <div class="table-wrapper">
-                        <table class="mini-table-geo" id="table-geo-municipios">
-                            <thead>
-                                <tr>
-                                    <th>Municipio</th>
-                                    <th style="width: 60px; text-align: center;">Cant.</th>
-                                </tr>
-                            </thead>
-                            <tbody></tbody>
-                        </table>
-                    </div>
-                </div>
-                <div class="main-dashboard-layout">
-        <!-- LADO DERECHO: La Tabla Detallada (toma el resto del espacio) -->
-        <div class="tabla-wrapper" style="flex: 1; background: #1e293b; padding: 16px; border-radius: 8px;">
-            <table class="table" id="table-geo-paises" style="width: 100%; color: #e2e8f0;">
-                <thead>
-                    <tr style="border-bottom: 1px solid #334155; color: #94a3b8;">
-                        <th>Ubicación</th>
-                        <th style="text-align: center;">Cantidad</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- Se rellena dinámicamente -->
-                </tbody>
-            </table>
             
-        </div>
-        <!-- LADO IZQUIERDO: El Gráfico (fijo o con un ancho controlado) -->
-        <div class="grafico-wrapper"
-            style="flex: 0 0 45%; min-height: 250px; background: #1e293b; padding: 16px; border-radius: 8px;">
-            <canvas id="chart-paises"></canvas>
-        </div>
-        
-    </div>
-            </div>
+
         </div>
     </div>
+</div>
 
     <div class="card" style="overflow-x: auto;">
         <h5 style="margin: 0 0 16px 0; color: #fff; font-size: 1rem;"><i class="fa-solid fa-list-check text-info"
@@ -944,7 +1186,7 @@
     Chart.register(ChartDataLabels);
 
     let tablaResultados;
-    let chartEstado, chartOrigen, chartPaises, chartProvincias, chartLocalidades, chartMunicipios;
+    let chartEstado, chartOrigen, chartPaises, chartProvincias, chartLocalidades, chartMunicipios, chartEmpleoPaises, chartEmpleoProvincias, chartEmpleoLocalidades, chartEmpleoMunicipios;
 
     function ordenarPeriodos(arrayPeriodos) {
         if (!arrayPeriodos || arrayPeriodos.length === 0) return [];
@@ -1045,12 +1287,46 @@
                 }
             }
         });
+         
+
+        // Configuración Pie de Origen con porcentajes internos corregido
+        chartEmpleoOrigen = new Chart(document.getElementById('empleo-chart-origen').getContext('2d'), {
+            type: 'pie',
+            data: {
+                labels: ['Nacionales', 'Internacionales', 'Locales'],
+                datasets: [{ data: [0, 0, 0], backgroundColor: ['#f59e0b', '#ef4444', '#10b981'], borderWidth: 0 }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { color: '#e2e8f0', font: { size: 11 } }
+                    },
+                    datalabels: {
+                        color: '#fff',
+                        font: { weight: 'bold', size: 12 },
+                        formatter: (value, ctx) => {
+                            let sum = 0;
+                            let dataArr = ctx.chart.data.datasets[0].data;
+                            dataArr.forEach(data => { sum += data; });
+                            return sum > 0 ? ((value * 100) / sum).toFixed(1) + "%" : "";
+                        }
+                    }
+                }
+            }
+        });
 
         // Gráficos Geográficos (Incluido el de Países)
         chartPaises = crearGraficoBarras('chart-paises');
         chartProvincias = crearGraficoBarras('chart-provincias');
         chartLocalidades = crearGraficoBarras('chart-localidades');
         chartMunicipios = crearGraficoBarras('chart-municipios');
+        chartEmpleoPaises = crearGraficoBarras('chart-empleo-paises');
+        chartEmpleoProvincias = crearGraficoBarras('chart-empleo-provincias');
+        chartEmpleoLocalidades = crearGraficoBarras('chart-empleo-localidades');
+        chartEmpleoMunicipios = crearGraficoBarras('chart-empleo-municipios');
 
         function cargarPeriodosGlobales() {
             fetch('/api/periodos_por_proyecto/?project_id=all')
@@ -1433,7 +1709,10 @@
     });
 
     // Indicador de carga inicial
-    $('#txt-total').text('...');
+    $('#empleo-txt-total').text('...');
+    $('#empleo-txt-total-desconocido').text('...');
+    $('#empleo-txt-total').text('...');
+    $('#txt-total-salta').text('...');
     $('#txt-total-salta').text('...');
 
     fetch(`?${params.toString()}`)
@@ -1447,15 +1726,33 @@
             const cantNacionalesTotal = parseInt(data.resumen.nacionales || 0);
             const cantNacionalesResto = cantNacionalesTotal - cantLocal; // Resto de Argentina menos Salta
             const cantInternacionales = parseInt(data.resumen.internacionales || 0);
+            const cantidadEmpleoDesconocido = parseInt(data.empleo.geo.paises.Desconocido ?? 0);
+
             
+
             // El universo completo es la suma de todos los países (Nacionales + Internacionales)
-            const totalGlobal = cantNacionalesTotal + cantInternacionales;
+            const totalGlobal = cantNacionalesTotal + cantInternacionales ;
 
             // Inyectamos los números grandes en las tarjetas
             $('#txt-local').text(cantLocal);
             $('#txt-nacionales').text(cantNacionalesResto);
             $('#txt-internacionales').text(cantInternacionales);
             $('#txt-total').text(totalGlobal + ' Proveedores');
+
+
+            const cantEmpleoLocal = parseInt(data.empleo.resumen.locales_salta || 0); // En la view, data.resumen.total es el total de Salta
+            const cantEmpleoNacionalesTotal = parseInt(data.empleo.resumen.nacionales || 0);
+            const cantEmpleoInternacionales = parseInt(data.empleo.resumen.internacionales - cantidadEmpleoDesconocido|| 0);
+            
+            
+            // El universo completo es la suma de todos los países (Nacionales + Internacionales)
+            const totalEmpleoGlobal = cantEmpleoNacionalesTotal + cantEmpleoInternacionales + cantEmpleoLocal;
+
+            $('#empleo-txt-local').text(cantEmpleoLocal);
+            $('#empleo-txt-nacionales').text(cantEmpleoNacionalesTotal);
+            $('#empleo-txt-internacionales').text(cantEmpleoInternacionales);
+            $('#empleo-txt-total').text(totalEmpleoGlobal + ' Empleados');
+            $('#empleo-txt-total-desconocido').text(cantidadEmpleoDesconocido + ' Empleados');
 
             // Calculamos y seteamos los porcentajes de Origen de forma segura
             if (totalGlobal > 0) {
@@ -1470,6 +1767,21 @@
                 $('#pct-local').text('0%');
                 $('#pct-nacionales').text('0%');
                 $('#pct-internacionales').text('0%');
+            }
+
+            // Calculamos y seteamos los porcentajes de Origen de forma segura
+            if (totalEmpleoGlobal > 0) {
+                const pctEmpleoLocal = ((cantEmpleoLocal * 100) / totalEmpleoGlobal).toFixed(1);
+                const pctEmpleoNacionales = ((cantEmpleoNacionalesTotal * 100) / totalEmpleoGlobal).toFixed(1);
+                const pctEmpleoInternacionales = ((cantEmpleoInternacionales * 100) / totalEmpleoGlobal).toFixed(1);
+
+                $('#empleo-pct-local').text(pctEmpleoLocal + '%');
+                $('#empleo-pct-nacionales').text(pctEmpleoNacionales + '%');
+                $('#empleo-pct-internacionales').text(pctEmpleoInternacionales + '%');
+            } else {
+                $('#empleo-pct-local').text('0%');
+                $('#empleo-pct-nacionales').text('0%');
+                $('#empleo-pct-internacionales').text('0%');
             }
 
             // ==========================================
@@ -1498,6 +1810,10 @@
             chartOrigen.data.datasets[0].data = [cantNacionalesResto, cantInternacionales, cantLocal];
             chartOrigen.update();
 
+            chartEmpleoOrigen.data.datasets[0].data = [cantEmpleoNacionalesTotal, cantEmpleoInternacionales, cantEmpleoLocal];
+            chartEmpleoOrigen.update(); 
+
+
             // ==========================================
             // 4. DESGLOSE GEOGRÁFICO DETALLADO
             // ==========================================
@@ -1505,6 +1821,10 @@
             actualizarSeccionGeoIndividual(chartProvincias, 'table-geo-provincias', data.geo.provincias);
             actualizarSeccionGeoIndividual(chartLocalidades, 'table-geo-localidades', data.geo.localidades);
             actualizarSeccionGeoIndividual(chartMunicipios, 'table-geo-municipios', data.geo.municipios);
+            actualizarSeccionGeoIndividual(chartEmpleoPaises, 'table-empleo-geo-paises', data.empleo.geo.paises);
+            actualizarSeccionGeoIndividual(chartEmpleoProvincias, 'table-empleo-geo-provincias', data.empleo.geo.provincias);
+            actualizarSeccionGeoIndividual(chartEmpleoLocalidades, 'table-empleo-geo-localidades', data.empleo.geo.departamentos_salta);
+            actualizarSeccionGeoIndividual(chartEmpleoMunicipios, 'table-empleo-geo-municipios', data.empleo.geo.municipios_salta);
 
             // ==========================================
             // 5. POBLAR DATATABLE DE NÓMINA (SÓLO SALTA)

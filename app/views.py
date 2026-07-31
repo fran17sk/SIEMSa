@@ -3552,13 +3552,10 @@ from django.utils.timezone import now
 from .models import RegistroProveedores  # Asegurate de que la importación sea correcta según tu app
 def analisis_proveedores_ddjj(request):
     """
-    Cruza los proveedores declarados en las DDJJ mineras (SIMSA) 
-    con el Registro de Proveedores local para determinar su estado de vigencia.
-    - Los gráficos geográficos muestran la totalidad de orígenes (Nacionales vs Internacionales).
-    - Los proveedores internacionales sin jerarquía ascendente se identifican directamente por su nodo raíz.
-    - El análisis de estados y nómina detallada se acota exclusivamente a proveedores de Salta.
+    Cruza los proveedores y empleados declarados en las DDJJ mineras (SIMSA)
+    con el Registro local de proveedores y procesa datos geográficos/laborales.
     """
-    
+
     # ==========================================
     # 1. MANEJO DE PETICIÓN AJAX (PROCESAMIENTO)
     # ==========================================
@@ -3568,8 +3565,12 @@ def analisis_proveedores_ddjj(request):
         periodo = request.GET.get("periodo") or "all"
 
         try:
-            # Traemos el contratista y resolvemos hasta 5 niveles de la jerarquía de Zones
-            query_simsa = """
+            params = [concesionario, concesionario, proyecto, proyecto, periodo, periodo]
+
+            # ----------------------------------------------------
+            # A. CONSULTA Y PROCESAMIENTO DE PROVEEDORES (CONTRACTORS)
+            # ----------------------------------------------------
+            query_simsa_proveedores = """
                 SELECT DISTINCT 
                     TRIM(c."Cuit") as "Cuit",
                     TRIM(c."BusinessName") as "BusinessName",
@@ -3605,28 +3606,63 @@ def analisis_proveedores_ddjj(request):
                   AND c3."IsDeleted" = false
                   AND cp."IsDeleted" = false
             """
-            params = [concesionario, concesionario, proyecto, proyecto, periodo, periodo]
+
+            # ----------------------------------------------------
+            # B. CONSULTA DE EMPLEADOS (EMPLOYEES)
+            # ----------------------------------------------------
+            query_simsa_empleados = """
+                SELECT DISTINCT 
+                    TRIM(p4."Cuil") as "Cuit",
+                    TRIM(p4."Name") as "BusinessName",
+                    p2."Name" as "Project",
+                    c3."Name" as "Company",
+                    z."Level" as "ZoneLevel",
+                    z."Name" as "ZonaDirecta",
+                    zp."Name" as "ZonaPadre",
+                    zpp."Name" as "ZonaAbuelo",
+                    zppp."Name" as "ZonaBisabuelo",
+                    zpppp."Name" as "ZonaTatarabuelo"
+                FROM "Employees" e
+                INNER JOIN "PresentationEmployees" pc ON pc."EmployeeId" = e."Id"
+                INNER JOIN "People" p4 ON p4."Id" = e."PersonId"
+                INNER JOIN "Presentations" p ON p."Id" = pc."PresentationId"
+                INNER JOIN "Periods" p3 ON p."PeriodId" = p3."Id"
+                INNER JOIN "PresentationStates" ps ON ps."Id" = p."PresentationStateId"
+                INNER JOIN "Projects" p2 ON p."ProjectId" = p2."Id"
+                INNER JOIN "CompanyProjects" cp ON cp."ProjectId" = p2."Id"
+                INNER JOIN "Companies" c3 ON c3."Id" = cp."CompanyId"
+                LEFT JOIN "Zones" z ON z."Id" = p4."ZoneId"
+                LEFT JOIN "Zones" zp ON zp."Id" = z."ParentId"
+                LEFT JOIN "Zones" zpp ON zpp."Id" = zp."ParentId"
+                LEFT JOIN "Zones" zppp ON zppp."Id" = zpp."ParentId"
+                LEFT JOIN "Zones" zpppp ON zpppp."Id" = zppp."ParentId"
+                WHERE p."IsDeleted" = false
+                  AND e."IsDeleted" = false
+                  AND (%s = 'all' OR c3."Id"::text = %s)
+                  AND (%s = 'all' OR p2."Id"::text = %s)
+                  AND (%s = 'all' OR p3."Id"::text = %s)
+                  AND ps."Name" = 'Presentado'
+                  AND pc."IsDeleted" = false
+                  AND p2."IsDeleted" = false
+                  AND c3."IsDeleted" = false
+                  AND cp."IsDeleted" = false
+            """
 
             with connections['simsa'].cursor() as cursor_simsa:
-                cursor_simsa.execute(query_simsa, params)
+                cursor_simsa.execute(query_simsa_proveedores, params)
                 contratistas_ddjj = cursor_simsa.fetchall()
 
-            if not contratistas_ddjj:
-                return JsonResponse({
-                    "resumen": {"vigentes": 0, "no_vigentes": 0, "nunca_inscriptos": 0, "total": 0, "nacionales": 0, "internacionales": 0},
-                    "geo": {"paises": {}, "provincias": {}, "localidades": {}, "municipios": {}},
-                    "resultados": []
-                })
+                cursor_simsa.execute(query_simsa_empleados, params)
+                empleados_ddjj = cursor_simsa.fetchall()
 
-            # --- Inicializadores Geográficos ---
-            list_paises = []
-            list_provincias = []
-            list_localidades = []
-            list_municipios = []
+            # --- 1. PROCESAMIENTO PROVEEDORES ---
+            list_paises_prov = []
+            list_provincias_prov = []
+            list_localidades_prov = []
+            list_departamentos_prov = []
 
             cuits_declarados = list(set([row[0] for row in contratistas_ddjj if row[0]]))
 
-            # Registro Local de Proveedores
             registro_local = {}
             if cuits_declarados:
                 ultimos_tramites = (
@@ -3642,64 +3678,50 @@ def analisis_proveedores_ddjj(request):
                         "es_vigente": (r.tramite == 'APROBADO' and (not r.fecha_vto or r.fecha_vto >= now().date()))
                     }
 
-            resultados = []
-            nomina = []
+            resultados_proveedores = []
+            nomina_proveedores = []
             count_vigentes, count_no_vigentes, count_nunca = 0, 0, 0
-            count_total = 0
+            count_total_prov = 0
 
             for row in contratistas_ddjj:
                 cuit, razon_social, proyecto_nom, empresa_nom = row[0], row[1], row[2], row[3]
                 level, z_directa, z_padre, z_abuelo, z_bisabuelo, z_tatarabuelo = row[4], row[5], row[6], row[7], row[8], row[9]
-                count_total = count_total + 1
-                
-                # --- LÓGICA DE DETECCIÓN GEOGRÁFICA RECURSIVA ---
+                count_total_prov += 1
+
                 pais, provincia, departamento, municipio, localidad = "Desconocido", "Desconocido", "Desconocido", "Desconocido", "Desconocido"
                 camino = [z for z in [z_tatarabuelo, z_bisabuelo, z_abuelo, z_padre, z_directa] if z]
-                
-                if camino:
-                    if len(camino) == 1:
-                        pais = camino[0]
-                    else:
-                        pais = camino[0]
-                        if len(camino) > 1: provincia = camino[1]
-                        if len(camino) > 2: departamento = camino[2]
-                        if len(camino) > 3: municipio = camino[3]
-                        if len(camino) > 4: localidad = camino[4]
-                
-                pais_limpio = pais.lower().strip()
-                list_paises.append(pais_limpio)
 
-                # Definimos banderas booleanas claras para la segmentación
+                if camino:
+                    pais = camino[0]
+                    if len(camino) > 1: provincia = camino[1]
+                    if len(camino) > 2: departamento = camino[2]
+                    if len(camino) > 3: municipio = camino[3]
+                    if len(camino) > 4: localidad = camino[4]
+
+                pais_limpio = pais.lower().strip()
+                list_paises_prov.append(pais_limpio)
+
                 es_argentina = "argentina" in pais_limpio
                 es_de_salta = es_argentina and provincia and "salta" in provincia.lower()
 
-                # --- ASIGNACIÓN DE ESTADOS POR DEFECTO (FUERA DE SALTA) ---
                 if es_argentina:
                     if provincia and provincia != "Desconocido":
-                        list_provincias.append(provincia)
-                    
+                        list_provincias_prov.append(provincia)
                     if es_de_salta:
-                        if localidad and localidad != "Desconocido": list_localidades.append(localidad)
-                        if municipio and municipio != "Desconocido": list_municipios.append(municipio)
-                        
-                        # Valores iniciales temporales para Salta (serán pisados en el bloque B)
+                        if localidad and localidad != "Desconocido": list_localidades_prov.append(localidad)
+                        if departamento and departamento != "Desconocido": list_departamentos_prov.append(departamento)
                         estado_analisis = "SIN REGISTRO"
                         tramite_registro = "SIN REGISTRO"
                     else:
-                        # Proveedor nacional de otra provincia
                         estado_analisis = "NACIONAL"
                         tramite_registro = "N/A"
                 else:
-                    # Proveedor fuera del país
                     estado_analisis = "INTERNACIONAL"
                     tramite_registro = "N/A"
 
                 fecha_vto = "-"
                 expediente = "-"
 
-                # ========================================================
-                # B. FILTRO DE DETALLE Y EVALUACIÓN EXCLUSIVA DE SALTA
-                # ========================================================
                 if es_de_salta:
                     info_local = registro_local.get(cuit)
                     if info_local:
@@ -3716,11 +3738,8 @@ def analisis_proveedores_ddjj(request):
                         estado_analisis = "NUNCA INSCRIPTO"
                         count_nunca += 1
                         tramite_registro = "SIN REGISTRO"
-                        fecha_vto = "-"
-                        expediente = "-"
 
-                    # Almacenamos en el array exclusivo detallado de Salta
-                    resultados.append({
+                    resultados_proveedores.append({
                         "cuit": cuit,
                         "razon_social": razon_social,
                         "proyecto": proyecto_nom,
@@ -3731,49 +3750,180 @@ def analisis_proveedores_ddjj(request):
                         "expediente": expediente
                     })
 
-                # ========================================================
-                # A. ADICIÓN A LA NÓMINA GENERAL (Al final, con datos ya firmes)
-                # ========================================================
-                nomina.append({
+                nomina_proveedores.append({
                     "cuit": cuit,
                     "razon_social": razon_social,
                     "proyecto": proyecto_nom,
                     "empresa": empresa_nom,
-                    "estado_analisis": estado_analisis,     # Guardará: VIGENTE/NO VIGENTE/NUNCA INSCRIPTO o NACIONAL o INTERNACIONAL
-                    "ultimo_tramite": tramite_registro,     # Datos del Registro Local o 'N/A'
-                    "fecha_vto": fecha_vto,                 # Fecha del Registro Local o '-'
-                    "expediente": expediente                # Nro Expediente o '-'
+                    "estado_analisis": estado_analisis,
+                    "ultimo_tramite": tramite_registro,
+                    "fecha_vto": fecha_vto,
+                    "expediente": expediente
                 })
-                    
-            # ========================================================
-            # C. PROCESAMIENTO DE RECUENTOS GEOGRÁFICOS TOTALES
-            # ========================================================
-            total_paises = Counter(list_paises)
-            count_nacionales = total_paises.get("argentina", 0)
-            count_internacionales = sum(v for k, v in total_paises.items() if "argentina" not in k)
 
-            # Formateamos con inicial mayúscula para la interfaz del dashboard
-            paises_formateados = {k.title(): v for k, v in total_paises.items() if k}
+            total_paises_prov = Counter(list_paises_prov)
+            count_nacionales_prov = total_paises_prov.get("argentina", 0)
+            count_internacionales_prov = sum(v for k, v in total_paises_prov.items() if "argentina" not in k)
 
+             # --- 2. PROCESAMIENTO EMPLEADOS ---
+
+            list_paises_emp = []
+
+            list_provincias_emp = []
+
+            list_departamentos_salta_emp = []
+
+            list_municipios_emp = []
+
+            list_localidades_emp = []
+
+
+            count_emp_locales = 0          # Salta
+
+            count_emp_nacionales = 0       # Argentina (excluye Salta)
+
+            count_emp_internacionales = 0  # Extranjero
+
+            count_total_emp = len(empleados_ddjj)
+
+
+            nomina_empleados = []
+
+
+            for row in empleados_ddjj:
+
+                cuil, nombre_empleado, proyecto_nom, empresa_nom = row[0], row[1], row[2], row[3]
+
+                level, z_directa, z_padre, z_abuelo, z_bisabuelo, z_tatarabuelo = row[4], row[5], row[6], row[7], row[8], row[9]
+
+
+                pais, provincia, departamento, municipio, localidad = "Desconocido", "Desconocido", "Desconocido", "Desconocido", "Desconocido"
+
+                camino = [z for z in [z_tatarabuelo, z_bisabuelo, z_abuelo, z_padre, z_directa] if z]
+
+
+                if camino:
+
+                    pais = camino[0]
+
+                    if len(camino) > 1: provincia = camino[1]
+
+                    if len(camino) > 2: departamento = camino[2]
+
+                    if len(camino) > 3: municipio = camino[3]
+
+                    if len(camino) > 4: localidad = camino[4]
+
+
+                pais_limpio = pais.lower().strip()
+
+                list_paises_emp.append(pais_limpio)
+
+
+                es_argentina = "argentina" in pais_limpio
+
+                es_de_salta = es_argentina and provincia and "salta" in provincia.lower()
+
+
+                if es_argentina:
+
+                    if provincia and provincia != "Desconocido":
+
+                        list_provincias_emp.append(provincia.title())
+
+
+                    if es_de_salta:
+
+                        count_emp_locales += 1
+
+                        origen_empleo = "LOCAL (SALTA)"
+
+                        if departamento and departamento != "Desconocido":
+
+                            list_departamentos_salta_emp.append(departamento.title())
+
+                        if municipio and municipio != "Desconocido":
+
+                            list_municipios_emp.append(municipio.title())
+
+                        if localidad and localidad != "Desconocido":
+
+                            list_localidades_emp.append(localidad.title())
+
+                    else:
+
+                        count_emp_nacionales += 1
+
+                        origen_empleo = "NACIONAL"
+
+                else:
+
+                    count_emp_internacionales += 1
+
+                    origen_empleo = "INTERNACIONAL"
+
+
+                nomina_empleados.append({
+
+                    "cuil": cuil,
+
+                    "nombre": nombre_empleado,
+
+                    "proyecto": proyecto_nom,
+
+                    "empresa": empresa_nom,
+
+                    "origen": origen_empleo,
+
+                    "pais": pais.title(),
+
+                    "provincia": provincia.title(),
+
+                    "departamento": departamento.title() if es_de_salta else "-"
+
+                })
+
+
+            total_paises_emp = Counter(list_paises_emp) 
+
+            # --- RESPUESTA JSON UNIFICADA ---
             return JsonResponse({
+                # SECCIÓN PROVEEDORES
                 "resumen": {
                     "vigentes": count_vigentes,
                     "no_vigentes": count_no_vigentes,
                     "nunca_inscriptos": count_nunca,
-                    "total_salta": len(resultados),  # Total de la nómina detallada (Salta)
-                    "nacionales": count_nacionales,
-                    "internacionales": count_internacionales,
-                    "total": count_total
-
+                    "total_salta": len(resultados_proveedores),
+                    "nacionales": count_nacionales_prov,
+                    "internacionales": count_internacionales_prov,
+                    "total": count_total_prov
                 },
                 "geo": {
-                    "paises": paises_formateados,
-                    "provincias": dict(Counter(list_provincias)),
-                    "localidades": dict(Counter(list_localidades)),
-                    "municipios": dict(Counter(list_municipios))
+                    "paises": {k.title(): v for k, v in total_paises_prov.items() if k},
+                    "provincias": dict(Counter(list_provincias_prov)),
+                    "localidades": dict(Counter(list_localidades_prov)),
+                    "municipios": dict(Counter(list_departamentos_prov))
                 },
-                "resultados": resultados,
-                "nomina" : nomina
+                "resultados": resultados_proveedores,
+                "nomina": nomina_proveedores,
+
+                # NUEVA SECCIÓN EMPLEOS
+                "empleo": {
+                    "resumen": {
+                        "locales_salta": count_emp_locales,
+                        "nacionales": count_emp_nacionales,
+                        "internacionales": count_emp_internacionales,
+                        "total": count_total_emp
+                    },
+                    "geo": {
+                        "paises": {k.title(): v for k, v in total_paises_emp.items() if k},
+                        "provincias": dict(Counter(list_provincias_emp)),
+                        "departamentos_salta": dict(Counter(list_departamentos_salta_emp)),
+                        "municipios_salta": dict(Counter(list_municipios_emp)),
+                        "localidades_salta": dict(Counter(list_localidades_emp))
+                    },
+                    "nomina": nomina_empleados
+                }
             })
 
         except Exception as e:
