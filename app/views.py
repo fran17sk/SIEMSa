@@ -5439,7 +5439,6 @@ def generar_informe_proveedores(request):
               AND (%s = 'all' OR p2."Id"::text = %s)
               AND (%s = 'all' OR p3."Id"::text = %s)
               AND ps."Name" = 'Presentado'
-              AND p."IsRectification" = false
               AND p2."IsDeleted" = false
               AND c3."IsDeleted" = false
               AND cp."IsDeleted" = false
