@@ -1652,7 +1652,7 @@ def exportar_excel(request):
     mineral_id = request.GET.get("mineral")
     mineral_nombre = request.GET.get("mineral_nombre", "")
 
-    qs = MinExport.objects.all()
+    qs = MinExport.objects.filter(id_export__Estado_anulacion=False)
     if mineral_id:
         qs = qs.filter(id_min=mineral_id)
 
