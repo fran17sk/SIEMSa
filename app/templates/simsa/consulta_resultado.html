@@ -52,7 +52,7 @@
                     {% for p in canons %}
                     <tr class="{% if p.paid > 0 %}row-paid{% else %}row-pending{% endif %}">
                         <td class="font-bold">{{ p.canonperiodid.name }}</td>
-                        <td>{{ p.pertenencias }}</td>
+                        <td>{{ p.pertenencias|default:p.superficie }}</td>
                         <td>${{ p.total|floatformat:2 }}</td>
                         <td class="text-success">{% if p.paid > 0 %}${{ p.paid|floatformat:2 }}{% else %}-{% endif %}</td>
                         <td><span class="date-text">{% if p.paiddate %}{{ p.paiddate|date:"d/m/Y" }}{% else %}-{% endif %}</span></td>
