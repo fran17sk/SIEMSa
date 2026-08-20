@@ -35,47 +35,71 @@
     <div class="canon-section">
         
 
-        <div class="table-responsive">
-            <table class="modern-table">
-                <thead>
-                    <tr>
-                        <th>Periodo</th>
-                        <th>Pertenencias</th>
-                        <th>Total</th>
-                        <th>Pagado</th>
-                        <th>Fecha Pago</th>
-                        <th>Saldo</th>
-                        <th>Estado</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for p in canons %}
-                    <tr class="{% if p.paid > 0 %}row-paid{% else %}row-pending{% endif %}">
-                        <td class="font-bold">{{ p.canonperiodid.name }}</td>
-                        <td>{{ p.pertenencias|default:p.superficie }}</td>
-                        <td>${{ p.total|floatformat:2 }}</td>
-                        <td class="text-success">{% if p.paid > 0 %}${{ p.paid|floatformat:2 }}{% else %}-{% endif %}</td>
-                        <td><span class="date-text">{% if p.paiddate %}{{ p.paiddate|date:"d/m/Y" }}{% else %}-{% endif %}</span></td>
-                        <td class="font-bold">${{ p.balance|floatformat:2 }}</td>
-                        <td>
-                            {% if p.paid > 0 %}
-                                <span class="status-pill success">Pagado</span>
-                            {% else %}
-                                <span class="status-pill warning">Pendiente</span>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="7" class="empty-row">
-                            <i data-lucide="alert-triangle"></i>
-                            No hay registros de canon. Consultar en <strong>OBSERVER</strong>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+       <div class="table-responsive">
+    <table class="modern-table">
+        <thead>
+            <tr>
+                <th>Periodo</th>
+                <th>Pertenencias</th>
+                <th>Total</th>
+                <th>Pagado</th>
+                <th>Fecha Pago</th>
+                <th>Saldo</th>
+                <th>Estado</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in canons %}
+            {# Evaluamos si existen VEPs en la lista prefetcheada #}
+            {% with vep=p.veps_pagados_list.0 %}
+            <tr class="{% if vep %}row-paid{% else %}row-pending{% endif %}">
+                <td class="font-bold">{{ p.canonperiodid.name }}</td>
+                <td>{{ p.pertenencias|default:p.superficie }}</td>
+                <td>${{ p.total|floatformat:2 }}</td>
+                
+                <!-- Importe Pagado desde el VEP (o p.paid) -->
+                <td class="text-success">
+                    {% if vep %}
+                        ${{ vep.amount|default:p.paid|floatformat:2 }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+                
+                <!-- Fecha de pago desde Vepdetails -->
+                <td>
+                    <span class="date-text">
+                        {% if vep and vep.paiddate %}
+                            {{ vep.paiddate|date:"d/m/Y" }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </span>
+                </td>
+                
+                <td class="font-bold">${{ p.balance|floatformat:2 }}</td>
+                
+                <!-- Estado del Canon -->
+                <td>
+                    {% if vep %}
+                        <span class="status-pill success">Pagado</span>
+                    {% else %}
+                        <span class="status-pill warning">Pendiente</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endwith %}
+            {% empty %}
+            <tr>
+                <td colspan="7" class="empty-row">
+                    <i data-lucide="alert-triangle"></i>
+                    No hay registros de canon. Consultar en <strong>OBSERVER</strong>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
     </div>
 
     <div class="card-footer">
