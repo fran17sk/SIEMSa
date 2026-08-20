@@ -5549,36 +5549,33 @@ def consulta_deuda_datos(request):
         .values_list('companyid__name', flat=True)
     )
 
-    pagos_aux = (
+    veps_pagados = Vepdetails.objects.using("simsa").filter(
+        isdeleted=False,
+        paiddate__isnull=False
+    ).select_related('vepid', 'canonstateid')
+
+    # 2. Obtener TODOS los cánones (pagados y no pagados)
+    canons_list = (
         Canons.objects.using("simsa")
         .filter(expedientid=expediente, isdeleted=False)
         .select_related('canonperiodid', 'canonstateid')
-        .order_by('-canonperiodid__autoid')
+        .prefetch_related(
+            Prefetch('vepdetails_set', queryset=veps_pagados, to_attr='veps_pagados_list')
+        )
+        .order_by('-canonperiodid__startdate')
     )
 
-# 2. Filtrar los Vepdetails asociados y no eliminados
-# Si quieres solo los pagados, puedes agregar filtros como paiddate__isnull=False o balance=0
-    pagos = (
-        Vepdetails.objects.using("simsa")
-        .filter(
-            canonid__in=pagos_aux,            # Utiliza la subconsulta
-            isdeleted=False,              # Excluye borrados lógicos
-            paiddate__isnull=False        # Garantiza que tengan fecha de pago
-        )
-        .select_related('vepid', 'canonid', 'canonstateid')
-        .order_by('-canonid__canonperiodid__startdate')
-    )
     context = {
         'expediente': expediente,
         'concesionarios': concesionarios,
-        'pagos': pagos,
+        'canons': canons_list,  # En la plantilla iterarás sobre 'canons'
     }
 
     return render(request, 'simsa/consulta_resultado.html', context)
 
 
 def expedientes_concesionario(request):
-    """Devuelve los demás expedientes del mismo concesionario (con pagos)."""
+    """Devuelve los demás expedientes del mismo concesionario (con cánones pagados y pendientes)."""
     expediente_id = request.GET.get('id')
 
     if not expediente_id:
@@ -5589,10 +5586,21 @@ def expedientes_concesionario(request):
     except Expedients.DoesNotExist:
         return HttpResponse("<p style='color:red;'>Expediente no encontrado.</p>")
 
-    # Concesionarios del principal
-    concesionarios_ids = expediente_principal.companyexpedients_set.filter(isdeleted=False).values_list("companyid", flat=True)
+    # 1. Obtener los IDs de los concesionarios del expediente principal
+    concesionarios_ids = expediente_principal.companyexpedients_set.filter(
+        isdeleted=False
+    ).values_list("companyid", flat=True)
 
-    # Otros expedientes del mismo concesionario (tipo Mina o Cantera)
+    # 2. Configurar el Prefetch reusable para traer los VEPs pagados
+    veps_pagados_prefetch = Prefetch(
+        'vepdetails_set',  # Cambiar si el related_name en Vepdetails.canonid es distinto
+        queryset=Vepdetails.objects.using("simsa")
+        .filter(isdeleted=False, paiddate__isnull=False)
+        .select_related('vepid', 'canonstateid'),
+        to_attr='veps_pagados_list'
+    )
+
+    # 3. Obtener los demás expedientes del concesionario
     otros_expedientes_qs = (
         Expedients.objects.using("simsa")
         .filter(
@@ -5604,34 +5612,28 @@ def expedientes_concesionario(request):
         .distinct()
     )
 
-    # Construir lista de datos con pagos y concesionarios
+    # 4. Construir la estructura con cánones (pagados y no pagados)
     data_expedientes = []
     for exp in otros_expedientes_qs:
-        concesionarios = exp.companyexpedients_set.filter(isdeleted=False).select_related('companyid').values_list('companyid__name', flat=True)
-        pagos_aux = (
-                Canons.objects.using("simsa")
-                .filter(expedientid=exp, isdeleted=False)
-                .select_related('canonperiodid', 'canonstateid')
-                .order_by('-canonperiodid__autoid')
-            )
+        concesionarios = (
+            exp.companyexpedients_set
+            .filter(isdeleted=False)
+            .select_related('companyid')
+            .values_list('companyid__name', flat=True)
+        )
 
-        # 2. Filtrar los Vepdetails asociados y no eliminados
-        # Si quieres solo los pagados, puedes agregar filtros como paiddate__isnull=False o balance=0
-        pagos = (
-            Vepdetails.objects.using("simsa")
-            .filter(
-                canonid__in=pagos_aux,            # Utiliza la subconsulta
-                isdeleted=False,              # Excluye borrados lógicos
-                paiddate__isnull=False        # Garantiza que tengan fecha de pago
-            )
-            .select_related('vepid', 'canonid', 'canonstateid')
-            .order_by('-canonid__canonperiodid__startdate')
+        canons = (
+            Canons.objects.using("simsa")
+            .filter(expedientid=exp, isdeleted=False)
+            .select_related('canonperiodid', 'canonstateid')
+            .prefetch_related(veps_pagados_prefetch)
+            .order_by('-canonperiodid__autoid')
         )
 
         data_expedientes.append({
             'expediente': exp,
             'concesionarios': concesionarios,
-            'pagos': pagos
+            'canons': canons,
         })
 
     context = {"data_expedientes": data_expedientes}

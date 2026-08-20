@@ -26,10 +26,10 @@
           </tr>
         </thead>
         <tbody>
-          {% for p in pagos %}
+          {% for p in item.canons %}
             <tr class="{% if p.paid > 0 %}pagado{% else %}pendiente{% endif %}">
-              <td>{{ p.canonid.canonperiodid.name }}</td>
-              <td>{{ p.canonid.pertenencias }}</td>
+              <td>{{ p.canonperiodid.name }}</td>
+              <td>{{ p.pertenencias }}</td>
               <td>${{ p.total|floatformat:2 }}</td>
               <td>{% if p.paid > 0 %}${{ p.paid|floatformat:2 }}{% else %}-{% endif %}</td>
               <td>{% if p.paiddate %}{{ p.paiddate|date:"d/m/Y" }}{% else %}-{% endif %}</td>
