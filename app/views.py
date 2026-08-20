@@ -1466,7 +1466,7 @@ def export_data_api(request):
             "JORDANIA":"Jordan"
         }
 
-    qs = MinExport.objects.all()
+    qs = MinExport.objects.filter(id_export__Estado_anulacion=False)
 
     if year:
         qs = qs.filter(id_export__fecha_export__year=year)
