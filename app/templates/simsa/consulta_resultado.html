@@ -30,6 +30,10 @@
                 {% endfor %}
             </div>
         </div>
+        <div class="info-item">
+            <label><i data-lucide="circle-dollar-sign"></i> DEUDA TOTAL:</label>
+            <span>${{ deuda_total|floatformat:2 }}</span>
+        </div>
     </div>
 
     <div class="canon-section">
@@ -40,7 +44,7 @@
         <thead>
             <tr>
                 <th>Periodo</th>
-                <th>Pertenencias</th>
+                <th>Pertenencias/Superf</th>
                 <th>Pagado</th>
                 <th>Fecha Pago</th>
                 <th>Saldo</th>
@@ -82,7 +86,7 @@
                     {% if vep %}
                         <span class="status-pill success">Pagado</span>
                     {% else %}
-                        {% if p.Balance is null %}
+                        {% if p.balance == 0 %}
                             <span class="status-pill success">Pagado</span>
                         {% else %}
                             <span class="status-pill warning">Pendiente</span>

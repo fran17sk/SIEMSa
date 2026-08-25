@@ -5564,11 +5564,13 @@ def consulta_deuda_datos(request):
         )
         .order_by('-canonperiodid__startdate')
     )
+    deuda_total = canons_list.aggregate(total=Sum('balance'))['total'] or 0.00
 
     context = {
         'expediente': expediente,
         'concesionarios': concesionarios,
-        'canons': canons_list,  # En la plantilla iterarás sobre 'canons'
+        'canons': canons_list,
+        'deuda_total': deuda_total,  # En la plantilla iterarás sobre 'canons'
     }
 
     return render(request, 'simsa/consulta_resultado.html', context)
