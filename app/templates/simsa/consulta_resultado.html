@@ -62,7 +62,7 @@
                 <!-- Importe Pagado desde el VEP (o p.paid) -->
                 <td class="text-success">
                     {% if vep %}
-                        ${{ vep.Paid|default:p.paid|floatformat:2 }}
+                        ${{ vep.Paid|floatformat:2 }}
                     {% else %}
                         ${{ p.paid|floatformat:2 }}
                     {% endif %}
