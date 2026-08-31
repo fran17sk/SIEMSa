@@ -5177,18 +5177,19 @@ def reporte_empresas_sin_presentacion_excel(request):
 
     return response
 
+
 def deudas_expedientes(request):
     query = """
     select 
         e."Expediente",
         e."Nombre" as "ExpedienteNombre",
-        c2."Name" ,
+        c2."Name" as "CompanyNombre",
+        count(distinct cp."Id") as semestres_cant,
         case 
-            when count(distinct cp."Id") = 3 then '2024 | 2do Semestre'
             when count(distinct cp."Id") = 4 then '2024 | 1er Semestre'
             when count(distinct cp."Id") = 5 then '2023 | 2do Semestre'
             when count(distinct cp."Id") = 6 then '2023 | 1er Semestre'
-            else count(distinct cp."Id")::text
+            else count(distinct cp."Id")::text || ' semestres'
         end as semestres_adeudados,
         sum(c."Total") as total_deuda
     from "Canons" c
@@ -5198,11 +5199,12 @@ def deudas_expedientes(request):
     inner join "Companies" c2 on c2."Id" = ce."CompanyId"
     where c."CanonStateId" = '00000000-0000-0000-0000-000000000010'
         and e."Tipo" = 'Mina'
+        and e."Estado" = 'Vigente'
         and cp."StartDate" <= CURRENT_DATE
         and ce."IsDeleted" = False
-    group by e."Expediente", e."Nombre",c2."Name"
+    group by e."Expediente", e."Nombre", c2."Name"
     having count(distinct cp."Id") >= 3
-    order by semestres_adeudados desc, total_deuda desc;
+    order by count(distinct cp."Id") desc, total_deuda desc;
     """
 
     with connections['simsa'].cursor() as cursor:
