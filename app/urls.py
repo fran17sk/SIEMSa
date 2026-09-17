@@ -127,8 +127,16 @@ urlpatterns = [
     path('pgypm/',views.pgypm,name='pgypm'),
     ###################################################expedientes##########################################################
     path('expedientes/',views.expedientes,name='expedientes'),
+    path('convenios/',views.convenios,name='convenios'),
+    path('convenios/exportar-excel/', views.exportar_convenios_excel, name='exportar_convenios_excel'),
     path('expedientes/detalle/<int:expediente_nro>/', views.detalle, name='detalle'),
-
+    path('convenios/mapa/', views.mapa_convenios, name='mapa_convenios'),
+    path('convenios/api/geojson/', views.api_convenios_geojson, name='api_convenios_geojson'),
+path(
+    'convenios/<int:convenio_id>/informe-pdf/',
+    views.generar_informe_convenio_pdf,
+    name='convenio_informe_pdf',
+),
 
     path('sirgen/',views.sirgen_view,name='sirgen'),
     path('sirgen/new',views.nuevo_pase,name='nuevo_pase'),

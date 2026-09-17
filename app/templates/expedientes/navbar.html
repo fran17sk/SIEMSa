@@ -1,0 +1,13 @@
+
+<a href="{% url 'expedientes' %}" class="{% if request.resolver_match.url_name == 'expedientes' %}active{% endif %}">
+    <i data-lucide="notebook-dot"></i> <span>Expedientes Judiciales</span>
+</a>
+
+
+<a href="{% url 'convenios' %}" class="{% if request.resolver_match.url_name == 'convenios' %}active{% endif %}">
+    <i data-lucide="signature"></i> <span>Convenios</span>
+</a>
+
+<a href="{% url 'mapa_convenios' %}" class="{% if request.resolver_match.url_name == 'mapa_convenios' %}active{% endif %}">
+    <i data-lucide="signature"></i> <span>mapa_convenios</span>
+</a>

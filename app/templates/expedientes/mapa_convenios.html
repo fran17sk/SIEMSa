@@ -1,0 +1,171 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mapa de Convenios Mineros - Salta</title>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+            background-color: #1a1a1e;
+            color: #e1e1e6;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        .filter-bar {
+            padding: 12px 20px;
+            background-color: #202024;
+            border-bottom: 1px solid #29292e;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            z-index: 1000;
+        }
+        .filter-bar input[type="text"] {
+            flex: 1;
+            max-width: 400px;
+            padding: 8px 14px;
+            background-color: #121214;
+            border: 1px solid #323238;
+            border-radius: 6px;
+            color: #ffffff;
+            font-size: 14px;
+            outline: none;
+        }
+        .filter-bar button {
+            padding: 8px 16px;
+            background-color: #00875f;
+            color: #ffffff;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        #map { flex: 1; width: 100%; }
+
+        /* Estilos del Popup */
+        .leaflet-popup-content-wrapper {
+            background-color: #202024 !important;
+            color: #e1e1e6 !important;
+            border-radius: 8px !important;
+        }
+        .leaflet-popup-tip { background-color: #202024 !important; }
+        .popup-container h4 {
+            color: #ffffff;
+            margin-bottom: 8px;
+            border-bottom: 1px solid #323238;
+            padding-bottom: 4px;
+        }
+        .popup-item { font-size: 13px; margin-bottom: 4px; }
+        .popup-item strong { color: #a8a8b3; }
+        .badge-activo { color: #00b37e; font-weight: bold; }
+        .badge-inactivo { color: #f75a68; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div class="filter-bar">
+        <input type="text" id="input-buscar" placeholder="Buscar por expediente o nombre..." onkeypress="handleKeyPress(event)" />
+        <button onclick="cargarGeoJSON()">Filtrar</button>
+    </div>
+
+    <div id="map"></div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script>
+        // Inicializar mapa centrado en Salta
+        const map = L.map('map').setView([-24.7859, -65.4117], 7);
+
+        // Mapa Base Oscuro Esri
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+            attribution: 'Esri, DeLorme, NAVTEQ',
+            maxZoom: 16
+        }).addTo(map);
+
+        // 1. CARGAR LÍMITES DE DEPARTAMENTOS DESDE ESTÁTICOS
+        fetch("{% static 'app/geojson/departamentos-salta.json' %}")
+            .then(res => res.json())
+            .then(data => {
+                L.geoJSON(data, {
+                    style: {
+                        color: '#FB2C36',
+                        weight: 1.2,
+                        dashArray: '3, 3',
+                        fillColor: '#ffffff',
+                        fillOpacity: 0.02
+                    },
+                    onEachFeature: function(feature, layer) {
+                        const nombreDpto = feature.properties.departamento || feature.properties.nombre || feature.properties.NAM;
+                        if (nombreDpto) {
+                            layer.bindTooltip(`Dpto. ${nombreDpto}`, { sticky: true, className: 'dpto-tooltip' });
+                        }
+                    }
+                }).addTo(map);
+            })
+            .catch(err => console.warn("No se cargó el archivo estático de departamentos:", err));
+
+        // 2. CARGAR TUS CAPAS DE CONVENIOS (TU ENDPOINT DJANGO)
+        let geojsonLayer = null;
+
+        function cargarGeoJSON() {
+            const query = document.getElementById('input-buscar').value.trim();
+            const url = `/convenios/api/geojson/?q=${encodeURIComponent(query)}`;
+
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    if (geojsonLayer) {
+                        map.removeLayer(geojsonLayer);
+                    }
+
+                    geojsonLayer = L.geoJSON(data, {
+                        style: function(feature) {
+                            const esActivo = feature.properties.activo;
+                            return {
+                                color: esActivo ? '#00b37e' : '#f75a68',
+                                weight: 2,
+                                opacity: 0.9,
+                                fillColor: esActivo ? '#00b37e' : '#f75a68',
+                                fillOpacity: 0.35
+                            };
+                        },
+                        onEachFeature: function(feature, layer) {
+                            const p = feature.properties;
+                            const estadoText = p.activo 
+                                ? '<span class="badge-activo">Activo</span>' 
+                                : '<span class="badge-inactivo">Inactivo</span>';
+
+                            const popupContent = `
+                                <div class="popup-container">
+                                    <h4>${p.nombre || 'Sin Nombre'}</h4>
+                                    <div class="popup-item"><strong>Expediente:</strong> ${p.expediente || 'N/D'}</div>
+                                    <div class="popup-item"><strong>Tipo:</strong> ${p.tipo || 'N/D'}</div>
+                                    <div class="popup-item"><strong>Concesionario:</strong> ${p.concesionario || 'N/D'}</div>
+                                    <div class="popup-item"><strong>Mineral:</strong> ${p.mineral || 'N/D'}</div>
+                                    <div class="popup-item"><strong>Estado:</strong> ${estadoText}</div>
+                                </div>
+                            `;
+                            layer.bindPopup(popupContent);
+                        }
+                    }).addTo(map);
+                })
+                .catch(error => console.error('Error al cargar datos:', error));
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') cargarGeoJSON();
+        }
+
+        cargarGeoJSON();
+    </script>
+</body>
+</html>

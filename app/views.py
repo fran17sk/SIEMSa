@@ -17,6 +17,7 @@ from django.utils.crypto import get_random_string
 from email.mime.image import MIMEImage
 from django.core.mail import EmailMultiAlternatives
 from django.core.mail import EmailMessage
+from django.core.serializers import serialize
 import json
 import os
 from django.db.models import OuterRef, Subquery
@@ -140,6 +141,11 @@ from zeep import Client
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.serialization import pkcs7
+import openpyxl
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+from openpyxl.utils import get_column_letter
+from django.http import HttpResponse
+from django.db.models import Q
 from unidecode import unidecode
 
 
@@ -5226,7 +5232,7 @@ def veps_interbanking(request):
                             ELSE vs2."Name"
                         END AS "State_Vep"
                        ,vs."Name" as "Vep_result" ,c."Name" as "Company" ,e."Expediente",e."Nombre" as "exp_name", e."Tipo" as "tipo",
-                       e."Yacencia",c2."Pertenencias", c2."PaidDate", c2."Paid" , cp."Name" 
+                       e."Yacencia",c2."Pertenencias", c2."PaidDate", vd."Paid" , cp."Name" 
                     from "Veps" v 
                        inner join "VepStates" vs on v."VepStateId" = vs."Id" 
                        inner join "VepLogs" vl on vl."VepId" = v."Id" 
@@ -5526,14 +5532,16 @@ def consulta_deuda_expediente(request):
 def consulta_deuda_datos(request):
     """Devuelve solo el expediente buscado."""
 
+    # Si la sesión caducó o no está autenticado, devolvemos 401 sin hacer redirección 302
+    if not request.user.is_authenticated:
+        return HttpResponseUnauthorized("Sesión caducada")
+
     termino = request.GET.get('numero')
     print("Búsqueda:", termino)
 
     if not termino:
         return HttpResponse("<p style='color:red;'>Debe ingresar un número o nombre de expediente.</p>")
 
-    # Llamamos al servicio centralizado pasando el número dinámico de la web
-    
     # Buscar por número o nombre
     expediente = None
     if termino.isdigit():
@@ -5556,7 +5564,7 @@ def consulta_deuda_datos(request):
         paiddate__isnull=False
     ).select_related('vepid', 'canonstateid')
 
-    # 2. Obtener TODOS los cánones (pagados y no pagados)
+    # Obtener TODOS los cánones (pagados y no pagados)
     canons_list = (
         Canons.objects.using("simsa")
         .filter(expedientid=expediente, isdeleted=False)
@@ -5572,12 +5580,11 @@ def consulta_deuda_datos(request):
         'expediente': expediente,
         'concesionarios': concesionarios,
         'canons': canons_list,
-        'deuda_total': deuda_total,  # En la plantilla iterarás sobre 'canons'
+        'deuda_total': deuda_total,
     }
 
     return render(request, 'simsa/consulta_resultado.html', context)
-
-
+    
 def expedientes_concesionario(request):
     """Devuelve los demás expedientes del mismo concesionario (con cánones pagados y pendientes)."""
     expediente_id = request.GET.get('id')
@@ -5648,40 +5655,68 @@ def pgypm(request):
     return render(request,'pgypm/inspeccion.html')
 
 #################################################EXPEDIENTES##############################################################
+import re
+
+def limpiar_array_postgres(valor):
+    """ Convierte '{"Empresa S.A."}' o '{"Empresa A","Empresa B"}' en lista o string limpio. """
+    if not valor:
+        return []
+    if isinstance(valor, str):
+        # Extrae los elementos dentro de las comillas o remueve caracteres { } "
+        # Caso 1: Si quieres una lista real de Python
+        elementos = re.findall(r'"([^"]*)"|([^,{}]+)', valor)
+        resultado = [e[0] or e[1] for e in elementos if e[0] or e[1]]
+        return [r.strip() for r in resultado if r.strip()]
+    elif isinstance(valor, (list, tuple)):
+        return [str(item).replace('{', '').replace('}', '').replace('"', '').strip() for item in valor]
+    return [str(valor)]
+
 def expedientes(request):
     query_general = request.GET.get('q', '')
     empresa_id = request.GET.get('empresa', '')
 
-    # 1. Definimos los filtros comunes para aplicar a ambos
-    filtro_q = Q()
+    filtro_minas_grupos = Q()
     if query_general:
-        filtro_q &= (Q(expediente__icontains=query_general) | Q(nombre__icontains=query_general))
-    
+        filtro_minas_grupos &= (
+            Q(expediente__icontains=query_general) | Q(nombre__icontains=query_general)
+        )
     if empresa_id:
-        # Usamos el campo concesionario que mencionaste
-        filtro_q &= Q(concesionario__icontains=empresa_id)
+        filtro_minas_grupos &= Q(concesionario__icontains=empresa_id)
 
-    # 2. Aplicamos el filtro ANTES de la unión en CanteraCateoMina
-    qs_minas = CanteraCateoMina.objects.using('catastro').filter(filtro_q).values('id', 'expediente', 'nombre', 'estado' ,'concesionario', 'tipo')
+    filtro_servidumbres = Q()
+    if query_general:
+        filtro_servidumbres &= (
+            Q(expediente__icontains=query_general) | Q(tipo_serv__icontains=query_general)
+        )
+    if empresa_id:
+        filtro_servidumbres &= Q(concesionario__icontains=empresa_id)
 
-    # 3. Aplicamos el filtro ANTES de la unión en GrupoMinero
-    qs_grupos = GrupoMinero.objects.using('catastro').filter(filtro_q).annotate(
+    # 1. Querysets (.values())
+    qs_minas = CanteraCateoMina.objects.using('catastro').filter(filtro_minas_grupos).values(
+        'id', 'expediente', 'nombre', 'estado', 'concesionario', 'tipo'
+    )
+
+    qs_grupos = GrupoMinero.objects.using('catastro').filter(filtro_minas_grupos).annotate(
         tipo=Value('Grupo', output_field=CharField())
-    ).values('id', 'expediente', 'nombre', 'estado' ,'concesionario', 'tipo')
+    ).values('id', 'expediente', 'nombre', 'estado', 'concesionario', 'tipo')
 
-    # 4. Ahora sí, unimos los resultados ya filtrados
-    expedientes_unificados = qs_minas.union(qs_grupos).order_by('-expediente')
+    qs_servidumbres = Servidumbres.objects.using('catastro').filter(filtro_servidumbres).annotate(
+        nombre=F('tipo_serv'),
+        tipo=Value('Servidumbre', output_field=CharField())
+    ).values('id', 'expediente', 'nombre', 'estado', 'concesionario', 'tipo')
 
-    
+    expedientes_unificados = qs_minas.union(qs_grupos, qs_servidumbres).order_by('-expediente')
 
     # 5. Paginación
     paginator = Paginator(expedientes_unificados, 15)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
-    # 6. Obtener lista de concesionarios para el buscador (Dropdown)
-    # Lo ideal es traerlos de la tabla que tenga la lista maestra, 
-    # pero si no existe, los sacamos de CanteraCateoMina:
+    # --- LIMPIEZA DE CONCESIONARIOS (Únicamente sobre los 15 elementos filtrados) ---
+    for item in page_obj.object_list:
+        # Crea la lista limpia para iterar en el HTML
+        item['concesionarios_lista'] = limpiar_array_postgres(item.get('concesionario'))
+
     concesionarios = Concesionarios.objects.using('catastro').all().order_by('concesionario')
 
     context = {
@@ -5692,6 +5727,142 @@ def expedientes(request):
     }
     return render(request, 'expedientes/buscar_expediente.html', context)
 
+def convenios(request):
+    query_general = request.GET.get('q', '')
+    empresa_id = request.GET.get('empresa', '')
+
+    # --- Filtro base para Convenios ---
+    filtro_convenios = Q()
+    if query_general:
+        filtro_convenios &= (
+            Q(expediente__icontains=query_general) | Q(nombre__icontains=query_general)
+        )
+    if empresa_id:
+        filtro_convenios &= Q(concesionario__icontains=empresa_id)
+
+    # 1. QuerySet base ordenado
+    qs_convenios = Convenios.objects.using('catastro').filter(filtro_convenios).values(
+        'id','expediente','superficie','tipo','nombre','concesionario','resolucion','activo','fecha_inicio','fecha_caducidad','departamento','municipio','lugar','mineral','observaciones','informe_ambiente',
+    ).order_by('-fecha_caducidad')
+
+    # 2. Paginación
+    paginator = Paginator(qs_convenios, 15)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    # 3. Limpieza de concesionarios únicamente para los 15 registros de la página visible
+    for item in page_obj.object_list:
+        item['concesionarios_lista'] = limpiar_array_postgres(item.get('concesionario'))
+
+    # 4. Dropdown de empresas/concesionarios
+    concesionarios = Concesionarios.objects.using('catastro').all().order_by('concesionario')
+
+    context = {
+        'page_obj': page_obj,
+        'concesionarios': concesionarios,
+        'query_general': query_general,
+        'empresa_id': empresa_id,
+    }
+
+    return render(request, 'expedientes/buscar_convenios.html', context)
+
+def exportar_convenios_excel(request):
+    query_general = request.GET.get('q', '')
+    empresa_id = request.GET.get('empresa', '')
+
+    # --- Filtros de búsqueda (mismos que en la vista principal) ---
+    filtro_convenios = Q()
+    if query_general:
+        filtro_convenios &= (
+            Q(expediente__icontains=query_general) | Q(nombre__icontains=query_general)
+        )
+    if empresa_id:
+        filtro_convenios &= Q(concesionario__icontains=empresa_id)
+
+    # Obtenemos TODOS los registros filtrados (sin paginación)
+    qs_convenios = Convenios.objects.using('catastro').filter(filtro_convenios).values(
+        'expediente', 'tipo', 'nombre', 'resolucion', 'concesionario', 
+        'departamento', 'municipio', 'lugar', 'mineral', 'superficie',
+        'fecha_inicio', 'fecha_caducidad', 'activo', 'informe_ambiente', 'observaciones'
+    ).order_by('-expediente')
+
+    # Crear libro de trabajo
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Convenios"
+
+    # Encabezados
+    headers = [
+        "Expediente", "Tipo", "Nombre", "Resolución", "Concesionario", 
+        "Departamento", "Municipio", "Lugar", "Mineral", "Superficie",
+        "Fecha Inicio", "Fecha Caducidad", "Estado", "Informe Ambiente", "Observaciones"
+    ]
+    ws.append(headers)
+
+    # Estilos del encabezado
+    header_fill = PatternFill(start_color="1F2937", end_color="1F2937", fill_type="solid") # Dark slate/navy
+    header_font = Font(name="Calibri", size=11, bold=True, color="FFFFFF")
+    align_center = Alignment(horizontal="center", vertical="center")
+    align_left = Alignment(horizontal="left", vertical="center")
+
+    for col_num, header_title in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col_num)
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = align_center
+
+    # Agregar filas
+    for item in qs_convenios:
+        # Limpieza rápida del array de postgres para concesionario
+        conc_raw = item.get('concesionario') or ""
+        conc_limpio = conc_raw.replace('{', '').replace('}', '').replace('"', '').strip()
+
+        # Formato de fechas
+        f_inicio = item.get('fecha_inicio').strftime('%d/%m/%Y') if item.get('fecha_inicio') else ""
+        f_caducidad = item.get('fecha_caducidad').strftime('%d/%m/%Y') if item.get('fecha_caducidad') else ""
+        f_ambiente = item.get('informe_ambiente').strftime('%d/%m/%Y') if item.get('informe_ambiente') else ""
+
+        estado_str = "Activo" if item.get('activo') else "Inactivo"
+
+        row = [
+            item.get('expediente') or "-",
+            item.get('tipo') or "-",
+            item.get('nombre') or "-",
+            item.get('resolucion') or "-",
+            conc_limpio or "-",
+            item.get('departamento') or "-",
+            item.get('municipio') or "-",
+            item.get('lugar') or "-",
+            item.get('mineral') or "-",
+            item.get('superficie') or "-",
+            f_inicio,
+            f_caducidad,
+            estado_str,
+            f_ambiente,
+            item.get('observaciones') or "-"
+        ]
+        ws.append(row)
+
+    # Ajuste automático del ancho de las columnas
+    for col in ws.columns:
+        max_len = 0
+        col_letter = get_column_letter(col[0].column)
+        for cell in col:
+            # Alineación básica vertical
+            cell.alignment = align_left if cell.row > 1 else align_center
+            val = str(cell.value or '')
+            if len(val) > max_len:
+                max_len = len(val)
+        ws.column_dimensions[col_letter].width = min(max(max_len + 3, 12), 40)
+
+    # Preparar respuesta HTTP para descargar archivo .xlsx
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = 'attachment; filename="Convenios_Export.xlsx"'
+    wb.save(response)
+    
+    return response
 
 def detalle(request, expediente_nro):
     # 1. Buscamos el expediente (usando .first() para obtener el objeto)
@@ -6222,3 +6393,216 @@ def exportar_csv(request):
             r.domicilio_legal, r.provincia_legal, r.localidad_legal, r.error
         ])
     return response
+
+
+def mapa_convenios(request):
+    """ Muestra la plantilla principal del mapa. """
+    return render(request, 'expedientes/mapa_convenios.html')
+
+
+def api_convenios_geojson(request):
+    query_general = request.GET.get('q', '')
+    empresa_id = request.GET.get('empresa', '')
+
+    where_clauses = ["geom IS NOT NULL"]
+    params = []
+
+    if query_general:
+        where_clauses.append("(expediente ILIKE %s OR nombre ILIKE %s)")
+        params.extend([f"%{query_general}%", f"%{query_general}%"])
+
+    if empresa_id:
+        where_clauses.append("concesionario ILIKE %s")
+        params.append(f"%{empresa_id}%")
+
+    where_str = " AND ".join(where_clauses)
+
+    # Reemplaza 'nombre_real_de_tu_tabla' con la tabla en la base de datos catastro
+    sql = f"""
+        SELECT jsonb_build_object(
+            'type', 'FeatureCollection',
+            'features', coalesce(jsonb_agg(features.feature), '[]'::jsonb)
+        )
+        FROM (
+            SELECT jsonb_build_object(
+                'type', 'Feature',
+                'id', id,
+                'geometry', ST_AsGeoJSON(geom)::jsonb,
+                'properties', jsonb_build_object(
+                    'expediente', expediente,
+                    'nombre', nombre,
+                    'tipo', tipo,
+                    'concesionario', concesionario,
+                    'activo', activo,
+                    'mineral', mineral
+                )
+            ) AS feature
+            FROM convenios
+            WHERE {where_str}
+        ) features;
+    """
+
+    with connections['catastro'].cursor() as cursor:
+        cursor.execute(sql, params)
+        row = cursor.fetchone()
+        result = row[0] if row else {}
+
+    if isinstance(result, str):
+        result = json.loads(result)
+
+    return JsonResponse(result, safe=False)
+
+
+import base64
+import io
+import json
+import os
+import tempfile
+import traceback
+
+from django.conf import settings
+from django.db import connections
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
+from django.template.loader import render_to_string
+
+import geopandas as gpd
+import matplotlib
+
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+from shapely.geometry import shape
+from xhtml2pdf import pisa
+
+
+def link_callback(uri, rel):
+  """Convierte URLs/rutas relativas o absolutas en rutas físicas del sistema de archivos para xhtml2pdf."""
+  if os.path.isabs(uri) and os.path.exists(uri):
+    return uri
+
+  # Manejo de MEDIA_URL / STATIC_URL
+  if uri.startswith(settings.MEDIA_URL):
+    path = os.path.join(settings.MEDIA_ROOT, uri.replace(settings.MEDIA_URL, ''))
+  elif uri.startswith(settings.STATIC_URL):
+    path = os.path.join(
+        settings.STATIC_ROOT, uri.replace(settings.STATIC_URL, '')
+    )
+  else:
+    path = os.path.join(settings.BASE_DIR, uri)
+
+  return path if os.path.isfile(path) else uri
+
+
+def generar_informe_convenio_pdf(request, convenio_id):
+  convenio = get_object_or_404(
+      Convenios.objects.using('catastro'), id=convenio_id
+  )
+
+  mapa_file_path = None
+
+  try:
+    db_table_name = Convenios._meta.db_table
+
+    sql = f'SELECT ST_AsGeoJSON(geom) AS geojson_str FROM "{db_table_name}" WHERE id = %s'
+
+    with connections['catastro'].cursor() as cursor:
+      cursor.execute(sql, [convenio.id])
+      row = cursor.fetchone()
+
+    if row and row[0]:
+      geom_json = json.loads(row[0])
+      geom_shapely = shape(geom_json)
+
+      gdf_convenio = gpd.GeoDataFrame(
+          [{'id': convenio.id}], geometry=[geom_shapely], crs='EPSG:4326'
+      )
+
+      # Reproyectar a POSGAR 2007 / Salta Zona 3
+      gdf_proj = gdf_convenio.to_crs(epsg=5345)
+
+      fig, ax = plt.subplots(figsize=(8, 4.5), dpi=150)
+
+      gdf_proj.plot(
+          ax=ax,
+          facecolor='#00875f',
+          edgecolor='#004d36',
+          alpha=0.6,
+          linewidth=2,
+      )
+
+      bounds = gdf_proj.total_bounds
+      margin_x = max((bounds[2] - bounds[0]) * 3.5, 15000)
+      margin_y = max((bounds[3] - bounds[1]) * 3.5, 15000)
+
+      ax.set_xlim(bounds[0] - margin_x, bounds[2] + margin_x)
+      ax.set_ylim(bounds[1] - margin_y, bounds[3] + margin_y)
+      ax.set_axis_off()
+
+      # Crear carpeta temporal dentro del proyecto local
+      local_temp_dir = os.path.join(str(settings.BASE_DIR), 'tmp_pdf_maps')
+      os.makedirs(local_temp_dir, exist_ok=True)
+
+      temp_img = tempfile.NamedTemporaryFile(
+          dir=local_temp_dir, delete=False, suffix='.png'
+      )
+      mapa_file_path = os.path.abspath(temp_img.name)
+      temp_img.close()
+
+      plt.savefig(
+          mapa_file_path, format='png', bbox_inches='tight', pad_inches=0.1
+      )
+      plt.close(fig)
+
+  except Exception as e:
+    print('=== ERROR GENERANDO MAPA EN PDF ===')
+    traceback.print_exc()
+    mapa_file_path = None
+
+  try:
+    # Limpieza de Arrays de Postgres
+    concesionario_clean = convenio.concesionario
+    if isinstance(concesionario_clean, (list, tuple)):
+      concesionario_clean = ', '.join(concesionario_clean)
+    elif isinstance(concesionario_clean, str):
+      concesionario_clean = concesionario_clean.strip('{}').replace('"', '')
+
+    mineral_clean = convenio.mineral
+    if isinstance(mineral_clean, (list, tuple)):
+      mineral_clean = ', '.join(mineral_clean)
+    elif isinstance(mineral_clean, str):
+      mineral_clean = mineral_clean.strip('{}').replace('"', '')
+
+    context = {
+        'convenio': convenio,
+        'concesionario_clean': concesionario_clean,
+        'mineral_clean': mineral_clean,
+        'mapa_img': mapa_file_path,
+    }
+
+    html_string = render_to_string('expedientes/informe_pdf.html', context)
+
+    pdf_buffer = io.BytesIO()
+
+    # Se pasa link_callback para resolver assets e imágenes automáticamente
+    pisa_status = pisa.CreatePDF(
+        html_string, dest=pdf_buffer, link_callback=link_callback
+    )
+
+    if pisa_status.err:
+      return HttpResponse('Error al generar el PDF', status=500)
+
+    pdf_buffer.seek(0)
+    response = HttpResponse(
+        pdf_buffer.getvalue(), content_type='application/pdf'
+    )
+    response['Content-Disposition'] = (
+        f'inline; filename="Informe_Convenio_{convenio.id}.pdf"'
+    )
+    return response
+
+  finally:
+    if mapa_file_path and os.path.exists(mapa_file_path):
+      try:
+        os.remove(mapa_file_path)
+      except Exception as cleanup_error:
+        print(f'Advertencia al limpiar archivo temporal: {cleanup_error}')

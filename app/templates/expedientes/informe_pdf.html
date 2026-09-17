@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Informe de Convenio Minero</title>
+    <style>
+        @page {
+            size: a4 portrait;
+            margin: 2.0cm 1.5cm 1.5cm 1.5cm;
+        }
+
+        body {
+            font-family: Helvetica, Arial, sans-serif;
+            color: #202024;
+            font-size: 10pt;
+            line-height: 1.4;
+        }
+
+        .header-table {
+            width: 100%;
+            border-bottom: 2px solid #00875f;
+            padding-bottom: 8px;
+            margin-bottom: 15px;
+        }
+
+        .title {
+            font-size: 14pt;
+            font-weight: bold;
+            color: #121214;
+            text-transform: uppercase;
+        }
+
+        .subtitle {
+            font-size: 9pt;
+            color: #6e6e73;
+            font-weight: bold;
+        }
+
+        .section-title {
+            font-size: 11pt;
+            font-weight: bold;
+            color: #00875f;
+            border-bottom: 1px solid #e1e1e6;
+            padding-bottom: 4px;
+            margin-top: 15px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+
+        .info-table {
+            width: 100%;
+            margin-bottom: 15px;
+        }
+
+        .info-table td {
+            padding: 6px 8px;
+            border-bottom: 1px solid #f0f0f5;
+            font-size: 9.5pt;
+            vertical-align: top;
+        }
+
+        .label {
+            font-weight: bold;
+            color: #55555e;
+            background-color: #f8f9fa;
+            width: 25%;
+        }
+
+        .value {
+            color: #121214;
+            width: 25%;
+        }
+
+        .badge-activo {
+            color: #00875f;
+            font-weight: bold;
+        }
+
+        .badge-inactivo {
+            color: #c53030;
+            font-weight: bold;
+        }
+
+        .map-container {
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        .map-img {
+            width: 100%;
+            max-height: 420px;
+            border: 1px solid #dcdce6;
+        }
+
+        .footer {
+            margin-top: 20px;
+            font-size: 8pt;
+            color: #8d8d99;
+            text-align: right;
+            border-top: 1px solid #e1e1e6;
+            padding-top: 6px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Encabezado -->
+    <table class="header-table">
+        <tr>
+            <td>
+                <div class="title">Informe Técnico de Convenio</div>
+                <div class="subtitle">Secretaría de Minería de Salta — Sistema SIEMSa</div>
+            </td>
+        </tr>
+    </table>
+
+    <!-- Ficha de Datos del Convenio -->
+    <div class="section-title">Datos del Convenio</div>
+    <table class="info-table">
+        <tr>
+            <td class="label">Nombre / Proyecto:</td>
+            <td class="value" colspan="3"><strong>{{ convenio.nombre|default:"Sin Especificar" }}</strong></td>
+        </tr>
+        <tr>
+            <td class="label">N° Expediente:</td>
+            <td class="value">{{ convenio.expediente|default:"N/D" }}</td>
+            <td class="label">Estado:</td>
+            <td class="value">
+                {% if convenio.activo %}
+                    <span class="badge-activo">Activo</span>
+                {% else %}
+                    <span class="badge-inactivo">Inactivo</span>
+                {% endif %}
+            </td>
+        </tr>
+        <tr>
+            <td class="label">Concesionario:</td>
+            <td class="value">{{ concesionario_clean|default:"N/D" }}</td>
+            <td class="label">Mineral:</td>
+            <td class="value">{{ mineral_clean|default:"N/D" }}</td>
+        </tr>
+        <tr>
+            <td class="label">Tipo:</td>
+            <td class="value">{{ convenio.tipo|default:"N/D" }}</td>
+            <td class="label">Departamento:</td>
+            <td class="value">{{ convenio.departamento|default:"N/D" }}</td>
+        </tr>
+    </table>
+
+    <!-- Ubicación y Encuadre Geográfico -->
+    <div class="section-title">Ubicación y Encuadre Territorial</div>
+    <div class="map-container">
+    {% if mapa_img %}
+        <img src="{{ mapa_img }}" class="map-img" alt="Mapa del Convenio" />
+    {% else %}
+        <p style="color: #8d8d99; padding: 20px;">No se pudo generar la vista preliminar del mapa para este convenio.</p>
+    {% endif %}
+</div>
+
+    <!-- Pie de página -->
+    <div class="footer">
+        Generado desde SIEMSa | Fecha de emisión: {% now "d/m/Y H:i" %}
+    </div>
+
+</body>
+</html>

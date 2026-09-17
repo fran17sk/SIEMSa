@@ -117,3 +117,18 @@ window.addEventListener('DOMContentLoaded', () => {
     // F. Renderizado final de iconos
     updateIcons();
 });
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.submenu-toggle').forEach(button => {
+        button.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const navItem = button.closest('.nav-item');
+            navItem.classList.toggle('open');
+        });
+    });
+
+    // Re-renderizar iconos de Lucide si están en uso dinámico
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
+});

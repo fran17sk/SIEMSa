@@ -2,14 +2,13 @@
 
 
 {% block nav %}
-  {% include 'contratos/navbar.html' %}
+  {% include 'simsa/navbar.html' %}
 {% endblock %}
 
 {% block head %}
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 <style>
 .container#cards {
-    max-width: 1200px;
     margin:  auto;
     background: var(--card-bg);
     color: var(--text-light);
@@ -195,10 +194,11 @@
 .empresa-panel li {
     padding: 10px;
     cursor: pointer;
+    background-color: var(--bg-main);
 }
 
 .empresa-panel li:hover {
-    background: #f3f4f6;
+    background: var(--card-bg);
 }
 
 /* ==============================

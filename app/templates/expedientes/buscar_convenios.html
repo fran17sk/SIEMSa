@@ -32,7 +32,7 @@
 
     .filter-form {
         display: grid;
-        grid-template-columns: 2fr 1fr auto;
+        grid-template-columns: 2fr 1fr auto auto;
         gap: 15px;
         align-items: flex-end;
     }
@@ -131,7 +131,30 @@
         color: var(--text-light);
         background: var(--card-bg);
     }
-    .active-page .page-link { background: var(--sidebar-accent); color: white; border-color: var(--sidebar-accent); }
+    .activq
+    .btn-excel {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background-color: #16a34a; /* Verde Excel */
+    color: #ffffff;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.btn-excel:hover {
+    background-color: #15803d;
+    color: #ffffff;
+}
+
+.btn-excel:active {
+    transform: scale(0.98);
+}
 </style>
 {% endblock %}
 
@@ -172,51 +195,133 @@
             </div>
 
             <button type="submit" class="btn-submit">BUSCAR</button>
+
+            <div class="header-actions btn-excel" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+    <!-- Tu título o contador -->
+
+    <!-- Botón para descargar Excel con los filtros actuales -->
+    <a href="{% url 'exportar_convenios_excel' %}?q={{ query_general }}&empresa={{ empresa_id }}" class="btn-submit">
+        <i data-lucide="download" class="icon-sm"></i>
+    </a>
+</div>
         </form>
     </div>
-
-    <table>
+<div class="table-container">
+    <table class="table-custom">
         <thead>
             <tr>
-                <th>Expediente</th>
-                <th>Nombre y Estado</th>
+                <th>Expediente / Tipo</th>
+                <th>Nombre y Resolucion</th>
                 <th>Concesionario</th>
+                <th>Ubicación / Mineral</th>
+                <th>Fechas (Inicio / Caducidad)</th>
+                <th>Estado</th>
                 <th style="text-align: right;">Acciones</th>
             </tr>
         </thead>
         <tbody>
             {% for exp in page_obj %}
             <tr>
+                <!-- Expediente y Tipo -->
                 <td>
-                    <span class="badge-id">{{ exp.expediente }}</span><br>
-                    <span class="type-{{ exp.tipo|lower }}" style="display:inline-block; margin-top:5px">
-                        {{ exp.tipo|upper }}
-                    </span>
-                </td>
-                <td>
-                    <div style="font-weight: bold;">{{ exp.nombre }}</div>
-                    <div style="font-size: 12px; color: var(--text-muted);">{{ exp.estado }}</div>
-                </td>
-                <td>
-                    {% if exp.concesionarios_lista %}
-                        {% for n in exp.concesionarios_lista %}
-                            <small style="display:block">• {{ n }}</small>
-                        {% endfor %}
-                    {% else %}
-                        -
+                    <div class="font-mono text-bold text-primary">{{ exp.expediente|default:"-" }}</div>
+                    {% if exp.tipo %}
+                        <span class="badge badge-tipo">
+                            {{ exp.tipo|upper }}
+                        </span>
                     {% endif %}
                 </td>
+
+                <!-- Nombre y Resolución -->
+                <td>
+                    <div class="text-title">{{ exp.nombre|default:"Sin Nombre" }}</div>
+                    {% if exp.resolucion %}
+                        <div class="text-subtitle">
+                           Res: {{ exp.resolucion }}
+                        </div>
+                    {% else %}
+                        <div class="text-subtitle">-</div>
+                    {% endif %}
+                </td>
+
+                <!-- Concesionarios -->
+                <td>
+                    {% if exp.concesionarios_lista %}
+                        <div class="concesionarios-list">
+                            {% for n in exp.concesionarios_lista %}
+                                                                    <div class="concesionario-item">
+
+                                    <span>{{ n }}</span>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <span class="text-muted">-</span>
+                    {% endif %}
+                </td>
+
+                <!-- Ubicación y Mineral -->
+                <td>
+                    <div class="text-body">
+                        {% if exp.departamento %}{{ exp.departamento }}{% endif %}
+                        {% if exp.municipio %}({{ exp.municipio }}){% endif %}
+                        {% if not exp.departamento and not exp.municipio %}-{% endif %}
+                    </div>
+                    {% if exp.mineral %}
+                        <span class="badge badge-subtle">
+                            {{ exp.mineral }}
+                        </span>
+                    {% endif %}
+                </td>
+
+                <!-- Fechas -->
+                <td>
+                    <div class="text-body">
+                        <small class="text-muted">Inicio:</small> {{ exp.fecha_inicio|date:"d/m/Y"|default:"-" }}
+                    </div>
+                    <div class="text-body">
+                        <small class="text-muted">Fin:</small> {{ exp.fecha_caducidad|date:"d/m/Y"|default:"-" }}
+                    </div>
+                </td>
+
+                <!-- Estado (activo booleano) -->
+                <td>
+                    {% if exp.activo %}
+                        <span class="badge badge-success">
+                            <span class="dot"></span> Activo
+                        </span>
+                    {% else %}
+                        <span class="badge badge-danger">
+                            <span class="dot"></span> Inactivo
+                        </span>
+                    {% endif %}
+                </td>
+
+                <!-- Acciones -->
                 <td style="text-align: right;">
-                    <a href="{% url 'detalle' exp.expediente %}" style="color: var(--sidebar-accent)">
-                        <i data-lucide="eye"></i>
-                    </a>
+                    <div class="actions-wrapper">
+                        <a href="#" class="btn-icon" title="Ver detalles">
+                            <i data-lucide="eye"></i>
+                        </a>
+                    </div>
+                </td>
+                <td>
+                    <a href="/convenios/{{ exp.id }}/informe-pdf/" target="_blank" class="btn-informe">
+    📄 Generar Informe
+</a>
                 </td>
             </tr>
             {% empty %}
-            <tr><td colspan="4" style="text-align:center; padding:40px">No se encontraron resultados</td></tr>
+            <tr>
+                <td colspan="7" class="empty-state">
+                    <i data-lucide="inbox" class="icon-lg"></i>
+                    <p>No se encontraron convenios que coincidan con la búsqueda.</p>
+                </td>
+            </tr>
             {% endfor %}
         </tbody>
     </table>
+</div>
 
     <div class="pagination-bar">
         <ul class="page-list">
