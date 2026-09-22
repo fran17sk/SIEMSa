@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mapa de Convenios Mineros - Salta</title>
+    <title>Mapa de Convenios y Catastro Minero - Salta</title>
     
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -14,108 +14,644 @@
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
             background-color: #1a1a1e;
-            color: #e1e1e6;
+            color: #333333;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            position: relative;
+        }
+
+        #map {
+            width: 100%;
+            height: 100vh;
+            z-index: 1;
+        }
+
+        /* Logo superior izquierdo */
+        .brand-header {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 8px 16px;
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+        }
+
+        .brand-header img {
+            height: 42px;
+            object-fit: contain;
+        }
+
+        /* Controles de zoom desplegados hacia abajo */
+        .leaflet-top.leaflet-left {
+            top: 80px !important;
+            left: 10px !important;
+        }
+
+        /* Toolbar lateral derecha estilo ArcGIS */
+        .right-toolbar {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            z-index: 1000;
             display: flex;
             flex-direction: column;
-            height: 100vh;
+            gap: 8px;
         }
-        .filter-bar {
-            padding: 12px 20px;
-            background-color: #202024;
-            border-bottom: 1px solid #29292e;
+
+        .tool-btn {
+            width: 38px;
+            height: 38px;
+            background-color: #ffffff;
+            color: #4c4c4c;
+            border: 1px solid #cccccc;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            font-size: 16px;
+            transition: all 0.2s ease;
+        }
+
+        .tool-btn:hover, .tool-btn.active {
+            background-color: #007ac2;
+            color: #ffffff;
+            border-color: #005a9e;
+        }
+
+        /* Estilos generales para paneles flotantes a la derecha */
+        .floating-panel {
+            position: absolute;
+            top: 15px;
+            right: 60px;
+            z-index: 1001;
+            background: #ffffff;
+            border-radius: 6px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+            width: 320px;
+            padding: 12px 16px;
+            display: none;
+            color: #333333;
+        }
+
+        .floating-panel.active {
+            display: block;
+        }
+
+        .panel-header {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: #2b2b2b;
+            border-bottom: 1px solid #e0e0e0;
+            padding-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .panel-close {
+            cursor: pointer;
+            color: #888888;
+            font-size: 16px;
+        }
+        .panel-close:hover { color: #000000; }
+
+        /* Panel de Búsqueda y Resultados (Estilo Jujuy/ArcGIS) */
+        .search-box-wrapper {
+            display: flex;
+            align-items: center;
+            border: 1px solid #cccccc;
+            border-radius: 4px;
+            background: #f8f9fa;
+            padding: 2px 6px;
+            margin-bottom: 10px;
+        }
+        .search-box-wrapper input {
+            flex: 1;
+            border: none;
+            background: transparent;
+            padding: 6px 4px;
+            font-size: 13px;
+            outline: none;
+        }
+        .search-box-wrapper .clear-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #888;
+            font-size: 14px;
+            padding: 0 4px;
+        }
+        .search-box-wrapper .search-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            color: #007ac2;
+            padding: 0 6px;
+        }
+
+        .results-count {
+            font-size: 12px;
+            font-weight: 600;
+            color: #555;
+            margin-bottom: 8px;
+        }
+
+        .results-list {
+            max-height: 360px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .result-card {
+            background: #fdfdfd;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 10px 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+        .result-card:hover {
+            border-color: #007ac2;
+            background-color: #f0f7fc;
+            box-shadow: 0 2px 6px rgba(0, 122, 194, 0.15);
+        }
+        .result-card-item {
+            margin-bottom: 2px;
+            color: #444;
+        }
+        .result-card-item strong {
+            color: #111;
+        }
+
+        /* Panel de Galería de Mapas Base */
+        .basemap-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            max-height: 380px;
+            overflow-y: auto;
+        }
+        .basemap-card {
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            cursor: pointer;
+            overflow: hidden;
+            transition: all 0.2s ease;
+            background: #f9f9f9;
+            text-align: center;
+        }
+        .basemap-card:hover { border-color: #007ac2; }
+        .basemap-card.selected { border-color: #007ac2; background-color: #e8f4fa; }
+        .basemap-thumbnail {
+            width: 100%;
+            height: 55px;
+            background-size: cover;
+            background-position: center;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .basemap-title {
+            font-size: 11px;
+            padding: 4px;
+            font-weight: 500;
+        }
+
+        /* Panel de Lista de Capas (Layers) */
+        .layers-list {
+            list-style: none;
+            max-height: 380px;
+            overflow-y: auto;
+        }
+        .layer-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 13px;
+        }
+        .layer-item-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .layer-toggle-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 15px;
+            color: #007ac2;
+            padding: 2px 4px;
+        }
+        .layer-toggle-btn.disabled {
+            color: #bbbbbb;
+        }
+
+        /* Panel de Leyenda (Legend) */
+        .legend-list {
+            max-height: 380px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .legend-item {
             display: flex;
             align-items: center;
             gap: 12px;
-            z-index: 1000;
+            font-size: 13px;
         }
-        .filter-bar input[type="text"] {
-            flex: 1;
-            max-width: 400px;
-            padding: 8px 14px;
-            background-color: #121214;
-            border: 1px solid #323238;
-            border-radius: 6px;
-            color: #ffffff;
-            font-size: 14px;
-            outline: none;
+        .legend-symbol {
+            width: 22px;
+            height: 16px;
+            border-radius: 2px;
+            border: 1px solid rgba(0,0,0,0.3);
+            display: inline-block;
         }
-        .filter-bar button {
-            padding: 8px 16px;
-            background-color: #00875f;
-            color: #ffffff;
-            border: none;
-            border-radius: 6px;
+
+        /* Popups y Modal */
+        .leaflet-popup-content-wrapper {
+            background-color: #ffffff !important;
+            color: #333333 !important;
+            border-radius: 6px !important;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+        }
+        .popup-container { padding: 4px; }
+        .popup-container h4 {
+            color: #007ac2;
+            font-size: 15px;
+            margin-bottom: 8px;
+            border-bottom: 1px solid #e0e0e0;
+            padding-bottom: 6px;
+        }
+        .popup-item { 
+            font-size: 12px; 
+            margin-bottom: 5px; 
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+        }
+        .popup-item strong { color: #666666; }
+        .badge-activo { color: #2e7d32; font-weight: bold; }
+        .badge-inactivo { color: #c62828; font-weight: bold; }
+
+        .btn-popup {
+            display: block;
+            width: 100%;
+            margin-top: 8px;
+            padding: 6px 0;
+            color: #ffffff !important;
+            text-align: center;
+            text-decoration: none;
+            font-size: 12px;
             font-weight: 600;
+            border-radius: 4px;
+            border: none;
             cursor: pointer;
         }
-        #map { flex: 1; width: 100%; }
+        .btn-pdf { background-color: #007ac2; }
+        .btn-coords { background-color: #2e7d32; }
 
-        /* Estilos del Popup */
-        .leaflet-popup-content-wrapper {
-            background-color: #202024 !important;
-            color: #e1e1e6 !important;
-            border-radius: 8px !important;
+        /* Modal Coordenadas */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0; top: 0;
+            width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.6);
         }
-        .leaflet-popup-tip { background-color: #202024 !important; }
-        .popup-container h4 {
-            color: #ffffff;
-            margin-bottom: 8px;
-            border-bottom: 1px solid #323238;
-            padding-bottom: 4px;
+        .modal-content {
+            background-color: #ffffff;
+            margin: 5% auto;
+            padding: 20px;
+            border-radius: 8px;
+            width: 90%; max-width: 800px;
+            max-height: 80vh;
+            overflow-y: auto;
+            color: #333333;
         }
-        .popup-item { font-size: 13px; margin-bottom: 4px; }
-        .popup-item strong { color: #a8a8b3; }
-        .badge-activo { color: #00b37e; font-weight: bold; }
-        .badge-inactivo { color: #f75a68; font-weight: bold; }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #e0e0e0;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+        .close-btn { color: #888888; font-size: 24px; cursor: pointer; }
+        .coords-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .coords-table th, .coords-table td { border: 1px solid #e0e0e0; padding: 8px 12px; }
+        .coords-table th { background-color: #f1f3f5; color: #007ac2; }
+        .coords-table tr:nth-child(even) { background-color: #f8f9fa; }
     </style>
 </head>
 <body>
 
-    <div class="filter-bar">
-        <input type="text" id="input-buscar" placeholder="Buscar por expediente o nombre..." onkeypress="handleKeyPress(event)" />
-        <button onclick="cargarGeoJSON()">Filtrar</button>
+    <!-- Logo Institucional -->
+    <div class="brand-header">
+        <img src="{% static 'app/img/logo.png' %}" alt="Logo Salta Gobierno">
+    </div>
+
+    <!-- Toolbar Lateral Derecha estilo ArcGIS -->
+    <div class="right-toolbar">
+        <button class="tool-btn" id="btn-search" title="Buscar" onclick="togglePanel('panel-search', this)">🔍</button>
+        <button class="tool-btn" id="btn-basemap" title="Mapas Base" onclick="togglePanel('panel-basemaps', this)">🖼️</button>
+        <button class="tool-btn" id="btn-layers" title="Capas" onclick="togglePanel('panel-layers', this)">🥞</button>
+        <button class="tool-btn" id="btn-legend" title="Leyenda" onclick="togglePanel('panel-legend', this)">📊</button>
+        <button class="tool-btn" title="Vista Inicial" onclick="resetView()">🏠</button>
+    </div>
+
+    <!-- Panel 1: Búsqueda con Lista de Resultados Interactiva -->
+    <div id="panel-search" class="floating-panel">
+        <div class="panel-header">
+            <span>Buscador de Minas y Convenios</span>
+            <span class="panel-close" onclick="cerrarPaneles()">✕</span>
+        </div>
+        
+        <div class="search-box-wrapper">
+            <input type="text" id="input-buscar" placeholder="Expediente, nombre, empresa..." oninput="onSearchInput()" onkeypress="handleKeyPress(event)" />
+            <button class="clear-btn" title="Limpiar" onclick="limpiarBusqueda()">✕</button>
+            <button class="search-btn" title="Buscar" onclick="cargarGeoJSON()">🔍</button>
+        </div>
+
+        <div id="results-count" class="results-count">Resultados: 0</div>
+        
+        <div id="results-list" class="results-list">
+            <!-- Los cards de resultados se generarán dinámicamente aquí -->
+        </div>
+    </div>
+
+    <!-- Panel 2: Galería de Mapas Base -->
+    <div id="panel-basemaps" class="floating-panel" style="width: 360px;">
+        <div class="panel-header">
+            <span>Mapas Base</span>
+            <span class="panel-close" onclick="cerrarPaneles()">✕</span>
+        </div>
+        <div class="basemap-grid">
+            <div class="basemap-card selected" onclick="cambiarMapaBase('satelital', this)">
+                <div class="basemap-thumbnail" style="background-image: url('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/7/62/39');"></div>
+                <div class="basemap-title">Imágenes con etiquetas</div>
+            </div>
+            <div class="basemap-card" onclick="cambiarMapaBase('topo', this)">
+                <div class="basemap-thumbnail" style="background-image: url('https://a.tile.opentopomap.org/7/39/62.png');"></div>
+                <div class="basemap-title">Topográfico</div>
+            </div>
+            <div class="basemap-card" onclick="cambiarMapaBase('gris_claro', this)">
+                <div class="basemap-thumbnail" style="background-image: url('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/7/62/39');"></div>
+                <div class="basemap-title">Lona gris claro</div>
+            </div>
+            <div class="basemap-card" onclick="cambiarMapaBase('gris_oscuro', this)">
+                <div class="basemap-thumbnail" style="background-image: url('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/7/62/39');"></div>
+                <div class="basemap-title">Lona gris oscuro</div>
+            </div>
+            <div class="basemap-card" onclick="cambiarMapaBase('esri_streets', this)">
+                <div class="basemap-thumbnail" style="background-image: url('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/7/62/39');"></div>
+                <div class="basemap-title">Calles / Estándar</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Panel 3: Control de Capas (Layers Panel) -->
+    <div id="panel-layers" class="floating-panel">
+        <div class="panel-header">
+            <span>Capas de Información</span>
+            <span class="panel-close" onclick="cerrarPaneles()">✕</span>
+        </div>
+        <ul class="layers-list">
+            <li class="layer-item">
+                <div class="layer-item-title">
+                    <button class="layer-toggle-btn" id="eye-activos" onclick="toggleLayer('activos', this)">👁️</button>
+                    <span>Convenios Activos</span>
+                </div>
+            </li>
+            <li class="layer-item">
+                <div class="layer-item-title">
+                    <button class="layer-toggle-btn" id="eye-inactivos" onclick="toggleLayer('inactivos', this)">👁️</button>
+                    <span>Convenios Inactivos</span>
+                </div>
+            </li>
+            <li class="layer-item">
+                <div class="layer-item-title">
+                    <button class="layer-toggle-btn" id="eye-minas" onclick="toggleLayer('minas', this)">👁️</button>
+                    <span>Mina Concedida</span>
+                </div>
+            </li>
+            <li class="layer-item">
+                <div class="layer-item-title">
+                    <button class="layer-toggle-btn" id="eye-solicitud" onclick="toggleLayer('solicitud', this)">👁️</button>
+                    <span>Solicitud de Mina</span>
+                </div>
+            </li>
+            <li class="layer-item">
+                <div class="layer-item-title">
+                    <button class="layer-toggle-btn" id="eye-cateos" onclick="toggleLayer('cateos', this)">👁️</button>
+                    <span>Cateos</span>
+                </div>
+            </li>
+            <li class="layer-item">
+                <div class="layer-item-title">
+                    <button class="layer-toggle-btn" id="eye-canteras" onclick="toggleLayer('canteras', this)">👁️</button>
+                    <span>Canteras</span>
+                </div>
+            </li>
+            <li class="layer-item">
+                <div class="layer-item-title">
+                    <button class="layer-toggle-btn" id="eye-reserva" onclick="toggleLayer('reserva', this)">👁️</button>
+                    <span>Áreas de Reserva</span>
+                </div>
+            </li>
+            <li class="layer-item">
+                <div class="layer-item-title">
+                    <button class="layer-toggle-btn" id="eye-municipios" onclick="toggleLayer('municipios', this)">👁️</button>
+                    <span>Límites Municipales</span>
+                </div>
+            </li>
+        </ul>
+    </div>
+
+    <!-- Panel 4: Leyenda (Legend Panel) -->
+    <div id="panel-legend" class="floating-panel">
+        <div class="panel-header">
+            <span>Leyenda</span>
+            <span class="panel-close" onclick="cerrarPaneles()">✕</span>
+        </div>
+        <div class="legend-list">
+            <div class="legend-item">
+                <span class="legend-symbol" style="background-color: rgba(0, 230, 118, 0.45); border-color: #00e676;"></span>
+                <span>Convenio Activo</span>
+            </div>
+            <div class="legend-item">
+                <span class="legend-symbol" style="background-color: rgba(255, 23, 68, 0.45); border-color: #ff1744;"></span>
+                <span>Convenio Inactivo</span>
+            </div>
+            <div class="legend-item">
+                <span class="legend-symbol" style="background-color: rgba(239, 83, 80, 0.6); border-color: #e53935;"></span>
+                <span>Mina Concedida</span>
+            </div>
+            <div class="legend-item">
+                <span class="legend-symbol" style="background-color: rgba(255, 238, 88, 0.6); border-color: #fbc02d;"></span>
+                <span>Solicitud de Mina</span>
+            </div>
+            <div class="legend-item">
+                <span class="legend-symbol" style="background-color: rgba(79, 195, 247, 0.6); border-color: #0288d1;"></span>
+                <span>Cateos</span>
+            </div>
+            <div class="legend-item">
+                <span class="legend-symbol" style="background-color: rgba(129, 199, 132, 0.6); border-color: #388e3c;"></span>
+                <span>Canteras</span>
+            </div>
+            <div class="legend-item">
+                <span class="legend-symbol" style="background-color: rgba(186, 104, 200, 0.6); border-color: #8e24aa;"></span>
+                <span>Áreas de Reserva</span>
+            </div>
+        </div>
     </div>
 
     <div id="map"></div>
 
-    <!-- Leaflet JS -->
+    <!-- Modal de Coordenadas -->
+    <div id="modal-coordenadas" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-titulo">Vértices y Coordenadas</h3>
+                <span class="close-btn" onclick="cerrarModal()">&times;</span>
+            </div>
+            <div id="modal-body"></div>
+        </div>
+    </div>
+
+    <!-- Leaflet JS & Proj4JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"></script>
 
     <script>
-        // Inicializar mapa centrado en Salta
-        const map = L.map('map').setView([-24.7859, -65.4117], 7);
+        proj4.defs("EPSG:4326", "+proj=longlat +datum=WGS84 +no_defs");
+        proj4.defs("POSGAR_FAJA3", "+proj=tmerc +lat_0=-90 +lon_0=-66 +k=1 +x_0=3500000 +y_0=0 +ellps=WGS84 +units=m +no_defs");
 
-        // Mapa Base Oscuro Esri
-        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
-            attribution: 'Esri, DeLorme, NAVTEQ',
-            maxZoom: 16
-        }).addTo(map);
+        const INITIAL_CENTER = [-24.7859, -65.4117];
+        const INITIAL_ZOOM = 7;
 
-        // 1. CARGAR LÍMITES DE DEPARTAMENTOS DESDE ESTÁTICOS
-        fetch("{% static 'app/geojson/departamentos-salta.json' %}")
+        // Capas Base
+        const basemaps = {
+            'satelital': L.layerGroup([
+                L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 18 }),
+                L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', { maxZoom: 18 })
+            ]),
+            'topo': L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { maxZoom: 17 }),
+            'gris_claro': L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', { maxZoom: 16 }),
+            'gris_oscuro': L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', { maxZoom: 16 }),
+            'esri_streets': L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 })
+        };
+
+        let currentBasemap = basemaps['satelital'];
+
+        const map = L.map('map', {
+            center: INITIAL_CENTER,
+            zoom: INITIAL_ZOOM,
+            zoomControl: true,
+            layers: [currentBasemap]
+        });
+
+        // Capas Vectoriales
+        const layerGroups = {
+            'activos': L.layerGroup().addTo(map),
+            'inactivos': L.layerGroup().addTo(map),
+            'minas': L.layerGroup().addTo(map),
+            'solicitud': L.layerGroup().addTo(map),
+            'cateos': L.layerGroup().addTo(map),
+            'canteras': L.layerGroup().addTo(map),
+            'reserva': L.layerGroup().addTo(map),
+            'municipios': L.layerGroup().addTo(map)
+        };
+
+        let featuresMap = {};
+        let leafletLayersMap = {}; // Guardar referencia a las capas de Leaflet por id
+        let debounceTimer = null;
+
+        // Control de Apertura/Cierre de Paneles
+        function togglePanel(panelId, btn) {
+            const panel = document.getElementById(panelId);
+            const estaActivo = panel.classList.contains('active');
+
+            cerrarPaneles();
+
+            if (!estaActivo) {
+                panel.classList.add('active');
+                if (btn) btn.classList.add('active');
+                if (panelId === 'panel-search') {
+                    document.getElementById('input-buscar').focus();
+                }
+            }
+        }
+
+        function cerrarPaneles() {
+            document.querySelectorAll('.floating-panel').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+        }
+
+        function toggleLayer(layerKey, btn) {
+            const lg = layerGroups[layerKey];
+            if (!lg) return;
+
+            if (map.hasLayer(lg)) {
+                map.removeLayer(lg);
+                btn.classList.add('disabled');
+                btn.innerText = '🙈';
+            } else {
+                map.addLayer(lg);
+                btn.classList.remove('disabled');
+                btn.innerText = '👁️';
+            }
+        }
+
+        function cambiarMapaBase(key, element) {
+            if (basemaps[key]) {
+                map.removeLayer(currentBasemap);
+                currentBasemap = basemaps[key];
+                map.addLayer(currentBasemap);
+
+                document.querySelectorAll('.basemap-card').forEach(card => card.classList.remove('selected'));
+                if (element) element.classList.add('selected');
+            }
+        }
+
+        // Cargar municipios
+        fetch('/api/municipios/geojson/')
             .then(res => res.json())
             .then(data => {
                 L.geoJSON(data, {
-                    style: {
-                        color: '#FB2C36',
-                        weight: 1.2,
-                        dashArray: '3, 3',
-                        fillColor: '#ffffff',
-                        fillOpacity: 0.02
-                    },
-                    onEachFeature: function(feature, layer) {
-                        const nombreDpto = feature.properties.departamento || feature.properties.nombre || feature.properties.NAM;
-                        if (nombreDpto) {
-                            layer.bindTooltip(`Dpto. ${nombreDpto}`, { sticky: true, className: 'dpto-tooltip' });
-                        }
-                    }
-                }).addTo(map);
-            })
-            .catch(err => console.warn("No se cargó el archivo estático de departamentos:", err));
+                    interactive: false,
+                    style: { color: '#ffffff', weight: 1.2, dashArray: '3, 3', fillColor: '#ffffff', fillOpacity: 0.05 }
+                }).addTo(layerGroups['municipios']);
+            }).catch(err => console.warn(err));
 
-        // 2. CARGAR TUS CAPAS DE CONVENIOS (TU ENDPOINT DJANGO)
-        let geojsonLayer = null;
+        // Búsqueda en tiempo real (debounce 300ms)
+        function onSearchInput() {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                cargarGeoJSON();
+            }, 300);
+        }
 
+        function limpiarBusqueda() {
+            document.getElementById('input-buscar').value = '';
+            cargarGeoJSON();
+        }
+
+        // Cargar GeoJSON y renderizar lista de resultados estilo Jujuy
         function cargarGeoJSON() {
             const query = document.getElementById('input-buscar').value.trim();
             const url = `/convenios/api/geojson/?q=${encodeURIComponent(query)}`;
@@ -123,48 +659,176 @@
             fetch(url)
                 .then(response => response.json())
                 .then(data => {
-                    if (geojsonLayer) {
-                        map.removeLayer(geojsonLayer);
-                    }
+                    layerGroups['activos'].clearLayers();
+                    layerGroups['inactivos'].clearLayers();
+                    featuresMap = {};
+                    leafletLayersMap = {};
 
-                    geojsonLayer = L.geoJSON(data, {
+                    const geojsonLayer = L.geoJSON(data, {
                         style: function(feature) {
                             const esActivo = feature.properties.activo;
                             return {
-                                color: esActivo ? '#00b37e' : '#f75a68',
+                                color: esActivo ? '#00e676' : '#ff1744',
                                 weight: 2,
                                 opacity: 0.9,
-                                fillColor: esActivo ? '#00b37e' : '#f75a68',
-                                fillOpacity: 0.35
+                                fillColor: esActivo ? '#00e676' : '#ff1744',
+                                fillOpacity: 0.45
                             };
                         },
                         onEachFeature: function(feature, layer) {
                             const p = feature.properties;
-                            const estadoText = p.activo 
+                            featuresMap[p.id] = feature;
+                            leafletLayersMap[p.id] = layer;
+
+                            const estadoBadge = p.activo 
                                 ? '<span class="badge-activo">Activo</span>' 
                                 : '<span class="badge-inactivo">Inactivo</span>';
 
                             const popupContent = `
                                 <div class="popup-container">
                                     <h4>${p.nombre || 'Sin Nombre'}</h4>
-                                    <div class="popup-item"><strong>Expediente:</strong> ${p.expediente || 'N/D'}</div>
-                                    <div class="popup-item"><strong>Tipo:</strong> ${p.tipo || 'N/D'}</div>
-                                    <div class="popup-item"><strong>Concesionario:</strong> ${p.concesionario || 'N/D'}</div>
-                                    <div class="popup-item"><strong>Mineral:</strong> ${p.mineral || 'N/D'}</div>
-                                    <div class="popup-item"><strong>Estado:</strong> ${estadoText}</div>
+                                    <div class="popup-item"><strong>Expediente:</strong> <span>${p.expediente || 'N/D'}</span></div>
+                                    <div class="popup-item"><strong>Tipo:</strong> <span>${p.tipo || 'N/D'}</span></div>
+                                    <div class="popup-item"><strong>Concesionario:</strong> <span>${p.concesionario || 'N/D'}</span></div>
+                                    <div class="popup-item"><strong>Mineral:</strong> <span>${p.mineral || 'N/D'}</span></div>
+                                    <div class="popup-item"><strong>Estado:</strong> ${estadoBadge}</div>
+                                    <a href="/convenios/${p.id}/informe-pdf/" target="_blank" class="btn-popup btn-pdf">📄 Descargar Informe Técnico</a>
+                                    <button class="btn-popup btn-coords" onclick="verCoordenadas('${p.id}')">📍 Ver Coordenadas</button>
                                 </div>
                             `;
                             layer.bindPopup(popupContent);
+
+                            if (p.activo) layer.addTo(layerGroups['activos']);
+                            else layer.addTo(layerGroups['inactivos']);
                         }
-                    }).addTo(map);
+                    });
+
+                    // Renderizar tarjetas de la prebúsqueda en la lista del panel
+                    renderizarResultados(data.features || []);
+
+                    // Si hay una búsqueda activa y devolvió polígonos, enfocar en el conjunto
+                    if (query !== '' && data.features && data.features.length > 0) {
+                        const bounds = geojsonLayer.getBounds();
+                        if (bounds.isValid()) {
+                            map.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 });
+                        }
+                    }
                 })
-                .catch(error => console.error('Error al cargar datos:', error));
+                .catch(error => console.error('Error al cargar convenios:', error));
+        }
+
+        // Renderiza las tarjetas dinámicas en el panel
+        function renderizarResultados(features) {
+            const resultsList = document.getElementById('results-list');
+            const resultsCount = document.getElementById('results-count');
+            
+            resultsCount.innerText = `Resultados: ${features.length}`;
+            resultsList.innerHTML = '';
+
+            if (features.length === 0) {
+                resultsList.innerHTML = '<div style="font-size:12px; color:#888; text-align:center; padding:10px;">No se encontraron resultados</div>';
+                return;
+            }
+
+            features.forEach(feature => {
+                const p = feature.properties;
+                const card = document.createElement('div');
+                card.className = 'result-card';
+                card.onclick = () => enfocarPoligono(p.id);
+
+                card.innerHTML = `
+                    <div class="result-card-item"><strong>Tipo:</strong> ${p.tipo || 'N/D'}</div>
+                    <div class="result-card-item"><strong>Nombre:</strong> ${p.nombre || 'N/D'}</div>
+                    <div class="result-card-item"><strong>Expediente:</strong> ${p.expediente || 'N/D'}</div>
+                    <div class="result-card-item"><strong>Titular:</strong> ${p.concesionario || 'N/D'}</div>
+                    <div class="result-card-item"><strong>Tipo mineral:</strong> ${p.mineral || 'N/D'}</div>
+                `;
+
+                resultsList.appendChild(card);
+            });
+        }
+
+        // Hace Zoom al polígono seleccionado y abre su Popup
+        function enfocarPoligono(featureId) {
+            const layer = leafletLayersMap[featureId];
+            if (layer) {
+                const bounds = layer.getBounds ? layer.getBounds() : null;
+                if (bounds && bounds.isValid()) {
+                    map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
+                    layer.openPopup();
+                } else if (layer.getLatLng) {
+                    map.setView(layer.getLatLng(), 15);
+                    layer.openPopup();
+                }
+            }
+        }
+
+        function resetView() {
+            map.setView(INITIAL_CENTER, INITIAL_ZOOM);
+        }
+
+        function verCoordenadas(featureId) {
+            const feature = featuresMap[featureId];
+            if (!feature) return;
+
+            const modal = document.getElementById('modal-coordenadas');
+            const modalBody = document.getElementById('modal-body');
+            document.getElementById('modal-titulo').innerText = `Vértices: ${feature.properties.nombre || 'Convenio'}`;
+
+            let coords = feature.geometry.type === 'Polygon' ? feature.geometry.coordinates[0] : feature.geometry.coordinates[0][0];
+
+            let tablaHTML = `
+                <table class="coords-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Lat/Lng Decimal</th>
+                            <th>DMS</th>
+                            <th>Gauss-Krüger (Faja 3)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            coords.forEach((point, index) => {
+                const lon = point[0];
+                const lat = point[1];
+                const gk = proj4("EPSG:4326", "POSGAR_FAJA3", [lon, lat]);
+
+                tablaHTML += `
+                    <tr>
+                        <td><strong>P${index + 1}</strong></td>
+                        <td>Lat: ${lat.toFixed(6)}<br>Lng: ${lon.toFixed(6)}</td>
+                        <td>${toDMS(lat, 'lat')}<br>${toDMS(lon, 'lon')}</td>
+                        <td>Y: ${gk[0].toFixed(2)}<br>X: ${gk[1].toFixed(2)}</td>
+                    </tr>
+                `;
+            });
+
+            tablaHTML += `</tbody></table>`;
+            modalBody.innerHTML = tablaHTML;
+            modal.style.display = "block";
+        }
+
+        function toDMS(val, type) {
+            const abs = Math.abs(val);
+            const deg = Math.floor(abs);
+            const minNotTrunc = (abs - deg) * 60;
+            const min = Math.floor(minNotTrunc);
+            const sec = ((minNotTrunc - min) * 60).toFixed(2);
+            const card = type === 'lat' ? (val >= 0 ? 'N' : 'S') : (val >= 0 ? 'E' : 'O');
+            return `${deg}° ${min}' ${sec}" ${card}`;
+        }
+
+        function cerrarModal() {
+            document.getElementById('modal-coordenadas').style.display = "none";
         }
 
         function handleKeyPress(event) {
             if (event.key === 'Enter') cargarGeoJSON();
         }
 
+        // Carga inicial al abrir
         cargarGeoJSON();
     </script>
 </body>

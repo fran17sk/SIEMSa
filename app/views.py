@@ -6404,7 +6404,7 @@ def api_convenios_geojson(request):
     query_general = request.GET.get('q', '')
     empresa_id = request.GET.get('empresa', '')
 
-    where_clauses = ["geom IS NOT NULL"]
+    where_clauses = ["activo is True"]
     params = []
 
     if query_general:
@@ -6429,6 +6429,7 @@ def api_convenios_geojson(request):
                 'id', id,
                 'geometry', ST_AsGeoJSON(geom)::jsonb,
                 'properties', jsonb_build_object(
+                    'id', id,
                     'expediente', expediente,
                     'nombre', nombre,
                     'tipo', tipo,
@@ -6452,144 +6453,372 @@ def api_convenios_geojson(request):
 
     return JsonResponse(result, safe=False)
 
+def api_municipios_geojson(request):
+  sql = """
+        SELECT jsonb_build_object(
+            'type', 'FeatureCollection',
+            'features', coalesce(jsonb_agg(features.feature), '[]'::jsonb)
+        )
+        FROM (
+            SELECT jsonb_build_object(
+                'type', 'Feature',
+                'id', id,
+                'geometry', ST_AsGeoJSON(geom)::jsonb,
+                'properties', jsonb_build_object(
+                    'nombre', nombre,
+                    'departamento', departamen,
+                    'ley', ley
+                )
+            ) AS feature
+            FROM canon_municipios
+            WHERE geom IS NOT NULL
+        ) features;
+    """
+
+  with connections['catastro'].cursor() as cursor:
+    cursor.execute(sql)
+    row = cursor.fetchone()
+    result = row[0] if row else {}
+
+  if isinstance(result, str):
+    result = json.loads(result)
+
+  return JsonResponse(result, safe=False)
 
 import base64
 import io
 import json
 import os
+import pathlib
 import tempfile
-import traceback
+import matplotlib
+import matplotlib.pyplot as plt
+from shapely.geometry import shape, box
+import geopandas as gpd
+
+matplotlib.use('Agg')
 
 from django.conf import settings
 from django.db import connections
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.template.loader import render_to_string
-
-import geopandas as gpd
-import matplotlib
-
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
-from shapely.geometry import shape
 from xhtml2pdf import pisa
 
 
 def link_callback(uri, rel):
-  """Convierte URLs/rutas relativas o absolutas en rutas físicas del sistema de archivos para xhtml2pdf."""
-  if os.path.isabs(uri) and os.path.exists(uri):
+    """Garantiza rutas absolutas universales para xhtml2pdf."""
+    if uri.startswith('file://'):
+        return uri
+    if os.path.isabs(uri) and os.path.exists(uri):
+        return pathlib.Path(uri).as_uri()
+
+    if uri.startswith(settings.MEDIA_URL):
+        path = os.path.join(settings.MEDIA_ROOT, uri.replace(settings.MEDIA_URL, ''))
+    elif uri.startswith(settings.STATIC_URL):
+        path = os.path.join(settings.STATIC_ROOT, uri.replace(settings.STATIC_URL, ''))
+    else:
+        path = os.path.join(settings.BASE_DIR, uri)
+
+    if os.path.isfile(path):
+        return pathlib.Path(path).as_uri()
+
     return uri
 
-  # Manejo de MEDIA_URL / STATIC_URL
-  if uri.startswith(settings.MEDIA_URL):
-    path = os.path.join(settings.MEDIA_ROOT, uri.replace(settings.MEDIA_URL, ''))
-  elif uri.startswith(settings.STATIC_URL):
-    path = os.path.join(
-        settings.STATIC_ROOT, uri.replace(settings.STATIC_URL, '')
-    )
-  else:
-    path = os.path.join(settings.BASE_DIR, uri)
+import base64
+import io
+import json
+import os
+import pathlib
+import tempfile
+import matplotlib
+import matplotlib.pyplot as plt
+from shapely.geometry import shape, box
+import geopandas as gpd
+import contextily as cx
 
-  return path if os.path.isfile(path) else uri
+matplotlib.use('Agg')
+
+from django.conf import settings
+from django.db import connections
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
+from django.template.loader import render_to_string
+from xhtml2pdf import pisa
+
+import io
+import json
+import os
+import pathlib
+import tempfile
+import contextily as cx
+import geopandas as gpd
+import matplotlib.pyplot as plt
+from shapely.geometry import shape, box
+from pyproj import Transformer
+
+from django.shortcuts import get_object_or_404
+from django.template.loader import render_to_string
+from django.http import HttpResponse
+from django.db import connections
+from django.conf import settings
+from xhtml2pdf import pisa
+
+
+def decimal_a_dms(val, es_latitud):
+    """Convierte grados decimales a formato DMS (Grados, Minutos, Segundos)."""
+    if val is None:
+        return "-"
+    abs_val = abs(val)
+    grados = int(abs_val)
+    minutos_resto = (abs_val - grados) * 60
+    minutos = int(minutos_resto)
+    segundos = round((minutos_resto - minutos) * 60, 2)
+
+    if es_latitud:
+        orientacion = 'N' if val >= 0 else 'S'
+    else:
+        orientacion = 'E' if val >= 0 else 'O'
+
+    return f"{grados}° {minutos}' {segundos}\" {orientacion}"
 
 
 def generar_informe_convenio_pdf(request, convenio_id):
-  convenio = get_object_or_404(
-      Convenios.objects.using('catastro'), id=convenio_id
-  )
+    convenio = get_object_or_404(
+        Convenios.objects.using('catastro'), id=convenio_id
+    )
 
-  mapa_file_path = None
-
-  try:
-    db_table_name = Convenios._meta.db_table
-
-    sql = f'SELECT ST_AsGeoJSON(geom) AS geojson_str FROM "{db_table_name}" WHERE id = %s'
-
-    with connections['catastro'].cursor() as cursor:
-      cursor.execute(sql, [convenio.id])
-      row = cursor.fetchone()
-
-    if row and row[0]:
-      geom_json = json.loads(row[0])
-      geom_shapely = shape(geom_json)
-
-      gdf_convenio = gpd.GeoDataFrame(
-          [{'id': convenio.id}], geometry=[geom_shapely], crs='EPSG:4326'
-      )
-
-      # Reproyectar a POSGAR 2007 / Salta Zona 3
-      gdf_proj = gdf_convenio.to_crs(epsg=5345)
-
-      fig, ax = plt.subplots(figsize=(8, 4.5), dpi=150)
-
-      gdf_proj.plot(
-          ax=ax,
-          facecolor='#00875f',
-          edgecolor='#004d36',
-          alpha=0.6,
-          linewidth=2,
-      )
-
-      bounds = gdf_proj.total_bounds
-      margin_x = max((bounds[2] - bounds[0]) * 3.5, 15000)
-      margin_y = max((bounds[3] - bounds[1]) * 3.5, 15000)
-
-      ax.set_xlim(bounds[0] - margin_x, bounds[2] + margin_x)
-      ax.set_ylim(bounds[1] - margin_y, bounds[3] + margin_y)
-      ax.set_axis_off()
-
-      # Crear carpeta temporal dentro del proyecto local
-      local_temp_dir = os.path.join(str(settings.BASE_DIR), 'tmp_pdf_maps')
-      os.makedirs(local_temp_dir, exist_ok=True)
-
-      temp_img = tempfile.NamedTemporaryFile(
-          dir=local_temp_dir, delete=False, suffix='.png'
-      )
-      mapa_file_path = os.path.abspath(temp_img.name)
-      temp_img.close()
-
-      plt.savefig(
-          mapa_file_path, format='png', bbox_inches='tight', pad_inches=0.1
-      )
-      plt.close(fig)
-
-  except Exception as e:
-    print('=== ERROR GENERANDO MAPA EN PDF ===')
-    traceback.print_exc()
     mapa_file_path = None
+    mapa_file_uri = None
+    lista_coordenadas = []
 
-  try:
-    # Limpieza de Arrays de Postgres
+    # Configurar transformador para Gauss-Krüger POSGAR 2007 Faja 3 (Salta / EPSG:5345)
+    transformer_gk = Transformer.from_crs("EPSG:4326", "EPSG:5345", always_xy=True)
+
+    try:
+        # 1. Obtener geometría del Convenio
+        db_table_name = Convenios._meta.db_table
+        sql = f'SELECT ST_AsGeoJSON(geom) AS geojson_str FROM "{db_table_name}" WHERE id = %s'
+
+        with connections['catastro'].cursor() as cursor:
+            cursor.execute(sql, [convenio.id])
+            row = cursor.fetchone()
+
+        if row and row[0]:
+            geom_json = json.loads(row[0])
+            geom_shapely = shape(geom_json)
+
+            # === EXTRAER Y CONVERTIR COORDENADAS DE LOS VÉRTICES ===
+            coords_raw = []
+            if geom_shapely.geom_type == 'Polygon':
+                coords_raw = list(geom_shapely.exterior.coords)
+            elif geom_shapely.geom_type == 'MultiPolygon':
+                # Toma el primer polígono si es un MultiPolygon
+                coords_raw = list(geom_shapely.geoms[0].exterior.coords)
+            elif geom_shapely.geom_type == 'Point':
+                coords_raw = [geom_shapely.coords[0]]
+
+            # Si el último punto es idéntico al primero (polígono cerrado), omitimos el duplicado final
+            if len(coords_raw) > 1 and coords_raw[0] == coords_raw[-1]:
+                coords_raw = coords_raw[:-1]
+
+            for lon, lat in coords_raw:
+                # Conversión a Gauss-Krüger POSGAR Faja 3
+                gk_x, gk_y = transformer_gk.transform(lon, lat)
+
+                # Conversión a DMS
+                lat_dms = decimal_a_dms(lat, es_latitud=True)
+                lon_dms = decimal_a_dms(lon, es_latitud=False)
+
+                lista_coordenadas.append({
+                    'lat_dec': lat,
+                    'lon_dec': lon,
+                    'lat_dms': lat_dms,
+                    'lon_dms': lon_dms,
+                    'gk_x': gk_x,
+                    'gk_y': gk_y,
+                })
+
+            # === GENERACIÓN DEL MAPA ===
+            # Para basemap satelital usaremos EPSG:3857 (Web Mercator)
+            gdf_convenio = gpd.GeoDataFrame(
+                [{'id': convenio.id}], geometry=[geom_shapely], crs='EPSG:4326'
+            ).to_crs(epsg=3857)
+
+            # Canvas ancho panorámico
+            fig, ax = plt.subplots(figsize=(10, 4.8), dpi=200)
+
+            # 2. Cargar Municipios desde 'canon_municipios'
+            try:
+                sql_muni = """
+                    SELECT jsonb_build_object(
+                        'type', 'FeatureCollection',
+                        'features', coalesce(jsonb_agg(
+                            jsonb_build_object(
+                                'type', 'Feature',
+                                'id', id,
+                                'geometry', ST_AsGeoJSON(geom)::jsonb,
+                                'properties', jsonb_build_object(
+                                    'id', id,
+                                    'nombre', nombre
+                                )
+                            )
+                        ), '[]'::jsonb)
+                    )
+                    FROM canon_municipios
+                    WHERE geom IS NOT NULL;
+                """
+
+                with connections['catastro'].cursor() as cursor:
+                    cursor.execute(sql_muni)
+                    muni_row = cursor.fetchone()
+                    muni_geojson = muni_row[0] if muni_row else None
+
+                if muni_geojson:
+                    if isinstance(muni_geojson, str):
+                        muni_geojson = json.loads(muni_geojson)
+
+                    if 'features' in muni_geojson and muni_geojson['features']:
+                        gdf_municipios = gpd.GeoDataFrame.from_features(
+                            muni_geojson['features'], crs='EPSG:4326'
+                        ).to_crs(epsg=3857)
+
+                        # Límites de zoom envolventes
+                        bounds = gdf_convenio.total_bounds
+                        dx = max(bounds[2] - bounds[0], 1000)
+                        dy = max(bounds[3] - bounds[1], 1000)
+
+                        margin_x = max(dx * 1, 3000)
+                        margin_y = max(dy * 1, 3000)
+
+                        xmin, xmax = bounds[0] - margin_x, bounds[2] + margin_x
+                        ymin, ymax = bounds[1] - margin_y, bounds[3] + margin_y
+
+                        ax.set_xlim(xmin, xmax)
+                        ax.set_ylim(ymin, ymax)
+
+                        # Dibujar límites de municipios (Líneas amarillas brillantes)
+                        gdf_municipios.plot(
+                            ax=ax,
+                            facecolor='none',
+                            edgecolor='#facc15',
+                            linewidth=1.2,
+                            linestyle='--',
+                            zorder=2,
+                        )
+
+                        view_box = box(xmin, ymin, xmax, ymax)
+
+                        # Etiquetado con alto contraste sobre la imagen satelital
+                        for _, row_muni in gdf_municipios.iterrows():
+                            nombre = row_muni.get('nombre')
+                            geom_muni = row_muni.geometry
+
+                            if nombre and geom_muni and not geom_muni.is_empty:
+                                if geom_muni.intersects(view_box):
+                                    centroid = geom_muni.intersection(view_box).centroid
+                                    ax.annotate(
+                                        text=str(nombre).upper(),
+                                        xy=(centroid.x, centroid.y),
+                                        horizontalalignment='center',
+                                        verticalalignment='center',
+                                        fontsize=6.5,
+                                        fontweight='bold',
+                                        color='#0f172a',
+                                        zorder=4,
+                                        bbox=dict(
+                                            boxstyle='round,pad=0.25',
+                                            facecolor='#ffffff',
+                                            edgecolor='#334155',
+                                            alpha=0.9,
+                                            linewidth=0.7,
+                                        ),
+                                    )
+
+            except Exception as muni_err:
+                print(f"Aviso: No se pudo superponer la capa de municipios: {muni_err}")
+
+            # 3. Dibujar Polígono del Convenio (Rojo brillante con borde blanco/rojo)
+            gdf_convenio.plot(
+                ax=ax,
+                facecolor='#ef4444',
+                edgecolor='#ffffff',
+                alpha=0.7,
+                linewidth=1,
+                zorder=3,
+            )
+
+            # 4. Agregar Capa Satelital (Esri WorldImagery)
+            try:
+                cx.add_basemap(
+                    ax,
+                    source=cx.providers.Esri.WorldImagery,
+                    zoom='auto',
+                    zorder=1
+                )
+            except Exception as sat_err:
+                print(f"Aviso: No se pudo descargar la capa satelital: {sat_err}")
+
+            ax.set_axis_off()
+
+            # Guardar mapa temporal
+            local_temp_dir = os.path.join(str(settings.BASE_DIR), 'tmp_pdf_maps')
+            os.makedirs(local_temp_dir, exist_ok=True)
+
+            temp_img = tempfile.NamedTemporaryFile(dir=local_temp_dir, delete=False, suffix='.png')
+            mapa_file_path = os.path.abspath(temp_img.name)
+            temp_img.close()
+
+            plt.savefig(mapa_file_path, format='png', bbox_inches='tight', pad_inches=0)
+            plt.close(fig)
+
+            mapa_file_uri = pathlib.Path(mapa_file_path).as_uri()
+
+    except Exception as e:
+        print('=== ERROR GENERANDO MAPA EN PDF ===')
+        import traceback
+        traceback.print_exc()
+        mapa_file_path = None
+        mapa_file_uri = None
+
+    # Sanitización de datos
     concesionario_clean = convenio.concesionario
     if isinstance(concesionario_clean, (list, tuple)):
-      concesionario_clean = ', '.join(concesionario_clean)
+        concesionario_clean = ', '.join(concesionario_clean)
     elif isinstance(concesionario_clean, str):
-      concesionario_clean = concesionario_clean.strip('{}').replace('"', '')
+        concesionario_clean = concesionario_clean.strip('{}').replace('"', '')
 
     mineral_clean = convenio.mineral
     if isinstance(mineral_clean, (list, tuple)):
-      mineral_clean = ', '.join(mineral_clean)
+        mineral_clean = ', '.join(mineral_clean)
     elif isinstance(mineral_clean, str):
-      mineral_clean = mineral_clean.strip('{}').replace('"', '')
+        mineral_clean = mineral_clean.strip('{}').replace('"', '')
 
+    # Armado del contexto para la plantilla HTML
     context = {
         'convenio': convenio,
         'concesionario_clean': concesionario_clean,
         'mineral_clean': mineral_clean,
-        'mapa_img': mapa_file_path,
+        'mapa_img': mapa_file_uri,
+        'lista_coordenadas': lista_coordenadas,  # <--- Inyección de coordenadas
     }
 
     html_string = render_to_string('expedientes/informe_pdf.html', context)
-
     pdf_buffer = io.BytesIO()
 
-    # Se pasa link_callback para resolver assets e imágenes automáticamente
     pisa_status = pisa.CreatePDF(
         html_string, dest=pdf_buffer, link_callback=link_callback
     )
 
+    # Limpieza del archivo de imagen temporal
+    if mapa_file_path and os.path.exists(mapa_file_path):
+        try:
+            os.remove(mapa_file_path)
+        except Exception as cleanup_error:
+            print(f'Advertencia al limpiar archivo temporal: {cleanup_error}')
+
     if pisa_status.err:
-      return HttpResponse('Error al generar el PDF', status=500)
+        return HttpResponse('Error al generar el PDF', status=500)
 
     pdf_buffer.seek(0)
     response = HttpResponse(
@@ -6599,10 +6828,3 @@ def generar_informe_convenio_pdf(request, convenio_id):
         f'inline; filename="Informe_Convenio_{convenio.id}.pdf"'
     )
     return response
-
-  finally:
-    if mapa_file_path and os.path.exists(mapa_file_path):
-      try:
-        os.remove(mapa_file_path)
-      except Exception as cleanup_error:
-        print(f'Advertencia al limpiar archivo temporal: {cleanup_error}')

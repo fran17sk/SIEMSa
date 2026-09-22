@@ -1,129 +1,202 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Informe de Convenio Minero</title>
+    <title>Informe Técnico de Convenio</title>
     <style>
         @page {
             size: a4 portrait;
-            margin: 2.0cm 1.5cm 1.5cm 1.5cm;
+            margin: 1.2cm;
+            @frame footer_frame {
+                -pdf-frame-content: footer_content;
+                left: 1.2cm;
+                width: 18.6cm;
+                top: 27.2cm;
+                height: 1.0cm;
+            }
         }
 
         body {
             font-family: Helvetica, Arial, sans-serif;
-            color: #202024;
-            font-size: 10pt;
-            line-height: 1.4;
+            color: #18181b;
+            font-size: 8.5pt;
+            line-height: 1.3;
         }
 
+        /* Contenedor del Logo Superior */
+        .header-logo {
+            text-align: right;
+            width: 100%;
+            margin-bottom: 5px;
+        }
+
+        .header-logo img {
+            max-width: 240px;
+            max-height: 65px;
+        }
+
+        /* Encabezado */
         .header-table {
             width: 100%;
-            border-bottom: 2px solid #00875f;
-            padding-bottom: 8px;
-            margin-bottom: 15px;
+            border-collapse: collapse;
+            margin-top: 5px;
+            margin-bottom: 4px;
         }
 
-        .title {
-            font-size: 14pt;
+        .header-title {
+            font-size: 13pt;
             font-weight: bold;
-            color: #121214;
+            color: #09090b;
             text-transform: uppercase;
         }
 
-        .subtitle {
-            font-size: 9pt;
-            color: #6e6e73;
-            font-weight: bold;
+        .header-subtitle {
+            font-size: 8pt;
+            color: #52525b;
         }
 
+        .divider {
+            border-bottom: 2px solid #00875f;
+            margin-bottom: 10px;
+            margin-top: 4px;
+        }
+
+        /* Títulos de Sección */
         .section-title {
-            font-size: 11pt;
+            font-size: 9.5pt;
             font-weight: bold;
             color: #00875f;
-            border-bottom: 1px solid #e1e1e6;
-            padding-bottom: 4px;
-            margin-top: 15px;
-            margin-bottom: 10px;
             text-transform: uppercase;
+            border-bottom: 1px solid #e4e4e7;
+            padding-bottom: 2px;
+            margin-top: 10px;
+            margin-bottom: 6px;
         }
 
+        /* Tablas de Información */
         .info-table {
             width: 100%;
-            margin-bottom: 15px;
+            border-collapse: collapse;
+            margin-bottom: 8px;
         }
 
         .info-table td {
-            padding: 6px 8px;
-            border-bottom: 1px solid #f0f0f5;
-            font-size: 9.5pt;
+            padding: 4px 6px;
             vertical-align: top;
+            border-bottom: 1px solid #f4f4f5;
         }
 
         .label {
             font-weight: bold;
-            color: #55555e;
-            background-color: #f8f9fa;
-            width: 25%;
+            color: #3f3f46;
+            width: 22%;
+            background-color: #fafafa;
         }
 
         .value {
-            color: #121214;
-            width: 25%;
+            color: #09090b;
+            width: 28%;
         }
 
+        /* Badges / Estados */
         .badge-activo {
-            color: #00875f;
+            color: #15803d;
             font-weight: bold;
         }
 
         .badge-inactivo {
-            color: #c53030;
+            color: #b91c1c;
             font-weight: bold;
         }
 
+        /* Contenedor del Mapa */
         .map-container {
             text-align: center;
-            margin-top: 10px;
-        }
-
-        .map-img {
+            margin-top: 4px;
+            margin-bottom: 8px;
             width: 100%;
-            max-height: 420px;
-            border: 1px solid #dcdce6;
         }
 
-        .footer {
-            margin-top: 20px;
+        /* Estilos para la tabla de Coordenadas */
+        .coords-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 8px;
             font-size: 8pt;
-            color: #8d8d99;
+        }
+
+        .coords-table tr {
+            page-break-inside: avoid;
+        }
+
+        .coords-table th {
+            background-color: #f4f4f5;
+            color: #00875f;
+            font-weight: bold;
+            text-transform: uppercase;
+            padding: 5px;
+            border: 1px solid #d4d4d8;
+            text-align: center;
+        }
+
+        .coords-table td {
+            padding: 4px 5px;
+            border: 1px solid #e4e4e7;
+            text-align: center;
+            color: #18181b;
+            vertical-align: middle;
+        }
+
+        .coords-table tr:nth-child(even) td {
+            background-color: #fafafa;
+        }
+
+        /* Estilos del Pie de Página */
+        .footer-text {
             text-align: right;
-            border-top: 1px solid #e1e1e6;
-            padding-top: 6px;
+            font-family: Helvetica, Arial, sans-serif;
+            font-size: 7pt;
+            color: #71717a;
+            border-top: 1px solid #e4e4e7;
+            padding-top: 4px;
         }
     </style>
 </head>
 <body>
 
-    <!-- Encabezado -->
+    <!-- ================= PÁGINA 1: DATOS Y MAPA ================= -->
+
+    <!-- Logo en la parte superior -->
+    <div class="header-logo">
+        <img src="{% static 'app/img/logo.png' %}" alt="Logo SIEMSa" />
+    </div>
+
+    <!-- Títulos principales -->
     <table class="header-table">
         <tr>
             <td>
-                <div class="title">Informe Técnico de Convenio</div>
-                <div class="subtitle">Secretaría de Minería de Salta — Sistema SIEMSa</div>
+                <div class="header-title">Informe Técnico de Convenio</div>
+                <div class="header-subtitle">Secretaría de Minería de Salta</div>
             </td>
         </tr>
     </table>
 
-    <!-- Ficha de Datos del Convenio -->
+    <div class="divider"></div>
+
+    <!-- Sección Datos Generales -->
     <div class="section-title">Datos del Convenio</div>
+
     <table class="info-table">
         <tr>
             <td class="label">Nombre / Proyecto:</td>
-            <td class="value" colspan="3"><strong>{{ convenio.nombre|default:"Sin Especificar" }}</strong></td>
+            <td class="value" colspan="3">
+                <strong>{{ convenio.nombre|default:"Sin Especificar" }}</strong>
+            </td>
         </tr>
         <tr>
-            <td class="label">N° Expediente:</td>
-            <td class="value">{{ convenio.expediente|default:"N/D" }}</td>
+            <td class="label">Nº Expediente:</td>
+            <td class="value">{{ convenio.expediente|default:"-" }}</td>
             <td class="label">Estado:</td>
             <td class="value">
                 {% if convenio.activo %}
@@ -135,31 +208,77 @@
         </tr>
         <tr>
             <td class="label">Concesionario:</td>
-            <td class="value">{{ concesionario_clean|default:"N/D" }}</td>
+            <td class="value">{{ concesionario_clean|default:"-" }}</td>
             <td class="label">Mineral:</td>
-            <td class="value">{{ mineral_clean|default:"N/D" }}</td>
+            <td class="value">{{ mineral_clean|default:"-" }}</td>
         </tr>
         <tr>
             <td class="label">Tipo:</td>
-            <td class="value">{{ convenio.tipo|default:"N/D" }}</td>
+            <td class="value">{{ convenio.tipo|default:"-" }}</td>
             <td class="label">Departamento:</td>
-            <td class="value">{{ convenio.departamento|default:"N/D" }}</td>
+            <td class="value">{{ convenio.departamento|default:"-" }}</td>
         </tr>
     </table>
 
-    <!-- Ubicación y Encuadre Geográfico -->
+    <!-- Sección Cartografía -->
     <div class="section-title">Ubicación y Encuadre Territorial</div>
-    <div class="map-container">
-    {% if mapa_img %}
-        <img src="{{ mapa_img }}" class="map-img" alt="Mapa del Convenio" />
-    {% else %}
-        <p style="color: #8d8d99; padding: 20px;">No se pudo generar la vista preliminar del mapa para este convenio.</p>
-    {% endif %}
-</div>
 
-    <!-- Pie de página -->
-    <div class="footer">
-        Generado desde SIEMSa | Fecha de emisión: {% now "d/m/Y H:i" %}
+    <div class="map-container">
+        {% if mapa_img %}
+            <img src="{{ mapa_img }}" width="100%" height="240" style="border: 1px solid #cbd5e1;" />
+        {% else %}
+            <p style="color: #71717a; font-style: italic; padding: 15px;">
+                No se pudo cargar la representación cartográfica del convenio.
+            </p>
+        {% endif %}
+    </div>
+
+    <!-- ================= SALTO DE PÁGINA FORZADO ================= -->
+    <pdf:nextpage />
+
+    <!-- ================= PÁGINA 2: TABLA DE COORDENADAS ================= -->
+
+    <div class="section-title">Coordenadas de Vértices del Polígono</div>
+
+    {% if lista_coordenadas %}
+    <table class="coords-table">
+        <thead>
+            <tr>
+                <th width="8%">Vértice</th>
+                <th width="28%">Grados Decimales (WGS84)</th>
+                <th width="34%">Grados, Minutos, Segundos (DMS)</th>
+                <th width="30%">Gauss-Krüger (POSGAR - Faja 3)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for c in lista_coordenadas %}
+            <tr>
+                <td><strong>P{{ forloop.counter }}</strong></td>
+                <td>
+                    Lat: {{ c.lat_dec|floatformat:6 }}<br>
+                    Lon: {{ c.lon_dec|floatformat:6 }}
+                </td>
+                <td>
+                    {{ c.lat_dms }}<br>
+                    {{ c.lon_dms }}
+                </td>
+                <td>
+                    Y: {{ c.gk_x|floatformat:2 }}<br>
+                    X: {{ c.gk_y|floatformat:2 }}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p style="color: #71717a; font-style: italic; padding: 10px 0;">
+        No se registran coordenadas asignadas para este polígono.
+    </p>
+    {% endif %}
+
+    <!-- Pie de página único -->
+    <div id="footer_content" class="footer-text">
+        Generado desde SIEMSa | Fecha de emisión: {% now 'd/m/Y H:i' %} - Página <pdf:pagenumber/> de <pdf:pagecount/>
     </div>
 
 </body>

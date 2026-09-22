@@ -137,6 +137,11 @@ path(
     views.generar_informe_convenio_pdf,
     name='convenio_informe_pdf',
 ),
+path(
+        'api/municipios/geojson/',
+        views.api_municipios_geojson,
+        name='api_municipios_geojson',
+    ),
 
     path('sirgen/',views.sirgen_view,name='sirgen'),
     path('sirgen/new',views.nuevo_pase,name='nuevo_pase'),
