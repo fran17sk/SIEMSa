@@ -6401,50 +6401,172 @@ def mapa_convenios(request):
 
 
 def api_convenios_geojson(request):
-    query_general = request.GET.get('q', '')
-    empresa_id = request.GET.get('empresa', '')
+    query_general = request.GET.get('q', '').strip()
+    empresa_id = request.GET.get('empresa', '').strip()
 
-    where_clauses = ["activo is True"]
-    params = []
+    # --- 1. Filtros para CONVENIOS ---
+    where_convenios = ["geom IS NOT NULL"]
+    params_convenios = []
 
     if query_general:
-        where_clauses.append("(expediente ILIKE %s OR nombre ILIKE %s)")
-        params.extend([f"%{query_general}%", f"%{query_general}%"])
+        where_convenios.append("(expediente::text ILIKE %s OR nombre ILIKE %s)")
+        params_convenios.extend([f"%{query_general}%", f"%{query_general}%"])
 
     if empresa_id:
-        where_clauses.append("concesionario ILIKE %s")
-        params.append(f"%{empresa_id}%")
+        where_convenios.append("concesionario ILIKE %s")
+        params_convenios.append(f"%{empresa_id}%")
 
-    where_str = " AND ".join(where_clauses)
+    where_str_convenios = " AND ".join(where_convenios)
 
-    # Reemplaza 'nombre_real_de_tu_tabla' con la tabla en la base de datos catastro
+    # --- 2. Filtros para CANTERAS_CATEOS_MINAS ---
+    where_minas = [
+        "geom IS NOT NULL",
+        "(estado IS NULL OR estado != 'Archivo')"
+    ]
+    params_minas = []
+
+    if query_general:
+        # Se agrega ::text para prevenir fallos si el tipo en DB es integer
+        where_minas.append("(expediente::text ILIKE %s OR nombre ILIKE %s)")
+        params_minas.extend([f"%{query_general}%", f"%{query_general}%"])
+
+    if empresa_id:
+        where_minas.append("concesionario ILIKE %s")
+        params_minas.append(f"%{empresa_id}%")
+
+    where_str_minas = " AND ".join(where_minas)
+
+    # --- 3. Filtros para GRUPOS_MINEROS ---
+    where_grupos = [
+        "geom IS NOT NULL",
+        "(estado IS NULL OR estado != 'Archivo')"
+    ]
+    params_grupos = []
+
+    if query_general:
+        # Se agrega ::text para prevenir fallos si el tipo en DB es integer
+        where_grupos.append("(expediente::text ILIKE %s OR nombre ILIKE %s)")
+        params_grupos.extend([f"%{query_general}%", f"%{query_general}%"])
+
+    if empresa_id:
+        where_grupos.append("concesionario ILIKE %s")
+        params_grupos.append(f"%{empresa_id}%")
+
+    where_str_grupos = " AND ".join(where_grupos)
+
+    # --- 4. Filtros para SERVIDUMBRES ---
+    where_servidumbres = [
+        "geom IS NOT NULL",
+        "(estado IS NULL OR estado != 'Archivo')"
+    ]
+    params_servidumbres = []
+
+    if query_general:
+        where_servidumbres.append("(expediente::text ILIKE %s OR tipo_serv ILIKE %s)")
+        params_servidumbres.extend([f"%{query_general}%", f"%{query_general}%"])
+
+    if empresa_id:
+        where_servidumbres.append("concesionario ILIKE %s")
+        params_servidumbres.append(f"%{empresa_id}%")
+
+    where_str_servidumbres = " AND ".join(where_servidumbres)
+
+    # Parámetros consolidados
+    all_params = params_convenios + params_minas + params_grupos + params_servidumbres
+
+    # --- 5. Consulta SQL ---
     sql = f"""
         SELECT jsonb_build_object(
             'type', 'FeatureCollection',
             'features', coalesce(jsonb_agg(features.feature), '[]'::jsonb)
         )
         FROM (
+            -- 1. CONVENIOS
             SELECT jsonb_build_object(
                 'type', 'Feature',
-                'id', id,
+                'id', CONCAT('convenio_', id),
                 'geometry', ST_AsGeoJSON(geom)::jsonb,
                 'properties', jsonb_build_object(
                     'id', id,
-                    'expediente', expediente,
+                    'expediente', expediente::text,
                     'nombre', nombre,
-                    'tipo', tipo,
+                    'tipo', COALESCE(tipo, 'CONVENIO'),
                     'concesionario', concesionario,
-                    'activo', activo,
-                    'mineral', mineral
+                    'activo', COALESCE(activo, True),
+                    'mineral', mineral,
+                    'capa', 'convenio'
                 )
             ) AS feature
             FROM convenios
-            WHERE {where_str}
+            WHERE {where_str_convenios}
+
+            UNION ALL
+
+            -- 2. CANTERAS, CATEOS, MINAS
+            SELECT jsonb_build_object(
+                'type', 'Feature',
+                'id', CONCAT('mina_', id),
+                'geometry', ST_AsGeoJSON(geom)::jsonb,
+                'properties', jsonb_build_object(
+                    'id', id,
+                    'expediente', expediente::text,
+                    'nombre', nombre,
+                    'tipo', COALESCE(tipo, 'MINA/CATEO/CANTERA'),
+                    'concesionario', concesionario,
+                    'activo', (LOWER(COALESCE(estado, '')) IN ('concedida', 'activo')),
+                    'mineral', mineral,
+                    'capa', 'mina'
+                )
+            ) AS feature
+            FROM canteras_cateos_minas
+            WHERE {where_str_minas}
+
+            UNION ALL
+
+            -- 3. GRUPOS MINEROS
+            SELECT jsonb_build_object(
+                'type', 'Feature',
+                'id', CONCAT('grupo_', id),
+                'geometry', ST_AsGeoJSON(geom)::jsonb,
+                'properties', jsonb_build_object(
+                    'id', id,
+                    'expediente', expediente::text,
+                    'nombre', nombre,
+                    'tipo', 'GRUPO MINERO',
+                    'concesionario', concesionario,
+                    'activo', (LOWER(COALESCE(estado, '')) IN ('concedida', 'activo')),
+                    'mineral', NULL,
+                    'capa', 'grupo'
+                )
+            ) AS feature
+            FROM grupos_mineros
+            WHERE {where_str_grupos}
+
+            UNION ALL
+
+            -- 4. SERVIDUMBRES
+            SELECT jsonb_build_object(
+                'type', 'Feature',
+                'id', CONCAT('servidumbre_', id),
+                'geometry', ST_AsGeoJSON(geom)::jsonb,
+                'properties', jsonb_build_object(
+                    'id', id,
+                    'expediente', expediente::text,
+                    'nombre', tipo_serv,
+                    'tipo', 'SERVIDUMBRE',
+                    'concesionario', concesionario,
+                    'activo', (LOWER(COALESCE(estado, '')) IN ('concedida', 'activo')),
+                    'mineral', NULL,
+                    'capa', 'servidumbre'
+                )
+            ) AS feature
+            FROM servidumbres
+            WHERE {where_str_servidumbres}
         ) features;
     """
 
     with connections['catastro'].cursor() as cursor:
-        cursor.execute(sql, params)
+        cursor.execute(sql, all_params)
         row = cursor.fetchone()
         result = row[0] if row else {}
 

@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mapa de Convenios y Catastro Minero - Salta</title>
+    <title>Mapa de Catastro Minero y Convenios - Salta</title>
     
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -123,7 +123,7 @@
         }
         .panel-close:hover { color: #000000; }
 
-        /* Panel de Búsqueda y Resultados (Estilo Jujuy/ArcGIS) */
+        /* Panel de Búsqueda y Resultados */
         .search-box-wrapper {
             display: flex;
             align-items: center;
@@ -377,12 +377,12 @@
     <!-- Panel 1: Búsqueda con Lista de Resultados Interactiva -->
     <div id="panel-search" class="floating-panel">
         <div class="panel-header">
-            <span>Buscador de Minas y Convenios</span>
+            <span>Buscador del Catastro Minero</span>
             <span class="panel-close" onclick="cerrarPaneles()">✕</span>
         </div>
         
         <div class="search-box-wrapper">
-            <input type="text" id="input-buscar" placeholder="Expediente, nombre, empresa..." oninput="onSearchInput()" onkeypress="handleKeyPress(event)" />
+            <input type="text" id="input-buscar" placeholder="Expediente, nombre, titular..." oninput="onSearchInput()" onkeypress="handleKeyPress(event)" />
             <button class="clear-btn" title="Limpiar" onclick="limpiarBusqueda()">✕</button>
             <button class="search-btn" title="Buscar" onclick="cargarGeoJSON()">🔍</button>
         </div>
@@ -424,7 +424,7 @@
         </div>
     </div>
 
-    <!-- Panel 3: Control de Capas (Layers Panel) -->
+    <!-- Panel 3: Control de Capas (6 Categorías Mineras) -->
     <div id="panel-layers" class="floating-panel">
         <div class="panel-header">
             <span>Capas de Información</span>
@@ -433,32 +433,8 @@
         <ul class="layers-list">
             <li class="layer-item">
                 <div class="layer-item-title">
-                    <button class="layer-toggle-btn" id="eye-activos" onclick="toggleLayer('activos', this)">👁️</button>
-                    <span>Convenios Activos</span>
-                </div>
-            </li>
-            <li class="layer-item">
-                <div class="layer-item-title">
-                    <button class="layer-toggle-btn" id="eye-inactivos" onclick="toggleLayer('inactivos', this)">👁️</button>
-                    <span>Convenios Inactivos</span>
-                </div>
-            </li>
-            <li class="layer-item">
-                <div class="layer-item-title">
                     <button class="layer-toggle-btn" id="eye-minas" onclick="toggleLayer('minas', this)">👁️</button>
-                    <span>Mina Concedida</span>
-                </div>
-            </li>
-            <li class="layer-item">
-                <div class="layer-item-title">
-                    <button class="layer-toggle-btn" id="eye-solicitud" onclick="toggleLayer('solicitud', this)">👁️</button>
-                    <span>Solicitud de Mina</span>
-                </div>
-            </li>
-            <li class="layer-item">
-                <div class="layer-item-title">
-                    <button class="layer-toggle-btn" id="eye-cateos" onclick="toggleLayer('cateos', this)">👁️</button>
-                    <span>Cateos</span>
+                    <span>Minas</span>
                 </div>
             </li>
             <li class="layer-item">
@@ -469,8 +445,26 @@
             </li>
             <li class="layer-item">
                 <div class="layer-item-title">
-                    <button class="layer-toggle-btn" id="eye-reserva" onclick="toggleLayer('reserva', this)">👁️</button>
-                    <span>Áreas de Reserva</span>
+                    <button class="layer-toggle-btn" id="eye-cateos" onclick="toggleLayer('cateos', this)">👁️</button>
+                    <span>Cateos</span>
+                </div>
+            </li>
+            <li class="layer-item">
+                <div class="layer-item-title">
+                    <button class="layer-toggle-btn" id="eye-grupos" onclick="toggleLayer('grupos', this)">👁️</button>
+                    <span>Grupos Mineros</span>
+                </div>
+            </li>
+            <li class="layer-item">
+                <div class="layer-item-title">
+                    <button class="layer-toggle-btn" id="eye-servidumbres" onclick="toggleLayer('servidumbres', this)">👁️</button>
+                    <span>Servidumbres</span>
+                </div>
+            </li>
+            <li class="layer-item">
+                <div class="layer-item-title">
+                    <button class="layer-toggle-btn" id="eye-convenios" onclick="toggleLayer('convenios', this)">👁️</button>
+                    <span>Convenios</span>
                 </div>
             </li>
             <li class="layer-item">
@@ -490,32 +484,28 @@
         </div>
         <div class="legend-list">
             <div class="legend-item">
-                <span class="legend-symbol" style="background-color: rgba(0, 230, 118, 0.45); border-color: #00e676;"></span>
-                <span>Convenio Activo</span>
+                <span class="legend-symbol" style="background-color: rgba(229, 57, 53, 0.6); border-color: #b71c1c;"></span>
+                <span>Minas</span>
             </div>
             <div class="legend-item">
-                <span class="legend-symbol" style="background-color: rgba(255, 23, 68, 0.45); border-color: #ff1744;"></span>
-                <span>Convenio Inactivo</span>
-            </div>
-            <div class="legend-item">
-                <span class="legend-symbol" style="background-color: rgba(239, 83, 80, 0.6); border-color: #e53935;"></span>
-                <span>Mina Concedida</span>
-            </div>
-            <div class="legend-item">
-                <span class="legend-symbol" style="background-color: rgba(255, 238, 88, 0.6); border-color: #fbc02d;"></span>
-                <span>Solicitud de Mina</span>
-            </div>
-            <div class="legend-item">
-                <span class="legend-symbol" style="background-color: rgba(79, 195, 247, 0.6); border-color: #0288d1;"></span>
-                <span>Cateos</span>
-            </div>
-            <div class="legend-item">
-                <span class="legend-symbol" style="background-color: rgba(129, 199, 132, 0.6); border-color: #388e3c;"></span>
+                <span class="legend-symbol" style="background-color: rgba(76, 175, 80, 0.6); border-color: #1b5e20;"></span>
                 <span>Canteras</span>
             </div>
             <div class="legend-item">
-                <span class="legend-symbol" style="background-color: rgba(186, 104, 200, 0.6); border-color: #8e24aa;"></span>
-                <span>Áreas de Reserva</span>
+                <span class="legend-symbol" style="background-color: rgba(3, 169, 244, 0.6); border-color: #01579b;"></span>
+                <span>Cateos</span>
+            </div>
+            <div class="legend-item">
+                <span class="legend-symbol" style="background-color: rgba(156, 39, 176, 0.6); border-color: #4a148c;"></span>
+                <span>Grupos Mineros</span>
+            </div>
+            <div class="legend-item">
+                <span class="legend-symbol" style="background-color: rgba(255, 152, 0, 0.6); border-color: #e65100;"></span>
+                <span>Servidumbres</span>
+            </div>
+            <div class="legend-item">
+                <span class="legend-symbol" style="background-color: rgba(0, 230, 118, 0.6); border-color: #007e33;"></span>
+                <span>Convenios</span>
             </div>
         </div>
     </div>
@@ -565,21 +555,45 @@
             layers: [currentBasemap]
         });
 
-        // Capas Vectoriales
+        // Capas Vectoriales específicas requeridas
         const layerGroups = {
-            'activos': L.layerGroup().addTo(map),
-            'inactivos': L.layerGroup().addTo(map),
             'minas': L.layerGroup().addTo(map),
-            'solicitud': L.layerGroup().addTo(map),
-            'cateos': L.layerGroup().addTo(map),
             'canteras': L.layerGroup().addTo(map),
-            'reserva': L.layerGroup().addTo(map),
+            'cateos': L.layerGroup().addTo(map),
+            'grupos': L.layerGroup().addTo(map),
+            'servidumbres': L.layerGroup().addTo(map),
+            'convenios': L.layerGroup().addTo(map),
             'municipios': L.layerGroup().addTo(map)
         };
 
+        // Paleta de Estilos y Colores según las 6 categorías
+        const STYLE_CONFIG = {
+            'minas': { stroke: '#b71c1c', fill: '#e53935', opacity: 0.6 },
+            'canteras': { stroke: '#1b5e20', fill: '#4caf50', opacity: 0.6 },
+            'cateos': { stroke: '#01579b', fill: '#03a9f4', opacity: 0.6 },
+            'grupos': { stroke: '#4a148c', fill: '#9c27b0', opacity: 0.6 },
+            'servidumbres': { stroke: '#e65100', fill: '#ff9800', opacity: 0.6 },
+            'convenios': { stroke: '#007e33', fill: '#00e676', opacity: 0.6 }
+        };
+
         let featuresMap = {};
-        let leafletLayersMap = {}; // Guardar referencia a las capas de Leaflet por id
+        let leafletLayersMap = {};
         let debounceTimer = null;
+
+        // Determinar a qué capa asociar según el tipo de derecho
+        function resolverClaveCapa(p) {
+            const tipo = (p.tipo || '').toLowerCase();
+            
+            if (tipo.includes('cantera')) return 'canteras';
+            if (tipo.includes('cateo')) return 'cateos';
+            if (tipo.includes('grupo')) return 'grupos';
+            if (tipo.includes('servidumbre')) return 'servidumbres';
+            if (tipo.includes('convenio')) return 'convenios';
+            if (tipo.includes('mina')) return 'minas';
+            
+            // Predeterminado si no coincide
+            return 'minas';
+        }
 
         // Control de Apertura/Cierre de Paneles
         function togglePanel(panelId, btn) {
@@ -646,12 +660,18 @@
             }, 300);
         }
 
+        function handleKeyPress(e) {
+            if (e.key === 'Enter') {
+                cargarGeoJSON();
+            }
+        }
+
         function limpiarBusqueda() {
             document.getElementById('input-buscar').value = '';
             cargarGeoJSON();
         }
 
-        // Cargar GeoJSON y renderizar lista de resultados estilo Jujuy
+        // Cargar GeoJSON y distribuir por las 6 capas
         function cargarGeoJSON() {
             const query = document.getElementById('input-buscar').value.trim();
             const url = `/convenios/api/geojson/?q=${encodeURIComponent(query)}`;
@@ -659,26 +679,34 @@
             fetch(url)
                 .then(response => response.json())
                 .then(data => {
-                    layerGroups['activos'].clearLayers();
-                    layerGroups['inactivos'].clearLayers();
+                    // Limpiar las capas vectoriales antes de rellenar
+                    Object.keys(layerGroups).forEach(k => {
+                        if (k !== 'municipios') layerGroups[k].clearLayers();
+                    });
+
                     featuresMap = {};
                     leafletLayersMap = {};
 
                     const geojsonLayer = L.geoJSON(data, {
                         style: function(feature) {
-                            const esActivo = feature.properties.activo;
+                            const p = feature.properties;
+                            const capaKey = resolverClaveCapa(p);
+                            const conf = STYLE_CONFIG[capaKey] || STYLE_CONFIG['minas'];
+
                             return {
-                                color: esActivo ? '#00e676' : '#ff1744',
+                                color: conf.stroke,
                                 weight: 2,
                                 opacity: 0.9,
-                                fillColor: esActivo ? '#00e676' : '#ff1744',
-                                fillOpacity: 0.45
+                                fillColor: conf.fill,
+                                fillOpacity: conf.opacity
                             };
                         },
                         onEachFeature: function(feature, layer) {
                             const p = feature.properties;
                             featuresMap[p.id] = feature;
                             leafletLayersMap[p.id] = layer;
+
+                            const capaKey = resolverClaveCapa(p);
 
                             const estadoBadge = p.activo 
                                 ? '<span class="badge-activo">Activo</span>' 
@@ -698,12 +726,16 @@
                             `;
                             layer.bindPopup(popupContent);
 
-                            if (p.activo) layer.addTo(layerGroups['activos']);
-                            else layer.addTo(layerGroups['inactivos']);
+                            // Agregar la capa al grupo correspondiente
+                            if (layerGroups[capaKey]) {
+                                layer.addTo(layerGroups[capaKey]);
+                            } else {
+                                layer.addTo(layerGroups['minas']);
+                            }
                         }
                     });
 
-                    // Renderizar tarjetas de la prebúsqueda en la lista del panel
+                    // Renderizar tarjetas de resultados en el panel
                     renderizarResultados(data.features || []);
 
                     // Si hay una búsqueda activa y devolvió polígonos, enfocar en el conjunto
@@ -714,7 +746,7 @@
                         }
                     }
                 })
-                .catch(error => console.error('Error al cargar convenios:', error));
+                .catch(error => console.error('Error al cargar datos:', error));
         }
 
         // Renderiza las tarjetas dinámicas en el panel
@@ -773,7 +805,7 @@
 
             const modal = document.getElementById('modal-coordenadas');
             const modalBody = document.getElementById('modal-body');
-            document.getElementById('modal-titulo').innerText = `Vértices: ${feature.properties.nombre || 'Convenio'}`;
+            document.getElementById('modal-titulo').innerText = `Vértices: ${feature.properties.nombre || 'Derecho Minero'}`;
 
             let coords = feature.geometry.type === 'Polygon' ? feature.geometry.coordinates[0] : feature.geometry.coordinates[0][0];
 
@@ -781,54 +813,42 @@
                 <table class="coords-table">
                     <thead>
                         <tr>
-                            <th>#</th>
-                            <th>Lat/Lng Decimal</th>
-                            <th>DMS</th>
-                            <th>Gauss-Krüger (Faja 3)</th>
+                            <th>Vértice</th>
+                            <th>Latitud (WGS84)</th>
+                            <th>Longitud (WGS84)</th>
+                            <th>X (POSGAR F3)</th>
+                            <th>Y (POSGAR F3)</th>
                         </tr>
                     </thead>
                     <tbody>
             `;
 
-            coords.forEach((point, index) => {
-                const lon = point[0];
-                const lat = point[1];
-                const gk = proj4("EPSG:4326", "POSGAR_FAJA3", [lon, lat]);
+            coords.forEach((coord, idx) => {
+                const lng = coord[0];
+                const lat = coord[1];
+                const posgar = proj4("EPSG:4326", "POSGAR_FAJA3", [lng, lat]);
 
                 tablaHTML += `
                     <tr>
-                        <td><strong>P${index + 1}</strong></td>
-                        <td>Lat: ${lat.toFixed(6)}<br>Lng: ${lon.toFixed(6)}</td>
-                        <td>${toDMS(lat, 'lat')}<br>${toDMS(lon, 'lon')}</td>
-                        <td>Y: ${gk[0].toFixed(2)}<br>X: ${gk[1].toFixed(2)}</td>
+                        <td>V${idx + 1}</td>
+                        <td>${lat.toFixed(6)}</td>
+                        <td>${lng.toFixed(6)}</td>
+                        <td>${posgar[0].toFixed(2)}</td>
+                        <td>${posgar[1].toFixed(2)}</td>
                     </tr>
                 `;
             });
 
-            tablaHTML += `</tbody></table>`;
+            tablaHTML += '</tbody></table>';
             modalBody.innerHTML = tablaHTML;
-            modal.style.display = "block";
-        }
-
-        function toDMS(val, type) {
-            const abs = Math.abs(val);
-            const deg = Math.floor(abs);
-            const minNotTrunc = (abs - deg) * 60;
-            const min = Math.floor(minNotTrunc);
-            const sec = ((minNotTrunc - min) * 60).toFixed(2);
-            const card = type === 'lat' ? (val >= 0 ? 'N' : 'S') : (val >= 0 ? 'E' : 'O');
-            return `${deg}° ${min}' ${sec}" ${card}`;
+            modal.style.display = 'block';
         }
 
         function cerrarModal() {
-            document.getElementById('modal-coordenadas').style.display = "none";
+            document.getElementById('modal-coordenadas').style.display = 'none';
         }
 
-        function handleKeyPress(event) {
-            if (event.key === 'Enter') cargarGeoJSON();
-        }
-
-        // Carga inicial al abrir
+        // Inicializar la carga de datos al iniciar la app
         cargarGeoJSON();
     </script>
 </body>
